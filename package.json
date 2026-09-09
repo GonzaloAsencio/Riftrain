@@ -1,0 +1,13 @@
+{
+  "name": "riftrain",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Riftbound Forecast Trainer - entrenador personal de anticipacion de recursos",
+  "scripts": {
+    "test": "node --test && node tools/run-browser-tests.js",
+    "test:engine": "node --test",
+    "test:browser": "node tools/run-browser-tests.js",
+    "dev": "node tools/serve.js"
+  }
+}

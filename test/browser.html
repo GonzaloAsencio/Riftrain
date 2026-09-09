@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Riftrain — tests de navegador</title>
+<link rel="stylesheet" href="../app.css">
+<style>
+  body { padding: 0; }
+  #out { font-family: ui-monospace, monospace; font-size: 12px; padding: 10px; }
+  .t-pass { color: #2f7d5a; }
+  .t-fail { color: #c0453c; font-weight: 700; }
+  #stage { padding: 0 12px; }
+</style>
+</head>
+<body>
+<!-- Escenario real montado en el DOM, con el CSS de produccion -->
+<div class="app" id="stage">
+  <main>
+    <section class="table">
+      <div class="hand" id="hand"></div>
+    </section>
+    <p class="ask">Pregunta de ejemplo con un texto largo para ver si fuerza el ancho de la pagina</p>
+    <div class="actions">
+      <button class="btn btn--ghost">No hay mas</button>
+      <button class="btn">Confirmar</button>
+    </div>
+  </main>
+</div>
+<pre id="out"></pre>
+
+<script type="module">
+import { Hand } from '../src/ui/hand.js';
+import { renderCard } from '../src/ui/card.js';
+
+const out = document.getElementById('out');
+let pass = 0, fail = 0;
+
+function check(name, cond, extra = '') {
+  const ok = !!cond;
+  ok ? pass++ : fail++;
+  const line = document.createElement('div');
+  line.className = ok ? 't-pass' : 't-fail';
+  line.textContent = `${ok ? 'PASS' : 'FAIL'} ${name}${extra ? ' :: ' + extra : ''}`;
+  out.appendChild(line);
+}
+
+const card = (id, name, energy = 1, power = {}, domain = 'fury') =>
+  ({ id, name, energy, power, type: 'unit', might: 3, domain, text: 'Texto de reglas.' });
+
+const mano = [
+  card('a', 'Chispa'), card('b', 'Recluta'), card('c', 'Descarga'),
+  card('d', 'Artillera'), card('e', 'Detonante'), card('f', 'Motin'), card('g', 'Granada'),
+];
+
+const hand = new Hand(document.getElementById('hand'), mano);
+
+// ---- LA REGLA 1: las cartas estan boca abajo DESDE EL PRINCIPIO
+const slots = document.querySelectorAll('#hand .hand__slot');
+check('R1 hay un slot por carta desde el arranque', slots.length === mano.length, `${slots.length}`);
+check('R1 todas arrancan boca abajo',
+  [...document.querySelectorAll('#hand .card')].every((c) => c.dataset.face === 'down'));
+
+// ---- LA REGLA 2: nombrar da vuelta AHI MISMO, en su lugar
+const before = [...document.querySelectorAll('#hand .hand__slot')].indexOf(
+  document.querySelector('[data-card-id="c"]').closest('.hand__slot'));
+const r = hand.reveal('c');
+const after = [...document.querySelectorAll('#hand .hand__slot')].indexOf(
+  document.querySelector('[data-card-id="c"]').closest('.hand__slot'));
+check('R2 acertar la da vuelta', r.hit && document.querySelector('[data-card-id="c"]').dataset.face === 'up');
+check('R2 queda marcada como acierto', document.querySelector('[data-card-id="c"]').dataset.result === 'hit');
+check('R2 NO cambia de lugar en el abanico', before === after, `${before} -> ${after}`);
+
+// ---- LA REGLA 4: falso positivo entra igual, tachado
+const intruso = card('zz', 'Carta Ajena');
+hand.addFalsePositive(intruso);
+const fp = document.querySelector('[data-card-id="zz"]');
+check('R4 el falso positivo entra al abanico', !!fp);
+check('R4 va dado vuelta y marcado', fp.dataset.face === 'up' && fp.dataset.result === 'false-positive');
+const fpStyle = getComputedStyle(fp.querySelector('.card__face--front'));
+check('R4 lleva borde rojo', fpStyle.borderTopColor === 'rgb(192, 69, 60)', fpStyle.borderTopColor);
+check('R4 el nombre va tachado',
+  getComputedStyle(fp.querySelector('.card__name')).textDecorationLine.includes('line-through'));
+
+// ---- LA REGLA 3: el cierre. Las que no vi, en blanco y negro, MISMA fila.
+const filaAntes = document.querySelectorAll('#hand .hand__slot').length;
+const missed = hand.revealRest({ stagger: 0 });
+check('R3 el cierre da vuelta las que faltaban', missed.length === mano.length - 1, `${missed.length}`);
+check('R3 NO se agregan huecos nuevos al cerrar',
+  document.querySelectorAll('#hand .hand__slot').length === filaAntes, `${filaAntes}`);
+
+const unaMissed = document.querySelector('[data-card-id="a"]');
+check('R3 quedan marcadas como missed', unaMissed.dataset.result === 'missed');
+const missedStyle = getComputedStyle(unaMissed.querySelector('.card__face--front'));
+check('R3 GRIS DE VERDAD: grayscale(1)', missedStyle.filter.includes('grayscale(1)'), missedStyle.filter);
+check('R3 y opacidad baja', parseFloat(missedStyle.opacity) < 0.5, missedStyle.opacity);
+
+// La acertada sigue en COLOR: el contraste es el feedback
+const hitStyle = getComputedStyle(document.querySelector('[data-card-id="c"] .card__face--front'));
+check('R3 la acertada NO se grisea',
+  !hitStyle.filter.includes('grayscale(1)') && parseFloat(hitStyle.opacity) === 1, hitStyle.filter);
+
+// Todas en la misma fila: mismo offsetTop
+const tops = new Set([...document.querySelectorAll('#hand .hand__slot')].map((s) => Math.round(s.getBoundingClientRect().top)));
+check('R3 acertadas y grises en la MISMA fila', tops.size <= 2, `${tops.size} alturas distintas`);
+
+// ---- La proporcion real de la carta
+const cardBox = document.querySelector('#hand .card').getBoundingClientRect();
+const ratio = cardBox.width / cardBox.height;
+check('Carta en proporcion 63:88', Math.abs(ratio - 63 / 88) < 0.02, ratio.toFixed(3));
+
+// ---- Sin arte, la carta sigue siendo legible: nunca un hueco
+const sinArte = renderCard(card('x', 'Sin Arte'), { faceUp: true });
+document.body.appendChild(sinArte);
+check('Sin img, la ventana de arte se dibuja igual',
+  sinArte.querySelector('.card__art').classList.contains('card__art--empty'));
+check('Sin img, el nombre sigue visible', sinArte.querySelector('.card__name').textContent === 'Sin Arte');
+sinArte.remove();
+
+// ---- QUIEN DESBORDA A LO ANCHO (esto es lo que el screenshot mostro)
+const docW = document.documentElement.clientWidth;
+
+// Un hijo dentro de un contenedor con overflow:auto sigue reportando su posicion
+// REAL en getBoundingClientRect aunque este clipeado. Contarlo como desborde seria
+// un falso positivo: lo que importa es que el contenedor scrollee, no la pagina.
+const dentroDeScroller = (node) => {
+  for (let p = node.parentElement; p && p !== document.body; p = p.parentElement) {
+    const ov = getComputedStyle(p).overflowX;
+    if (ov === 'auto' || ov === 'scroll' || ov === 'hidden' || ov === 'clip') return true;
+  }
+  return false;
+};
+
+const culpables = [];
+for (const node of document.querySelectorAll('#stage *')) {
+  if (dentroDeScroller(node)) continue;
+  const r = node.getBoundingClientRect();
+  if (r.right > docW + 1 || r.left < -1) {
+    culpables.push(`${node.tagName}.${node.className || '(sin clase)'} [${Math.round(r.left)}..${Math.round(r.right)}]`);
+  }
+}
+check(`Nada desborda de ${docW}px`, culpables.length === 0, culpables.slice(0, 6).join(' | '));
+
+// El que manda: la PAGINA no puede scrollear en horizontal, pase lo que pase.
+const docSW = document.documentElement.scrollWidth;
+let quien = '';
+if (docSW > docW + 1) {
+  for (const node of document.querySelectorAll('body *')) {
+    const r = node.getBoundingClientRect();
+    if (r.right > docW + 1) { quien = `${node.tagName}.${node.className} hasta ${Math.round(r.right)}`; break; }
+  }
+}
+check('El documento no scrollea en horizontal', docSW <= docW + 1,
+  `scrollWidth ${docSW} vs ${docW} — primero: ${quien || 'nadie'}`);
+
+// Y la mano SI tiene que scrollear sola cuando no entra.
+const manoAbierta = document.getElementById('hand');
+check('La mano abierta contiene su propio scroll',
+  manoAbierta.scrollWidth >= manoAbierta.clientWidth,
+  `hand ${manoAbierta.scrollWidth} / ${manoAbierta.clientWidth}`);
+
+// ---- ANCHO DE TELEFONO REAL.
+// Chrome headless tiene un piso de viewport (~500px), asi que un --window-size
+// chico NO prueba nada. Montamos la mano en un contenedor de ancho FIJO y
+// medimos contra el: eso si reproduce un telefono angosto.
+for (const ancho of [320, 360, 390]) {
+  const box = document.createElement('div');
+  box.style.cssText = `width:${ancho}px; padding:0 12px; box-sizing:border-box; position:absolute; left:-9999px;`;
+  const table = document.createElement('div');
+  table.className = 'table';
+  const h = document.createElement('div');
+  h.className = 'hand';
+  table.appendChild(h);
+  box.appendChild(table);
+  document.body.appendChild(box);
+
+  // Caso peor: mano de 7 + tres falsos positivos = 10 cartas en la fila.
+  const peor = new Hand(h, mano);
+  peor.addFalsePositive(card('fp1', 'Intrusa Uno'));
+  peor.addFalsePositive(card('fp2', 'Intrusa Dos'));
+  peor.addFalsePositive(card('fp3', 'Intrusa Tres'));
+
+  const limite = box.getBoundingClientRect().right;
+  const desbordan = [...h.querySelectorAll('.hand__slot')]
+    .filter((s) => s.getBoundingClientRect().right > limite + 1).length;
+
+  check(`Mano de 10 cartas entra en ${ancho}px`, desbordan === 0, `${desbordan} slots se salen`);
+  check(`Sin scroll horizontal en ${ancho}px`,
+    h.scrollWidth <= h.clientWidth + 1, `${h.scrollWidth} vs ${h.clientWidth}`);
+  box.remove();
+}
+
+const head = document.createElement('div');
+head.textContent = `\n=== ${pass} PASS / ${fail} FAIL ===`;
+head.className = fail ? 't-fail' : 't-pass';
+out.appendChild(head);
+document.title = fail ? `FAIL(${fail})` : `PASS(${pass})`;
+</script>
+</body>
+</html>

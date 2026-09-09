@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16181d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Riftbound Forecast Trainer</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="streak" id="streak">
+      <span class="streak__n num">0</span>
+      <span class="streak__l">racha</span>
+    </div>
+    <span class="level" id="level">Nivel 1</span>
+    <button class="iconbtn" id="btn-stats" title="Estadisticas" aria-label="Estadisticas">%</button>
+    <button class="iconbtn" id="btn-mode" title="Cambiar de modo" aria-label="Cambiar de modo">R</button>
+    <span class="timer num" id="timer">0.0s</span>
+  </header>
+
+  <main>
+    <!-- LA MESA: panel oscuro, para que las cartas destaquen -->
+    <section class="table" aria-label="Mesa del rival">
+      <div class="table__head">
+        <span class="table__turn" id="turn">Turno —</span>
+        <span class="table__deck" id="deck">—</span>
+        <span class="chip hidden" id="chip-review">repaso</span>
+        <span class="chip hidden" id="chip-seed"></span>
+      </div>
+
+      <div class="runes" id="runes" aria-label="Runas en mesa"></div>
+
+      <!-- La mano esta boca abajo desde el primer segundo -->
+      <div class="hand" id="hand"></div>
+    </section>
+
+    <p class="ask" id="ask">Cargando…</p>
+
+    <!-- Zonas de input: solo una visible a la vez -->
+    <div id="input-picks" class="picks hidden"></div>
+
+    <div id="input-type" class="typebox hidden">
+      <input id="type-field" type="text" autocomplete="off" autocapitalize="off"
+             autocorrect="off" spellcheck="false" placeholder="Nombra una carta…"
+             aria-label="Nombra una carta" aria-autocomplete="list">
+      <div id="suggest" class="suggest hidden" role="listbox"></div>
+    </div>
+
+    <div id="input-num" class="numpad hidden" role="group" aria-label="Elegi un numero"></div>
+
+    <div class="named" id="named"></div>
+
+    <div class="actions">
+      <button class="btn btn--ghost hidden" id="btn-skip">No hay mas</button>
+      <button class="btn" id="btn-primary">Confirmar</button>
+    </div>
+
+    <section class="verdict hidden" id="verdict" aria-live="polite"></section>
+
+    <p class="ph-banner hidden" id="ph-banner"></p>
+  </main>
+</div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

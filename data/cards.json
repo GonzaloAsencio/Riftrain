@@ -1,0 +1,73 @@
+{
+  "_placeholder": true,
+  "_warning": "DATOS DE ANDAMIO. Ninguna de estas cartas es real de Riftbound. Existen solo para que el motor y el revelado se puedan probar. Reemplazar por decklists reales: borrar 'cards' y 'decks' y pegar los propios, o poner _placeholder en false.",
+  "_schema": {
+    "card": "{ id, name, energy, power:{domain:n}, type, subtype?, might?, text?, img?, domain }",
+    "deck": "{ id, name, legend, domains:[], archetype, cards:[{cardId, qty}] }",
+    "domains": ["fury", "calm", "mind", "body", "order", "chaos"],
+    "types": ["unit", "spell", "gear", "battlefield", "legend", "champion"]
+  },
+
+  "cards": [
+    { "id": "ph-chispa",    "name": "Chispa",              "energy": 1, "power": {},            "type": "spell", "domain": "fury",  "text": "1 de danio a una unidad.", "img": null, "placeholder": true },
+    { "id": "ph-recluta",   "name": "Recluta de chatarra", "energy": 2, "power": {},            "type": "unit",  "subtype": "Yordle", "might": 2, "domain": "fury", "text": "", "img": null, "placeholder": true },
+    { "id": "ph-descarga",  "name": "Descarga",            "energy": 2, "power": {"fury": 1},   "type": "spell", "domain": "fury",  "text": "3 de danio repartido.", "img": null, "placeholder": true },
+    { "id": "ph-artillera", "name": "Artillera",           "energy": 3, "power": {"fury": 1},   "type": "unit",  "subtype": "Zaunita", "might": 4, "domain": "fury", "text": "Al entrar: 2 de danio.", "img": null, "placeholder": true },
+    { "id": "ph-detonante", "name": "Detonante",           "energy": 5, "power": {"fury": 1},   "type": "spell", "domain": "fury",  "text": "4 de danio repartido.", "img": null, "placeholder": true },
+    { "id": "ph-motin",     "name": "Motin",               "energy": 1, "power": {"chaos": 1},  "type": "spell", "domain": "chaos", "text": "Robas 1. Descartas 1.", "img": null, "placeholder": true },
+    { "id": "ph-saboteador","name": "Saboteador",          "energy": 2, "power": {"chaos": 1},  "type": "unit",  "subtype": "Pirata", "might": 3, "domain": "chaos", "text": "Sigiloso.", "img": null, "placeholder": true },
+    { "id": "ph-caos-total","name": "Caos total",          "energy": 4, "power": {"chaos": 2},  "type": "spell", "domain": "chaos", "text": "Cada jugador descarta su mano.", "img": null, "placeholder": true },
+    { "id": "ph-granada",   "name": "Granada",             "energy": 0, "power": {"fury": 1},   "type": "spell", "domain": "fury",  "text": "2 de danio.", "img": null, "placeholder": true },
+    { "id": "ph-bastion",   "name": "Bastion",             "energy": 3, "power": {},            "type": "unit",  "subtype": "Guardia", "might": 5, "domain": "body", "text": "Defensor.", "img": null, "placeholder": true },
+
+    { "id": "ph-meditar",   "name": "Meditar",             "energy": 1, "power": {},            "type": "spell", "domain": "calm",  "text": "Robas 1.", "img": null, "placeholder": true },
+    { "id": "ph-centinela", "name": "Centinela",           "energy": 2, "power": {"calm": 1},   "type": "unit",  "subtype": "Vastaya", "might": 3, "domain": "calm", "text": "Defensor.", "img": null, "placeholder": true },
+    { "id": "ph-decreto",   "name": "Decreto",             "energy": 2, "power": {"order": 2},  "type": "spell", "domain": "order", "text": "Anula un hechizo.", "img": null, "placeholder": true },
+    { "id": "ph-magistrado","name": "Magistrado",          "energy": 4, "power": {"order": 1},  "type": "unit",  "subtype": "Noble", "might": 4, "domain": "order", "text": "Al entrar: silencia una unidad.", "img": null, "placeholder": true },
+    { "id": "ph-augurio",   "name": "Augurio",             "energy": 3, "power": {"mind": 1},   "type": "spell", "domain": "mind",  "text": "Mira las 3 de arriba.", "img": null, "placeholder": true },
+    { "id": "ph-archivista","name": "Archivista",          "energy": 3, "power": {"mind": 2},   "type": "unit",  "subtype": "Erudito", "might": 2, "domain": "mind", "text": "Al entrar: robas 2.", "img": null, "placeholder": true },
+    { "id": "ph-sello",     "name": "Sello del orden",     "energy": 5, "power": {"order": 1, "calm": 1}, "type": "gear", "domain": "order", "text": "Tus unidades tienen +1 Might.", "img": null, "placeholder": true },
+    { "id": "ph-tratado",   "name": "Tratado",             "energy": 6, "power": {"calm": 2},   "type": "spell", "domain": "calm",  "text": "Ambos jugadores roban 3.", "img": null, "placeholder": true }
+  ],
+
+  "decks": [
+    {
+      "id": "ph-aggro-fury",
+      "name": "PH · Aggro Fury/Chaos",
+      "legend": "Placeholder, Leyenda de Prueba",
+      "domains": ["fury", "chaos"],
+      "archetype": "Aggro",
+      "placeholder": true,
+      "cards": [
+        { "cardId": "ph-chispa", "qty": 3 },
+        { "cardId": "ph-recluta", "qty": 3 },
+        { "cardId": "ph-descarga", "qty": 3 },
+        { "cardId": "ph-artillera", "qty": 2 },
+        { "cardId": "ph-detonante", "qty": 2 },
+        { "cardId": "ph-motin", "qty": 2 },
+        { "cardId": "ph-saboteador", "qty": 3 },
+        { "cardId": "ph-caos-total", "qty": 1 },
+        { "cardId": "ph-granada", "qty": 3 }
+      ]
+    },
+    {
+      "id": "ph-control-order",
+      "name": "PH · Control Order/Calm",
+      "legend": "Placeholder, Leyenda de Prueba",
+      "domains": ["order", "calm", "mind"],
+      "archetype": "Control",
+      "placeholder": true,
+      "cards": [
+        { "cardId": "ph-meditar", "qty": 3 },
+        { "cardId": "ph-centinela", "qty": 3 },
+        { "cardId": "ph-decreto", "qty": 2 },
+        { "cardId": "ph-magistrado", "qty": 3 },
+        { "cardId": "ph-augurio", "qty": 2 },
+        { "cardId": "ph-archivista", "qty": 2 },
+        { "cardId": "ph-sello", "qty": 2 },
+        { "cardId": "ph-tratado", "qty": 2 },
+        { "cardId": "ph-bastion", "qty": 3 }
+      ]
+    }
+  ]
+}
