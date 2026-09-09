@@ -138,6 +138,17 @@ export function flipUp(node, card, result = null) {
   }
 }
 
+/**
+ * La vuelve a tapar. Simetrico de flipUp: en modo picks el jugador desmarca, y
+ * deshacer un clic tiene que devolver la carta al dorso, no dejarla a la vista.
+ */
+export function flipDown(node) {
+  node.dataset.face = 'down';
+  delete node.dataset.result;
+  node.querySelector('.fp-tag')?.remove();
+  node.setAttribute('aria-label', 'Carta boca abajo');
+}
+
 export function describeCard(card, result) {
   const parts = [card.name];
   const cost = [];

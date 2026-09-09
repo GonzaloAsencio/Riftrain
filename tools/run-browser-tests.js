@@ -87,9 +87,31 @@ if (!lines.length) {
   process.exit(1);
 }
 
-for (const l of lines) if (!l.ok) console.error(l.text);
+// El resumen final es un CENTINELA: la suite lo escribe recien al terminar del
+// todo. Sin esto, una excepcion a mitad del modulo cortaba el resto de los
+// checks y el runner informaba "N pass, 0 fail" con exit 0. Menos tests y
+// ningun rojo NO es una suite en verde: es una suite que se murio antes.
+const SUMMARY = /^=== (\d+) PASS \/ (\d+) FAIL ===$/;
+const summary = lines.map((l) => SUMMARY.exec(l.text)).find(Boolean);
+if (!summary) {
+  console.error('La suite NO llego al final: se corto a mitad de camino.');
+  console.error(`Alcanzo a reportar ${lines.length} checks antes de morir.`);
+  console.error('Casi siempre es una excepcion en el <script> de test/browser.html.');
+  process.exit(1);
+}
 
-const failed = lines.filter((l) => !l.ok).length;
-const passed = lines.length - failed;
-console.log(`navegador: ${passed} pass, ${failed} fail (${bin.split(/[\\/]/).pop()})`);
+const checks = lines.filter((l) => !SUMMARY.test(l.text));
+for (const l of checks) if (!l.ok) console.error(l.text);
+
+const failed = checks.filter((l) => !l.ok).length;
+const passed = checks.length - failed;
+
+// Y lo que yo cuento tiene que coincidir con lo que la suite dice haber corrido.
+const [, declaredPass, declaredFail] = summary;
+if (Number(declaredPass) !== passed || Number(declaredFail) !== failed) {
+  console.error(`Descuadre: la suite declara ${declaredPass}/${declaredFail} y yo conte ${passed}/${failed}.`);
+  process.exit(1);
+}
+
+console.log(`navegador: ${passed} pass, ${failed} fail (${bin.split(/[\/]/).pop()})`);
 process.exit(failed ? 1 : 0);

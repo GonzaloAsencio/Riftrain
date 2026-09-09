@@ -82,6 +82,50 @@ check('R4 lleva borde rojo', fpStyle.borderTopColor === 'rgb(192, 69, 60)', fpSt
 check('R4 el nombre va tachado',
   getComputedStyle(fp.querySelector('.card__name')).textDecorationLine.includes('line-through'));
 
+// ---- MODO PICKS (niveles 1 y 2): marcar da vuelta, desmarcar vuelve a tapar.
+// Si marcar un pick no da vuelta la carta, el cierre gris se come todo y el
+// puntaje da 0/N. Ese fue el bug: los picks solo escribian en una variable.
+const picksBox = document.createElement('div');
+picksBox.className = 'table';
+picksBox.style.cssText = 'position:absolute; left:-9999px; width:420px;';
+const picksHandEl = document.createElement('div');
+picksHandEl.className = 'hand';
+picksBox.appendChild(picksHandEl);
+document.body.appendChild(picksBox);
+
+const manoPicks = [card('p1', 'Artillera'), card('p2', 'Chispa'), card('p3', 'Descarga'), card('p3', 'Descarga')];
+const hp = new Hand(picksHandEl, manoPicks);
+const enPicks = (id) => picksHandEl.querySelector(`[data-card-id="${id}"]`);
+
+const marcada = hp.reveal('p1');
+check('P1 marcar un pick da vuelta la carta', marcada.hit && enPicks('p1').dataset.face === 'up');
+check('P1 y queda en color, marcada como acierto', enPicks('p1').dataset.result === 'hit');
+
+const destapada = hp.unreveal('p1');
+check('P2 desmarcar la vuelve a tapar', destapada && enPicks('p1').dataset.face === 'down');
+check('P2 y le saca la marca de acierto', !enPicks('p1').dataset.result);
+check('P2 el slot NO desaparece del abanico',
+  picksHandEl.querySelectorAll('.hand__slot').length === manoPicks.length);
+
+hp.reveal('p3');
+hp.reveal('p3');
+check('P3 las dos copias se dan vuelta por separado', hp.remaining('p3') === 0);
+hp.unreveal('p3');
+check('P3 destapar una deja la otra dada vuelta', hp.remaining('p3') === 1);
+
+const intrusa = card('zz2', 'Ajena Dos');
+hp.addFalsePositive(intrusa);
+check('P4 el falso positivo entra a la fila', !!enPicks('zz2'));
+const quitado = hp.removeFalsePositive('zz2');
+check('P4 desmarcarlo lo saca de la fila', quitado && !enPicks('zz2'));
+check('P4 y no queda en el resumen', hp.summary().falsePositives.length === 0);
+
+hp.reveal('p2');
+hp.revealRest({ stagger: 0 });
+check('P5 tras el cierre lo marcado sigue en color', enPicks('p2').dataset.result === 'hit');
+check('P5 y lo que no marque queda gris', enPicks('p1').dataset.result === 'missed');
+picksBox.remove();
+
 // ---- LA REGLA 3: el cierre. Las que no vi, en blanco y negro, MISMA fila.
 const filaAntes = document.querySelectorAll('#hand .hand__slot').length;
 const missed = hand.revealRest({ stagger: 0 });
