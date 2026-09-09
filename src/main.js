@@ -10,6 +10,7 @@ import { generateScenario, QUESTION } from './engine/scenario.js';
 import { DOMAIN_COLOR, DOMAIN_LABEL, projectRunes, RUNE_DECK_SIZE } from './engine/runes.js';
 import { cardCost, costLabel, availableRunes } from './engine/cost.js';
 import { search, resolve } from './engine/match.js';
+import { scoreNaming } from './engine/scoring.js';
 import * as prog from './engine/progression.js';
 import * as store from './store.js';
 import { Hand } from './ui/hand.js';
@@ -212,8 +213,10 @@ function paintPicks(s) {
       if (app.answered) return;
       const on = b.getAttribute('aria-pressed') === 'true';
       b.setAttribute('aria-pressed', on ? 'false' : 'true');
-      if (on) app.named = app.named.filter((id) => id !== card.id);
-      else app.named.push(card.id);
+      // El boton no alcanza: marcar tiene que dar vuelta la carta en el abanico,
+      // que es donde vive el feedback. El pick es el gesto, la carta es la imagen.
+      if (on) unnameCard(card);
+      else nameCard(card, { tag: false });
     });
     ui.picks.appendChild(b);
   }
@@ -299,17 +302,28 @@ function flashField(msg) {
  * Nombro una carta: se da vuelta AHI MISMO si esta en la mano.
  * Si no esta, entra igual al abanico, tachada y con borde rojo.
  */
-function nameCard(card) {
+function nameCard(card, { tag = true } = {}) {
   if (app.answered) return;
   app.named.push(card.id);
 
   const { hit } = app.hand.reveal(card.id);
   if (!hit) app.hand.addFalsePositive(card);
 
-  ui.named.appendChild(el('span', 'named__tag', card.name));
+  // En modo picks el boton marcado YA es el registro de lo que dije: una
+  // etiqueta arriba seria el mismo dato dos veces.
+  if (tag) ui.named.appendChild(el('span', 'named__tag', card.name));
+
   ui.field.value = '';
   ui.suggest.classList.add('hidden');
-  ui.field.focus({ preventScroll: true });
+  if (tag) ui.field.focus({ preventScroll: true });
+}
+
+/** Me arrepenti: la carta se vuelve a tapar y sale de lo que afirme. */
+function unnameCard(card) {
+  if (app.answered) return;
+  const i = app.named.lastIndexOf(card.id);
+  if (i !== -1) app.named.splice(i, 1);
+  if (!app.hand.unreveal(card.id)) app.hand.removeFalsePositive(card.id);
 }
 
 // ---------------------------------------------------------------- modo runas
@@ -412,36 +426,36 @@ function finishRound() {
 
 function closeCardRound(ms) {
   const s = app.scenario;
-  const solution = s.solution;
-  const playableIds = solution.playableIds;
+
+  // El puntaje se calcula sobre lo que NOMBRE, y lo calcula el motor. Antes se
+  // leia de `dataset.result` de los nodos del abanico: o sea, solo contaba lo
+  // que la UI hubiera dado vuelta. En modo picks no se daba vuelta nada, asi
+  // que el resultado era 0/N siempre y la progresion comia ceros.
+  const score = scoreNaming({
+    namedIds: app.named,
+    handIds: s.hand.map((c) => c.id),
+    playableIds: s.solution.playableIds,
+  });
 
   // EL CIERRE: las que no nombre se dan vuelta solas, en blanco y negro,
   // en la MISMA fila, al lado de las que acerte en color.
   app.hand.revealRest();
-  const summary = app.hand.summary();
-
-  // Acertar = nombrar una carta de la mano que ADEMAS era jugable.
-  const hitIds = summary.hits.map((c) => c.id);
-  const correctos = hitIds.filter((id) => playableIds.includes(id));
-  const expected = new Set(playableIds).size;
-  const missedIds = playableIds.filter((id) => !hitIds.includes(id));
-
-  // Falsos positivos: la nombre y no estaba en la mano, o estaba pero NO era jugable.
-  const fpFueraDeMano = summary.falsePositives.map((c) => c.id);
-  const fpNoJugables = hitIds.filter((id) => !playableIds.includes(id));
-  const falsePositiveIds = [...fpFueraDeMano, ...fpNoJugables];
 
   paintVerdict({
-    hits: correctos.length, expected,
-    falsePositives: falsePositiveIds.length,
+    hits: score.hits,
+    expected: score.expected,
+    falsePositives: score.falsePositives,
     rows: buildWhyRows(s),
   });
 
   return {
     seed: s.seed, question: s.question, deckId: s.deckId, turn: s.turn,
-    hits: correctos.length, expected,
-    falsePositives: falsePositiveIds.length,
-    missedIds, falsePositiveIds, ms,
+    hits: score.hits,
+    expected: score.expected,
+    falsePositives: score.falsePositives,
+    missedIds: score.missedIds,
+    falsePositiveIds: score.falsePositiveIds,
+    ms,
   };
 }
 

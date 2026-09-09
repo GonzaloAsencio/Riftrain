@@ -24,7 +24,7 @@
  * "tiene dos" es justamente parte de la habilidad.
  */
 
-import { renderCard, flipUp, openZoom } from './card.js';
+import { renderCard, flipUp, flipDown, openZoom } from './card.js';
 
 const HOLD_MS = 380;
 
@@ -96,6 +96,37 @@ export class Hand {
     flipUp(entry.node, entry.card, 'hit');
     entry.slot.dataset.lift = '1';
     return { hit: true, card: entry.card };
+  }
+
+  /**
+   * Desmarcar: vuelve a tapar UNA copia ya dada vuelta.
+   *
+   * En los niveles 1 y 2 el jugador marca botones y puede arrepentirse. Si el
+   * clic da vuelta la carta pero el segundo clic no la tapa, el abanico deja de
+   * ser el espejo de lo que dije, y el abanico ES el feedback.
+   *
+   * Despues del cierre no hace nada: ahi lo gris ya es la respuesta.
+   * @returns {boolean} si tapo alguna
+   */
+  unreveal(cardId) {
+    if (this.closed) return false;
+    // Se destapa la ULTIMA que se dio vuelta: deshacer es deshacer el ultimo clic.
+    const entry = [...this.slots].reverse().find((s) => s.card.id === cardId && s.revealed);
+    if (!entry) return false;
+
+    entry.revealed = false;
+    flipDown(entry.node);
+    delete entry.slot.dataset.lift;
+    return true;
+  }
+
+  /** Desmarcar un falso positivo: sale de la fila como si nunca lo hubiera dicho. */
+  removeFalsePositive(cardId) {
+    const i = this.extras.findIndex((s) => s.card.id === cardId);
+    if (i === -1) return false;
+    const [entry] = this.extras.splice(i, 1);
+    entry.slot.remove();
+    return true;
   }
 
   /**
