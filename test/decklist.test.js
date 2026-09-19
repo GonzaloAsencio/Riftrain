@@ -13,6 +13,66 @@ import { parseDecklist } from '../src/engine/decklist.js';
 
 const byName = (r, name) => r.cards.find((c) => c.name === name);
 
+/**
+ * Un export de texto REAL de Piltover Archive, pegado tal cual.
+ *
+ * Es el insumo de los AC-SEC-*: las secciones vienen en ingles y sin '#', las
+ * cantidades van adelante, y hay dos cartas (Gust y Salvage) que estan en el
+ * MainDeck Y en el Sideboard. Esa repeticion es justamente la trampa: el parser
+ * viejo las sumaba y daba 2 copias de algo que el rival solo puede jugar una vez.
+ *
+ * Las cuentas: 39 MainDeck + 12 runas + 3 battlefields + 10 sideboard + legend
+ * + champion = 66 lineas de carta.
+ */
+const PILTOVER_EXPORT = `Legend:
+1 Kennen, Heart of the Tempest
+
+Champion:
+1 Kennen, Storm of Shuriken
+
+MainDeck:
+3 Traveling Merchant
+3 Rhasa the Sunderer
+3 Seal of Discord
+3 Shadow Order Disciple
+3 Tail-Cloaked Matriarch
+3 Lightning Rush
+2 Switcheroo
+2 Last Rites
+2 Star-Crossed
+2 Tornado Warrior
+1 Gust
+1 Ride the Wind
+1 The Harrowing
+1 Tideturner
+1 Salvage
+1 Flash
+1 Treasure Hunter
+1 Baron Nashor
+1 Shadows of the Past
+2 Fizz, Trickster
+2 Ezreal, Prodigy
+
+Battlefields:
+1 Zaun Warrens
+1 Minefield
+1 Shadow Temple
+
+Runes:
+9 Chaos Rune
+3 Order Rune
+
+Sideboard:
+3 Ravenbloom Prefect
+2 Decree of Unity
+1 Gust
+1 Rebuke
+1 Salvage
+1 Hard Bargain
+1 Angler Beast`;
+
+const totalQty = (list) => list.reduce((a, c) => a + c.qty, 0);
+
 test('AC-DCK-01: lee cantidad y nombre en las tres formas que usan los exports', () => {
   const r = parseDecklist('3 Chispa\n2x Descarga\nGranada x4');
   assert.equal(r.errors.length, 0);
