@@ -23,10 +23,43 @@
  *    | 5 + 1 calm + 1 order -> 5 de energia y un poder de cada dominio
  */
 
-import { DOMAINS } from './runes.js';
+import { DOMAINS, RUNE_DECK_SIZE } from './runes.js';
 
 const COMMENT = /^\/\//;
 const HEADER = /^#\s*(.*)$/;
+const SECTION = /^(.+?)\s*:\s*$/;
+
+/**
+ * Las zonas del export. Una carta NO vale lo mismo segun donde esta: las del
+ * MainDeck son las que el rival puede robar; las del Sideboard no entran a la
+ * partida, y sumarlas al mazo seria entrenar contra copias que no existen.
+ *
+ * Los seis nombres de la izquierda salen de un export real de Piltover Archive.
+ * Los alias son tolerancia de formato, no reglas de Riftbound.
+ */
+const SECTIONS = new Map([
+  ['legend', 'legend'],
+  ['champion', 'champion'],
+  ['maindeck', 'main'],
+  ['main', 'main'],
+  ['deck', 'main'],
+  ['battlefields', 'battlefields'],
+  ['battlefield', 'battlefields'],
+  ['runes', 'runes'],
+  ['runedeck', 'runes'],
+  ['sideboard', 'sideboard'],
+]);
+
+/** "MAINDECK :" y "MainDeck:" son el mismo encabezado escrito por dos programas. */
+function sectionKey(text) {
+  return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
+}
+
+/** "Chaos Rune" -> "chaos". Devuelve null si no es un dominio que exista. */
+function runeDomain(name) {
+  const key = sectionKey(name).replace(/runas?$|rune?s?$/, '');
+  return DOMAINS.includes(key) ? key : null;
+}
 
 /** Id estable a partir del nombre: sin acentos, sin espacios, minusculas. */
 export function slug(name) {
@@ -96,8 +129,16 @@ export function parseDecklist(text, { name } = {}) {
   }
 
   const errors = [];
-  const byId = new Map();
+  const zones = {
+    main: new Map(), sideboard: new Map(), battlefields: new Map(),
+    legend: new Map(), champion: new Map(), runes: new Map(),
+  };
   let deckName = null;
+  // Sin encabezados, todo es MainDeck: una lista pelada sigue funcionando igual.
+  let zone = 'main';
+  const runes = {};
+  let runesLine = null;
+  let runesBroken = false;
 
   text.split(/\r?\n/).forEach((raw, i) => {
     const line = i + 1;
@@ -112,6 +153,26 @@ export function parseDecklist(text, { name } = {}) {
 
     const fail = (reason) => errors.push({ line, text: trimmed, reason });
 
+    const section = SECTION.exec(trimmed);
+    if (section) {
+      const key = SECTIONS.get(sectionKey(section[1]));
+      if (key) {
+        zone = key;
+        if (key === 'runes' && runesLine === null) runesLine = line;
+        return;
+      }
+      // Seccion que no conozco: DESCARTO lo que viene abajo en vez de meterlo en
+      // la zona anterior. Adivinar la zona es adivinar si la carta entra a la
+      // mano, y eso cambia el entrenamiento.
+      zone = 'skip';
+      const conocidas = [...new Set(SECTIONS.values())].join(', ');
+      return fail(`no se que zona es "${section[1]}" (las que conozco son ${conocidas})`);
+    }
+
+    if (zone === 'skip') return;
+
+    const byId = zones[zone];
+
     const [left, ...costParts] = trimmed.split('|');
     const { qty, name: cardName } = splitQty(left.trim());
 
@@ -120,6 +181,23 @@ export function parseDecklist(text, { name } = {}) {
     }
     if (!Number.isInteger(qty) || qty < 1) {
       return fail(`la cantidad tiene que ser 1 o mas, y dice ${qty}`);
+    }
+
+    // La Legend y el Champion quedan AFUERA del mazo (no se roban), y son una
+    // sola cada uno. Una segunda es un error de la lista, no una copia extra.
+    if ((zone === 'legend' || zone === 'champion') && (qty > 1 || zones[zone].size)) {
+      return fail(`la seccion ${zone === 'legend' ? 'Legend' : 'Champion'} lleva una sola carta`);
+    }
+
+    // Las runas no son cartas de mano: son la composicion del Mazo de Runas.
+    if (zone === 'runes') {
+      const domain = runeDomain(cardName);
+      if (!domain) {
+        runesBroken = true;
+        return fail(`no reconozco la runa "${cardName}" (los dominios son ${DOMAINS.join(', ')})`);
+      }
+      runes[domain] = (runes[domain] ?? 0) + qty;
+      return;
     }
 
     let cost = null;
@@ -157,12 +235,35 @@ export function parseDecklist(text, { name } = {}) {
       text: '',
       img: null,
       source: 'pasted',
+      zone,
     });
   });
 
-  const cards = [...byId.values()];
+  const cards = [...zones.main.values()];
+  const sideboard = [...zones.sideboard.values()];
+  const battlefields = [...zones.battlefields.values()];
 
-  const domains = [...new Set(cards.flatMap((c) => Object.keys(c.power)))].sort();
+  // Regla 1: el Mazo de Runas tiene 12. Si la lista dice otra cosa, lo informo
+  // pero devuelvo las runas igual: esconderlas no arregla la lista.
+  //
+  // Si alguna linea de runa ya fallo, me callo: el total no puede dar 12 porque
+  // falta esa runa, y un segundo motivo derivado del primero es ruido.
+  const runeTotal = Object.values(runes).reduce((a, n) => a + n, 0);
+  if (runesLine !== null && !runesBroken && runeTotal !== RUNE_DECK_SIZE) {
+    errors.push({
+      line: runesLine,
+      text: 'Runes:',
+      reason: `el Mazo de Runas tiene que sumar ${RUNE_DECK_SIZE} y esta lista suma ${runeTotal}`,
+    });
+  }
+
+  // De donde salen los dominios: de los costos Y del Mazo de Runas. Una lista
+  // pegada casi nunca trae costos (ver needsCost), asi que sin las runas el
+  // mazo quedaria sin dominios y el motor no podria proyectar la mesa.
+  const domains = [...new Set([
+    ...cards.flatMap((c) => Object.keys(c.power)),
+    ...Object.keys(runes),
+  ])].sort();
   const finalName = deckName ?? name ?? 'Mazo pegado';
 
   return {
@@ -171,8 +272,16 @@ export function parseDecklist(text, { name } = {}) {
       name: finalName,
       domains,
       cards: cards.map((c) => ({ cardId: c.id, qty: c.qty })),
+      // Viajan en el deck para que la UI los saque del mismo find() por deckId
+      // que ya usa, sin que scenario.js tenga que enterarse de que existen.
+      legend: [...zones.legend.values()][0] ?? null,
+      champion: [...zones.champion.values()][0] ?? null,
+      runes,
     },
     cards,
+    sideboard,
+    battlefields,
+    runes,
     needsCost: cards.filter((c) => c.needsCost).map((c) => c.id),
     errors,
   };
