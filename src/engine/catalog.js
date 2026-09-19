@@ -169,3 +169,85 @@ export function buildCatalog(items) {
 
   return { cards: [...byId.values()], errors };
 }
+
+/**
+ * Busca un nombre pegado en el catalogo.
+ *
+ * EL CASO RARO QUE HAY QUE CONTEMPLAR: las decklists exportadas le anteponen el
+ * nombre del campeon a la Legend -- escriben "Kennen, Heart of the Tempest"
+ * cuando la carta se llama solo "Heart of the Tempest".
+ *
+ * Pero hay cartas cuyo nombre propio LLEVA coma ("Fizz, Trickster"), asi que el
+ * nombre entero se prueba SIEMPRE primero. Recortar por la coma es el plan B,
+ * nunca el plan A.
+ */
+function findInCatalog(name, index) {
+  const exacto = index.get(slug(name));
+  if (exacto) return exacto;
+
+  const coma = name.indexOf(',');
+  if (coma > 0) {
+    const atras = index.get(slug(name.slice(coma + 1)));
+    if (atras) return atras;
+  }
+  return null;
+}
+
+/**
+ * Cruza un mazo pegado contra el catalogo: los nombres salen de la lista, los
+ * costos salen del catalogo. Es el paso que convierte una lista de texto en
+ * algo que el motor puede evaluar.
+ *
+ * Las cantidades las manda SIEMPRE la lista pegada, no el catalogo: si el rival
+ * lleva una sola copia, no puede jugar dos (regla 8).
+ *
+ * @param {object} parsed  lo que devuelve parseDecklist()
+ * @param {object[]} catalogCards  las cartas de buildCatalog()
+ * @returns {{ deck: object, cards: object[], missing: {name:string,zone:string,reason:string}[] }}
+ */
+export function resolveDeck(parsed, catalogCards) {
+  if (!parsed || typeof parsed !== 'object' || !parsed.deck) {
+    throw new TypeError('resolveDeck espera el resultado de parseDecklist()');
+  }
+  if (!Array.isArray(catalogCards)) {
+    throw new TypeError(`resolveDeck espera un array de cartas, recibi: ${typeof catalogCards}`);
+  }
+
+  const index = new Map(catalogCards.map((c) => [c.id, c]));
+  const missing = [];
+
+  const buscar = (carta, zone) => {
+    const hit = findInCatalog(carta.name, index);
+    if (!hit) {
+      missing.push({
+        name: carta.name,
+        zone,
+        reason: `"${carta.name}" no esta en el catalogo oficial`,
+      });
+      return null;
+    }
+    return hit;
+  };
+
+  const cards = [];
+  const entries = [];
+  for (const carta of parsed.cards) {
+    const hit = buscar(carta, 'main');
+    if (!hit) continue;
+    cards.push(hit);
+    entries.push({ cardId: hit.id, qty: carta.qty });
+  }
+
+  const { legend, champion } = parsed.deck;
+
+  return {
+    deck: {
+      ...parsed.deck,
+      cards: entries,
+      legend: legend ? buscar(legend, 'legend') : null,
+      champion: champion ? buscar(champion, 'champion') : null,
+    },
+    cards,
+    missing,
+  };
+}
