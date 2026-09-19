@@ -79,19 +79,20 @@ test('AC-BLD-05: el mazo resuelto entra en el motor y se puede evaluar pagabilid
   const mano = expandDeck(r.deck, porId);
   assert.equal(mano.length, 7, '3 + 2 + 2');
 
-  // Star-Crossed cuesta 3 + 1 Chaos = 4 runas. Con 4 Chaos abiertas, entra.
+  // Star-Crossed pide 3 de Energia + 1 de Poder Chaos. Con floating, TRES runas
+  // Chaos alcanzan: se agotan las tres y una de esas mismas se recicla.
   const sc = porId.get('star-crossed');
-  const cuatro = [0, 1, 2, 3].map(() => ({ domain: 'chaos', ready: true }));
-  assert.equal(canPlayCard(sc, cuatro).ok, true);
+  const tresChaos = [0, 1, 2].map(() => ({ domain: 'chaos', ready: true }));
+  assert.equal(canPlayCard(sc, tresChaos).ok, true);
 
-  // Con una agotada, ya no: "abiertas" no es lo mismo que "en mesa" (regla 7).
-  const tresYUna = [
+  // Con solo 2 abiertas la Energia no llega, aunque para reciclar sobre.
+  const dosAbiertas = [
     { domain: 'chaos', ready: true }, { domain: 'chaos', ready: true },
-    { domain: 'chaos', ready: true }, { domain: 'chaos', ready: false },
+    { domain: 'chaos', ready: false },
   ];
-  const no = canPlayCard(sc, tresYUna);
+  const no = canPlayCard(sc, dosAbiertas);
   assert.equal(no.ok, false);
-  assert.ok(no.reason, 'y devuelve el motivo');
+  assert.match(no.reason, /Energia/, 'el motivo es la energia, no el dominio');
 });
 
 test('AC-BLD-06: solo viajan las cartas que el mazo usa, no el catalogo entero', () => {

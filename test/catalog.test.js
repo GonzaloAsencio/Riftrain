@@ -138,16 +138,17 @@ test('AC-CAT-10: la carta normalizada entra en cost.js sin adaptador', () => {
   const cost = cardCost(card);
   assert.equal(cost.energy, 3);
   assert.equal(cost.powerTotal, 1);
-  assert.equal(cost.runes, 4, 'EL CONCEPTO: 3 de energia + 1 de poder son CUATRO runas');
+  assert.equal(cost.runes, 3, 'floating: la reciclada es una de las tres agotadas');
 
-  // Con 3 runas Chaos abiertas no alcanza, y el motivo lo explica.
-  const pocas = [0, 1, 2].map(() => ({ domain: 'chaos', ready: true }));
-  const no = canPlayCard(card, pocas);
+  // Tres Chaos abiertas alcanzan: se agotan las tres y una se recicla.
+  const tres = [0, 1, 2].map(() => ({ domain: 'chaos', ready: true }));
+  assert.equal(canPlayCard(card, tres).ok, true);
+
+  // Tres Order NO: no hay ninguna Chaos para reciclar.
+  const otroDominio = [0, 1, 2].map(() => ({ domain: 'order', ready: true }));
+  const no = canPlayCard(card, otroDominio);
   assert.equal(no.ok, false);
-  assert.ok(no.reason);
-
-  const justas = [0, 1, 2, 3].map(() => ({ domain: 'chaos', ready: true }));
-  assert.equal(canPlayCard(card, justas).ok, true);
+  assert.match(no.reason, /Chaos/);
 });
 
 test('AC-CAT-11: los ids del catalogo cruzan con los del parser de decklists', () => {
