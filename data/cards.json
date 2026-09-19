@@ -1,73 +1,618 @@
 {
-  "_placeholder": true,
-  "_warning": "DATOS DE ANDAMIO. Ninguna de estas cartas es real de Riftbound. Existen solo para que el motor y el revelado se puedan probar. Reemplazar por decklists reales: borrar 'cards' y 'decks' y pegar los propios, o poner _placeholder en false.",
-  "_schema": {
-    "card": "{ id, name, energy, power:{domain:n}, type, subtype?, might?, text?, img?, domain }",
-    "deck": "{ id, name, legend, domains:[], archetype, cards:[{cardId, qty}] }",
-    "domains": ["fury", "calm", "mind", "body", "order", "chaos"],
-    "types": ["unit", "spell", "gear", "battlefield", "legend", "champion"]
+ "_placeholder": false,
+ "_generated": "2026-09-19T23:26:01.690Z",
+ "_warning": "GENERADO por tools/build-deck.mjs desde data/catalog.json. No editar a mano. Datos de carta (c) Riot Games.",
+ "cards": [
+  {
+   "id": "traveling-merchant",
+   "name": "Traveling Merchant",
+   "baseName": "Traveling Merchant",
+   "subtitle": null,
+   "code": "OGN-185/298",
+   "collectorNumber": 185,
+   "energy": 2,
+   "power": {},
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "unit",
+   "might": 2,
+   "text": "<p>When I move, discard 1, then draw 1.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/b7dbebe2bf5691391c8e4146e478b8bd2ac40aef-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery"
   },
-
-  "cards": [
-    { "id": "ph-chispa",    "name": "Chispa",              "energy": 1, "power": {},            "type": "spell", "domain": "fury",  "text": "1 de danio a una unidad.", "img": null, "placeholder": true },
-    { "id": "ph-recluta",   "name": "Recluta de chatarra", "energy": 2, "power": {},            "type": "unit",  "subtype": "Yordle", "might": 2, "domain": "fury", "text": "", "img": null, "placeholder": true },
-    { "id": "ph-descarga",  "name": "Descarga",            "energy": 2, "power": {"fury": 1},   "type": "spell", "domain": "fury",  "text": "3 de danio repartido.", "img": null, "placeholder": true },
-    { "id": "ph-artillera", "name": "Artillera",           "energy": 3, "power": {"fury": 1},   "type": "unit",  "subtype": "Zaunita", "might": 4, "domain": "fury", "text": "Al entrar: 2 de danio.", "img": null, "placeholder": true },
-    { "id": "ph-detonante", "name": "Detonante",           "energy": 5, "power": {"fury": 1},   "type": "spell", "domain": "fury",  "text": "4 de danio repartido.", "img": null, "placeholder": true },
-    { "id": "ph-motin",     "name": "Motin",               "energy": 1, "power": {"chaos": 1},  "type": "spell", "domain": "chaos", "text": "Robas 1. Descartas 1.", "img": null, "placeholder": true },
-    { "id": "ph-saboteador","name": "Saboteador",          "energy": 2, "power": {"chaos": 1},  "type": "unit",  "subtype": "Pirata", "might": 3, "domain": "chaos", "text": "Sigiloso.", "img": null, "placeholder": true },
-    { "id": "ph-caos-total","name": "Caos total",          "energy": 4, "power": {"chaos": 2},  "type": "spell", "domain": "chaos", "text": "Cada jugador descarta su mano.", "img": null, "placeholder": true },
-    { "id": "ph-granada",   "name": "Granada",             "energy": 0, "power": {"fury": 1},   "type": "spell", "domain": "fury",  "text": "2 de danio.", "img": null, "placeholder": true },
-    { "id": "ph-bastion",   "name": "Bastion",             "energy": 3, "power": {},            "type": "unit",  "subtype": "Guardia", "might": 5, "domain": "body", "text": "Defensor.", "img": null, "placeholder": true },
-
-    { "id": "ph-meditar",   "name": "Meditar",             "energy": 1, "power": {},            "type": "spell", "domain": "calm",  "text": "Robas 1.", "img": null, "placeholder": true },
-    { "id": "ph-centinela", "name": "Centinela",           "energy": 2, "power": {"calm": 1},   "type": "unit",  "subtype": "Vastaya", "might": 3, "domain": "calm", "text": "Defensor.", "img": null, "placeholder": true },
-    { "id": "ph-decreto",   "name": "Decreto",             "energy": 2, "power": {"order": 2},  "type": "spell", "domain": "order", "text": "Anula un hechizo.", "img": null, "placeholder": true },
-    { "id": "ph-magistrado","name": "Magistrado",          "energy": 4, "power": {"order": 1},  "type": "unit",  "subtype": "Noble", "might": 4, "domain": "order", "text": "Al entrar: silencia una unidad.", "img": null, "placeholder": true },
-    { "id": "ph-augurio",   "name": "Augurio",             "energy": 3, "power": {"mind": 1},   "type": "spell", "domain": "mind",  "text": "Mira las 3 de arriba.", "img": null, "placeholder": true },
-    { "id": "ph-archivista","name": "Archivista",          "energy": 3, "power": {"mind": 2},   "type": "unit",  "subtype": "Erudito", "might": 2, "domain": "mind", "text": "Al entrar: robas 2.", "img": null, "placeholder": true },
-    { "id": "ph-sello",     "name": "Sello del orden",     "energy": 5, "power": {"order": 1, "calm": 1}, "type": "gear", "domain": "order", "text": "Tus unidades tienen +1 Might.", "img": null, "placeholder": true },
-    { "id": "ph-tratado",   "name": "Tratado",             "energy": 6, "power": {"calm": 2},   "type": "spell", "domain": "calm",  "text": "Ambos jugadores roban 3.", "img": null, "placeholder": true }
-  ],
-
-  "decks": [
+  {
+   "id": "rhasa-the-sunderer",
+   "name": "Rhasa the Sunderer",
+   "baseName": "Rhasa the Sunderer",
+   "subtitle": null,
+   "code": "OGN-195/298",
+   "collectorNumber": 195,
+   "energy": 10,
+   "power": {
+    "chaos": 1
+   },
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "unit",
+   "might": 6,
+   "text": "<p>I cost :rb_energy_1: less for each card in your trash.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/e34fe8a9ee533dee99f96b4e6677d1edbd6a262d-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery"
+  },
+  {
+   "id": "seal-of-discord",
+   "name": "Seal of Discord",
+   "baseName": "Seal of Discord",
+   "subtitle": null,
+   "code": "OGN-204/298",
+   "collectorNumber": 204,
+   "energy": 0,
+   "power": {
+    "chaos": 1
+   },
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "gear",
+   "might": null,
+   "text": "<p>:rb_exhaust:: [Reaction] — [Add] :rb_rune_chaos:. (Abilities that add resources can't be reacted to.)</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/dd8433e77e46ca77aaf0be35d1774218d9a2f037-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery"
+  },
+  {
+   "id": "shadow-order-disciple",
+   "name": "Shadow Order Disciple",
+   "baseName": "Shadow Order Disciple",
+   "subtitle": null,
+   "code": "VEN-095/166",
+   "collectorNumber": 95,
+   "energy": 2,
+   "power": {},
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "unit",
+   "might": 2,
+   "text": "<p>When I move, you may [Burn 1] to give me +1 :rb_might: this turn. (To Burn 1, put the top card of your Main Deck into your trash.)</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/f85fb8b46a29360f9850826df11202ff8221fec8-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery"
+  },
+  {
+   "id": "tail-cloaked-matriarch",
+   "name": "Tail-Cloaked Matriarch",
+   "baseName": "Tail-Cloaked Matriarch",
+   "subtitle": null,
+   "code": "VEN-104/166",
+   "collectorNumber": 104,
+   "energy": 4,
+   "power": {},
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "unit",
+   "might": 4,
+   "text": "<p>[Empower] :rb_energy_2::rb_rune_chaos: (:rb_energy_2::rb_rune_chaos:: Empower me. Use only if not Empowered.)<br />When I become [Empowered], you may choose a unit in your trash with Energy cost no more than :rb_energy_3: and Power cost no more than :rb_rune_rainbow:. Play it to your base, ignoring its cost.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/91a04e2131245c81c2eac486e63925592b0e253a-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery"
+  },
+  {
+   "id": "lightning-rush",
+   "name": "Lightning Rush",
+   "baseName": "Lightning Rush",
+   "subtitle": null,
+   "code": "VEN-156/166",
+   "collectorNumber": 156,
+   "energy": 1,
+   "power": {},
+   "domain": "order",
+   "domains": [
+    "order",
+    "chaos"
+   ],
+   "type": "spell",
+   "might": null,
+   "text": "<p>Look at the top 3 cards of your Main Deck. You may choose a card from among them and draw it. Put the rest into your trash.<br />[Flow] :rb_energy_2::rb_rune_rainbow: (You may play this from your trash for its Flow cost. Then banish it.)</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/22375e0d2d1a49cb0eb7e31aebf3e73a2e0bba55-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery"
+  },
+  {
+   "id": "switcheroo",
+   "name": "Switcheroo",
+   "baseName": "Switcheroo",
+   "subtitle": null,
+   "code": "SFD-145/221",
+   "collectorNumber": 145,
+   "energy": 2,
+   "power": {
+    "chaos": 2
+   },
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "spell",
+   "might": null,
+   "text": "<p>[Hidden] (Hide now for :rb_rune_rainbow: to react with later for :rb_energy_0:.)<br />[Action] (Play on your turn or in showdowns.)<br />Swap the Might of two units at the same battlefield this turn.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/a4338f495feff5eee46d5349b5fded5e35e76176-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery"
+  },
+  {
+   "id": "last-rites",
+   "name": "Last Rites",
+   "baseName": "Last Rites",
+   "subtitle": null,
+   "code": "SFD-150/221",
+   "collectorNumber": 150,
+   "energy": 3,
+   "power": {},
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "gear",
+   "might": 2,
+   "text": "<p>[Equip] — :rb_rune_chaos:, Recycle 2 cards from your trash (Pay the cost: Attach this to a unit you control.)</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/6cfab85030bff454262794e4fa12f11b5dc45a74-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery"
+  },
+  {
+   "id": "star-crossed",
+   "name": "Star-Crossed",
+   "baseName": "Star-Crossed",
+   "subtitle": null,
+   "code": "UNL-128/219",
+   "collectorNumber": 128,
+   "energy": 3,
+   "power": {
+    "chaos": 1
+   },
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "spell",
+   "might": null,
+   "text": "<p>[Reaction] (Play any time, even before spells and abilities resolve.)<br />Return a friendly unit and an enemy unit to their owners' hands.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/0bfa45e6e86dfc256de0163f96273b761e9592fb-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery"
+  },
+  {
+   "id": "tornado-warrior",
+   "name": "Tornado Warrior",
+   "baseName": "Tornado Warrior",
+   "subtitle": null,
+   "code": "VEN-099/166",
+   "collectorNumber": 99,
+   "energy": 3,
+   "power": {},
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "unit",
+   "might": 3,
+   "text": "<p>[Hidden] (Hide now for :rb_rune_rainbow: to react with later for :rb_energy_0:.)<br />When you play me from face down, you may empower something here. Disempower it at end of turn.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/f9b2ffecc997670713bffd3168e5578b5fb7a014-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery"
+  },
+  {
+   "id": "gust",
+   "name": "Gust",
+   "baseName": "Gust",
+   "subtitle": null,
+   "code": "OGN-169/298",
+   "collectorNumber": 169,
+   "energy": 1,
+   "power": {},
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "spell",
+   "might": null,
+   "text": "<p>[Reaction] (Play any time, even before spells and abilities resolve.)<br />Return a unit at a battlefield with 3 :rb_might: or less to its owner's hand.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/dfd3b161ab76ba0c5d503384f1289b3395434b10-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery"
+  },
+  {
+   "id": "ride-the-wind",
+   "name": "Ride the Wind",
+   "baseName": "Ride the Wind",
+   "subtitle": null,
+   "code": "OGN-173/298",
+   "collectorNumber": 173,
+   "energy": 2,
+   "power": {
+    "chaos": 1
+   },
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "spell",
+   "might": null,
+   "text": "<p>[Action] (Play on your turn or in showdowns.)<br />Move a friendly unit and ready it.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/864d9f8992db7f9a9e795d9438d941ca564ddde7-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery"
+  },
+  {
+   "id": "the-harrowing",
+   "name": "The Harrowing",
+   "baseName": "The Harrowing",
+   "subtitle": null,
+   "code": "OGN-198/298",
+   "collectorNumber": 198,
+   "energy": 6,
+   "power": {
+    "chaos": 2
+   },
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "spell",
+   "might": null,
+   "text": "<p>Play a unit from your trash, ignoring its Energy cost. (You must still pay its Power cost.)</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/6914034f56dd50ab37df26e3541c997479bb5a6d-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery"
+  },
+  {
+   "id": "tideturner",
+   "name": "Tideturner",
+   "baseName": "Tideturner",
+   "subtitle": null,
+   "code": "OGN-199/298",
+   "collectorNumber": 199,
+   "energy": 2,
+   "power": {},
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "unit",
+   "might": 2,
+   "text": "<p>[Hidden] (Hide now for :rb_rune_rainbow: to react with later for :rb_energy_0:.)<br />When you play me, you may choose a friendly unit. Move me to its location and it to my original location.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/bad355dba8b32d1fba33dc3924cad6a34b61b5af-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery"
+  },
+  {
+   "id": "salvage",
+   "name": "Salvage",
+   "baseName": "Salvage",
+   "subtitle": null,
+   "code": "OGN-224/298",
+   "collectorNumber": 224,
+   "energy": 2,
+   "power": {
+    "order": 1
+   },
+   "domain": "order",
+   "domains": [
+    "order"
+   ],
+   "type": "spell",
+   "might": null,
+   "text": "<p>[Action] (Play on your turn or in showdowns.)<br />You may kill a gear. Draw 1.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/9bdbac358e7c9415c1354b6d1f6888dcf9c5519b-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery"
+  },
+  {
+   "id": "flash",
+   "name": "Flash",
+   "baseName": "Flash",
+   "subtitle": null,
+   "code": "OGS-011/024",
+   "collectorNumber": 11,
+   "energy": 2,
+   "power": {},
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "spell",
+   "might": null,
+   "text": "<p>[Reaction] (Play any time, even before spells and abilities resolve.)<br />Move up to 2 friendly units to base.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/4d9cc1c13b75933e509e642213f13359350cd3f9-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery"
+  },
+  {
+   "id": "treasure-hunter",
+   "name": "Treasure Hunter",
+   "baseName": "Treasure Hunter",
+   "subtitle": null,
+   "code": "SFD-130/221",
+   "collectorNumber": 130,
+   "energy": 2,
+   "power": {},
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "unit",
+   "might": 1,
+   "text": "<p>When I move, play a Gold gear token exhausted.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/c4e1bf257379b4612a1c58f0480480d9b698196c-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery"
+  },
+  {
+   "id": "baron-nashor",
+   "name": "Baron Nashor",
+   "baseName": "Baron Nashor",
+   "subtitle": null,
+   "code": "UNL-147/219",
+   "collectorNumber": 147,
+   "energy": 10,
+   "power": {
+    "chaos": 3
+   },
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "unit",
+   "might": 12,
+   "text": "<p>As you play me, add the Baron Pit battlefield token to the board if it's not there already. If you do, I enter there. (It has &quot;Units can move here from anywhere.&quot;)<br />I can't be chosen by enemy spells and abilities.<br />Other friendly units have +2 :rb_might:.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/59946969e8d21869c3ffe801a3ffbdd8165a873f-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery"
+  },
+  {
+   "id": "shadows-of-the-past",
+   "name": "Shadows of the Past",
+   "baseName": "Shadows of the Past",
+   "subtitle": null,
+   "code": "VEN-103/166",
+   "collectorNumber": 103,
+   "energy": 3,
+   "power": {
+    "chaos": 1
+   },
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "spell",
+   "might": null,
+   "text": "<p>Return up to 2 units from trashes to their owners' hands.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/25e2130938a893833fcb8e29287adbd230c3b67f-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery"
+  },
+  {
+   "id": "fizz-trickster",
+   "name": "Fizz, Trickster",
+   "baseName": "Fizz",
+   "subtitle": "Trickster",
+   "code": "SFD-140/221",
+   "collectorNumber": 140,
+   "energy": 3,
+   "power": {
+    "chaos": 1
+   },
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "unit",
+   "might": 3,
+   "text": "<p>When you play me, you may play a spell from your trash with Energy cost no more than :rb_energy_3:, ignoring its Energy cost. Recycle that spell after you play it. (You must still pay its Power cost.)</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/6d1c6615fb6ef5fb520a35b2ce76f8feee9167dc-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery"
+  },
+  {
+   "id": "ezreal-prodigy",
+   "name": "Ezreal, Prodigy",
+   "baseName": "Ezreal",
+   "subtitle": "Prodigy",
+   "code": "VEN-SP5/006",
+   "collectorNumber": 5,
+   "energy": 3,
+   "power": {
+    "chaos": 1
+   },
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "unit",
+   "might": 3,
+   "text": "<p>When you play me, discard 1, then draw 2.<br />Optional additional costs you pay cost :rb_energy_1: or :rb_rune_rainbow: less.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/fd4beecca19d4e84ead0852acce83d4c34ac1b4c-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery"
+  },
+  {
+   "id": "heart-of-the-tempest",
+   "name": "Heart of the Tempest",
+   "baseName": "Heart of the Tempest",
+   "subtitle": null,
+   "code": "VEN-155/166",
+   "collectorNumber": 155,
+   "energy": null,
+   "power": {},
+   "domain": "order",
+   "domains": [
+    "order",
+    "chaos"
+   ],
+   "type": "legend",
+   "might": null,
+   "text": "<p>When you play a card from anywhere other than your hand, empower me.<br />[Action][&gt;] Disempower me, :rb_exhaust:: Give a unit [Assault 2] this turn. (+2 :rb_might: while it's an attacker.)</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/0eab83392b310417d2630d50a3bfee3dd02b31c4-744x1039.png?accountingTag=RB",
+   "needsCost": true,
+   "reason": "la galeria no publica costo para esta carta",
+   "source": "gallery"
+  },
+  {
+   "id": "kennen-storm-of-shuriken",
+   "name": "Kennen, Storm of Shuriken",
+   "baseName": "Kennen",
+   "subtitle": "Storm of Shuriken",
+   "code": "VEN-113/166",
+   "collectorNumber": 113,
+   "energy": 3,
+   "power": {
+    "chaos": 1
+   },
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "unit",
+   "might": 4,
+   "text": "<p>When you play me, [Burn 2]. (Put the top 2 cards of your Main Deck into your trash.)<br />When I conquer, give a spell in your trash [Flow] equal to its cost this turn. (You may play it from your trash for its Flow cost. Then banish it.)</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/2f27c99f3df2940940dddd65105e5e42bbeeab3d-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery"
+  }
+ ],
+ "decks": [
+  {
+   "id": "koko-kennen",
+   "name": "koko-kennen",
+   "domains": [
+    "chaos",
+    "order"
+   ],
+   "legend": "heart-of-the-tempest",
+   "champion": "kennen-storm-of-shuriken",
+   "runes": {
+    "chaos": 9,
+    "order": 3
+   },
+   "cards": [
     {
-      "id": "ph-aggro-fury",
-      "name": "PH · Aggro Fury/Chaos",
-      "legend": "Placeholder, Leyenda de Prueba",
-      "domains": ["fury", "chaos"],
-      "archetype": "Aggro",
-      "placeholder": true,
-      "cards": [
-        { "cardId": "ph-chispa", "qty": 3 },
-        { "cardId": "ph-recluta", "qty": 3 },
-        { "cardId": "ph-descarga", "qty": 3 },
-        { "cardId": "ph-artillera", "qty": 2 },
-        { "cardId": "ph-detonante", "qty": 2 },
-        { "cardId": "ph-motin", "qty": 2 },
-        { "cardId": "ph-saboteador", "qty": 3 },
-        { "cardId": "ph-caos-total", "qty": 1 },
-        { "cardId": "ph-granada", "qty": 3 }
-      ]
+     "cardId": "traveling-merchant",
+     "qty": 3
     },
     {
-      "id": "ph-control-order",
-      "name": "PH · Control Order/Calm",
-      "legend": "Placeholder, Leyenda de Prueba",
-      "domains": ["order", "calm", "mind"],
-      "archetype": "Control",
-      "placeholder": true,
-      "cards": [
-        { "cardId": "ph-meditar", "qty": 3 },
-        { "cardId": "ph-centinela", "qty": 3 },
-        { "cardId": "ph-decreto", "qty": 2 },
-        { "cardId": "ph-magistrado", "qty": 3 },
-        { "cardId": "ph-augurio", "qty": 2 },
-        { "cardId": "ph-archivista", "qty": 2 },
-        { "cardId": "ph-sello", "qty": 2 },
-        { "cardId": "ph-tratado", "qty": 2 },
-        { "cardId": "ph-bastion", "qty": 3 }
-      ]
+     "cardId": "rhasa-the-sunderer",
+     "qty": 3
+    },
+    {
+     "cardId": "seal-of-discord",
+     "qty": 3
+    },
+    {
+     "cardId": "shadow-order-disciple",
+     "qty": 3
+    },
+    {
+     "cardId": "tail-cloaked-matriarch",
+     "qty": 3
+    },
+    {
+     "cardId": "lightning-rush",
+     "qty": 3
+    },
+    {
+     "cardId": "switcheroo",
+     "qty": 2
+    },
+    {
+     "cardId": "last-rites",
+     "qty": 2
+    },
+    {
+     "cardId": "star-crossed",
+     "qty": 2
+    },
+    {
+     "cardId": "tornado-warrior",
+     "qty": 2
+    },
+    {
+     "cardId": "gust",
+     "qty": 1
+    },
+    {
+     "cardId": "ride-the-wind",
+     "qty": 1
+    },
+    {
+     "cardId": "the-harrowing",
+     "qty": 1
+    },
+    {
+     "cardId": "tideturner",
+     "qty": 1
+    },
+    {
+     "cardId": "salvage",
+     "qty": 1
+    },
+    {
+     "cardId": "flash",
+     "qty": 1
+    },
+    {
+     "cardId": "treasure-hunter",
+     "qty": 1
+    },
+    {
+     "cardId": "baron-nashor",
+     "qty": 1
+    },
+    {
+     "cardId": "shadows-of-the-past",
+     "qty": 1
+    },
+    {
+     "cardId": "fizz-trickster",
+     "qty": 2
+    },
+    {
+     "cardId": "ezreal-prodigy",
+     "qty": 2
     }
-  ]
+   ]
+  }
+ ]
 }
