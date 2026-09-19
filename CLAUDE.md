@@ -61,11 +61,17 @@ Estan fijadas por el usuario. **No se infieren las reglas de Riftbound por cuent
    `canalizadas = min(2, 12 - mesa_tras_reciclar)`.
 4. **Energia** (incolora) = agotar una runa. Reversible, se endereza en el Awaken. No cambia la mesa.
    **Poder** (con dominio) = reciclar una runa. Permanente: sale de la mesa. La reduce.
-5. **El concepto critico**: una carta de 3 de Energia + 1 de Poder Fury **no cuesta 3 runas: cuesta 4**.
-   Y esa reciclada le resta una runa al turno siguiente.
+5. **El concepto critico — "rune floating"**: una runa tiene **dos usos y los dos se pueden gastar
+   en el mismo turno**. Se agota para dar 1 de Energia y despues se recicla para dar 1 de Poder de
+   su dominio (en ese orden: reciclada ya no esta para agotarse). Por eso una carta de 3 de Energia
+   + 1 de Poder Fury **se paga con TRES runas Fury, no con cuatro**: se agotan las tres y una de
+   esas mismas se recicla. **Los costes no se suman.** Y esa reciclada le resta una runa al turno
+   siguiente.
 6. **El Poder es especifico de dominio**: para pagar 1 de Poder Fury hace falta que una runa
-   *disponible* sea Fury. No alcanza con tener runas.
-7. **"Abiertas" no es lo mismo que "en mesa"**: una runa ya agotada este turno no paga nada.
+   *en mesa* sea Fury. No alcanza con tener runas.
+7. **Las dos mitades miran cosas distintas**: la **Energia** necesita runas **abiertas** (una
+   agotada ya no da energia); el **Poder** necesita runas **en mesa** del dominio pedido, abiertas
+   o agotadas, porque para reciclar una runa no hace falta que este abierta.
 8. **La mano es concreta**: 5 a 7 cartas. No se calcula sobre el mazo entero; si tiene una sola
    copia, no puede jugar dos.
 9. **Todo rechazo devuelve su motivo**, para mostrarlo al dar vuelta la carta:

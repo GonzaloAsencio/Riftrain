@@ -1,19 +1,29 @@
 /**
- * Validacion de pagabilidad. Sumar costes NO alcanza.
+ * Validacion de pagabilidad.
  *
- * EL CONCEPTO CRITICO:
- *   Una carta de 3 de Energia + 1 de Poder Fury NO cuesta 3 runas: cuesta 4.
- *   Tres agotadas mas una reciclada. Y esa reciclada le resta una runa al turno siguiente.
+ * EL CONCEPTO CRITICO — "rune floating":
+ *   Una runa tiene DOS usos y los dos se pueden gastar en el mismo turno.
+ *     - AGOTARLA da 1 de Energia (incolora). Reversible: se endereza en el Awaken.
+ *     - RECICLARLA da 1 de Poder de su dominio. Permanente: sale de la mesa.
+ *   Primero se agota y despues se recicla; al reves no, porque reciclada ya no esta.
  *
- * El Poder es especifico de dominio: para pagar 1 de Poder Fury hace falta que una
- * runa DISPONIBLE sea de dominio Fury. No alcanza con tener runas.
+ *   Por eso 3 de Energia + 1 de Poder Fury se paga con TRES runas Fury, no con
+ *   cuatro: se agotan las tres y UNA DE ESAS MISMAS se recicla. Los costes NO
+ *   se suman.
+ *
+ * LAS DOS MITADES MIRAN COSAS DISTINTAS, y es lo unico que hay que tener claro:
+ *   - La ENERGIA necesita runas ABIERTAS. Una agotada ya no da energia.
+ *   - El PODER necesita runas EN MESA del dominio pedido, abiertas o no: para
+ *     reciclar una runa no hace falta que este abierta.
  *
  * Por que la asignacion es trivial y no hace falta un matching bipartito:
  *   no hay comodines. Cada punto de Poder de dominio D solo puede pagarse con una
  *   runa de dominio D, y una runa de dominio D no sirve para ningun otro requisito
- *   de Poder. Los conjuntos son DISJUNTOS. Asi que alcanza con, por cada dominio,
- *   comparar disponibles contra requeridos; y despues chequear el total, porque la
- *   Energia (incolora) se paga con cualquier runa que haya sobrado.
+ *   de Poder. Los conjuntos son DISJUNTOS. Asi que alcanza con comparar, por cada
+ *   dominio, lo que hay en mesa contra lo que se pide.
+ *
+ * (Hasta 2026-09-19 este modulo cobraba energia + poder. Era un bug, y de los
+ * caros: rechazaba jugadas que en la mesa real se hacen.)
  */
 
 import { DOMAINS, DOMAIN_LABEL } from './runes.js';
@@ -30,7 +40,16 @@ export function cardCost(card) {
     }
   }
   const energy = card.energy ?? 0;
-  return { energy, power, powerTotal, runes: energy + powerTotal };
+  return { energy, power, powerTotal, runes: runesNeeded(energy, powerTotal) };
+}
+
+/**
+ * Cuantas runas distintas tienen que participar como minimo.
+ * NO es la suma: una misma runa puede agotarse por Energia y despues reciclarse
+ * por Poder, asi que manda la mitad mas grande.
+ */
+function runesNeeded(energy, powerTotal) {
+  return Math.max(energy, powerTotal);
 }
 
 /** Suma los costes de varias cartas en un unico coste combinado. */
@@ -45,22 +64,27 @@ export function sumCosts(costs) {
       powerTotal += n;
     }
   }
-  return { energy, power, powerTotal, runes: energy + powerTotal };
+  return { energy, power, powerTotal, runes: runesNeeded(energy, powerTotal) };
 }
 
 /**
- * Runas DISPONIBLES, que no es lo mismo que runas en mesa:
- * una runa ya agotada este turno no puede volver a pagar nada.
+ * Lo que hay para pagar, separado en las dos cosas que NO son lo mismo:
+ *
+ *   total / byDomain        -> runas ABIERTAS. Es lo que paga ENERGIA.
+ *   onBoard / onBoardByDomain -> runas EN MESA, abiertas o agotadas. Es lo que
+ *                                se puede RECICLAR por Poder.
  */
 export function availableRunes(runes) {
   const byDomain = {};
+  const onBoardByDomain = {};
   let total = 0;
   for (const r of runes) {
+    onBoardByDomain[r.domain] = (onBoardByDomain[r.domain] ?? 0) + 1;
     if (!r.ready) continue;
     byDomain[r.domain] = (byDomain[r.domain] ?? 0) + 1;
     total += 1;
   }
-  return { total, byDomain, onBoard: runes.length };
+  return { total, byDomain, onBoardByDomain, onBoard: runes.length };
 }
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
@@ -83,14 +107,15 @@ export function costLabel(cost) {
  */
 export function canPay(cost, avail) {
   // 1. Dominios primero: es el rechazo mas informativo y el que mas se olvida.
+  //    Se mira la MESA, no las abiertas: una runa agotada igual se recicla.
   for (const [d, need] of Object.entries(cost.power)) {
-    const have = avail.byDomain[d] ?? 0;
+    const have = avail.onBoardByDomain?.[d] ?? 0;
     if (have < need) {
       const label = DOMAIN_LABEL[d];
       const reason =
         have === 0
-          ? `Pide ${plural(need, `${label}`, `${label}`)} y no hay runas ${label} disponibles`
-          : `Pide ${need} ${label} y solo hay ${plural(have, 'runa', 'runas')} ${label} disponible${have === 1 ? '' : 's'}`;
+          ? `Pide ${need} ${label} y no hay runas ${label} en mesa`
+          : `Pide ${need} ${label} y solo hay ${plural(have, 'runa', 'runas')} ${label} en mesa`;
       return {
         ok: false,
         reason,
@@ -101,15 +126,14 @@ export function canPay(cost, avail) {
     }
   }
 
-  // 2. Total: la Energia es incolora, la paga cualquier runa que haya sobrado.
-  if (cost.runes > avail.total) {
-    const breakdown = costLabel(cost);
+  // 2. La Energia es incolora, pero SI necesita runas abiertas.
+  if (cost.energy > avail.total) {
     return {
       ok: false,
-      reason: `Cuesta ${plural(cost.runes, 'runa', 'runas')} (${breakdown}) y solo hay ${plural(avail.total, 'disponible', 'disponibles')}`,
-      needed: cost.runes,
+      reason: `Pide ${cost.energy} de Energia y solo hay ${plural(avail.total, 'runa abierta', 'runas abiertas')}`,
+      needed: cost.energy,
       available: avail.total,
-      detail: { kind: 'total', need: cost.runes, have: avail.total },
+      detail: { kind: 'energy', need: cost.energy, have: avail.total },
     };
   }
 

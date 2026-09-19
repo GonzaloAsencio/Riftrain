@@ -17,7 +17,7 @@ test('AC-CMB-01: playableCards marca cada carta con su motivo', () => {
 
   assert.equal(r[0].ok, true);
   assert.equal(r[1].ok, false);
-  assert.match(r[1].reason, /8 runas/);
+  assert.match(r[1].reason, /8 de Energia/);
   assert.equal(r[2].ok, false);
   assert.match(r[2].reason, /Order/);
 });
@@ -37,12 +37,19 @@ test('AC-CMB-03: verificacion puntual — "puede jugar esta unidad Y ademas este
   const unidad = card('u', 1, { fury: 1 });
   const hechizo = card('h', 1, { mind: 1 });
 
-  assert.equal(verifyCombo([unidad, hechizo], runas).ok, true, '4 runas justas');
+  assert.equal(verifyCombo([unidad, hechizo], runas).ok, true, '4 abiertas de sobra');
 
-  const pocas = makeBoard(['fury', 'mind', 'mind']);
-  const r = verifyCombo([unidad, hechizo], pocas);
+  // Con floating, TRES runas alcanzan para 2 de Energia + 1 Fury + 1 Mind:
+  // se agotan las tres y dos de esas mismas se reciclan.
+  const justas = makeBoard(['fury', 'mind', 'mind']);
+  assert.equal(verifyCombo([unidad, hechizo], justas).ok, true);
+
+  // Lo que lo rompe es que falte el DOMINIO: sin ninguna Fury en mesa no hay
+  // con que pagar el Poder, por mas runas que haya.
+  const sinFury = makeBoard(['mind', 'mind', 'mind', 'mind']);
+  const r = verifyCombo([unidad, hechizo], sinFury);
   assert.equal(r.ok, false);
-  assert.match(r.reason, /4 runas/);
+  assert.match(r.reason, /Fury/);
 });
 
 test('AC-CMB-04: la combinacion mas cara', () => {
