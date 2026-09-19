@@ -27,6 +27,33 @@ import { DOMAINS } from './runes.js';
 
 const COMMENT = /^\/\//;
 const HEADER = /^#\s*(.*)$/;
+const SECTION = /^(.+?)\s*:\s*$/;
+
+/**
+ * Las zonas del export. Una carta NO vale lo mismo segun donde esta: las del
+ * MainDeck son las que el rival puede robar; las del Sideboard no entran a la
+ * partida, y sumarlas al mazo seria entrenar contra copias que no existen.
+ *
+ * Los seis nombres de la izquierda salen de un export real de Piltover Archive.
+ * Los alias son tolerancia de formato, no reglas de Riftbound.
+ */
+const SECTIONS = new Map([
+  ['legend', 'legend'],
+  ['champion', 'champion'],
+  ['maindeck', 'main'],
+  ['main', 'main'],
+  ['deck', 'main'],
+  ['battlefields', 'battlefields'],
+  ['battlefield', 'battlefields'],
+  ['runes', 'runes'],
+  ['runedeck', 'runes'],
+  ['sideboard', 'sideboard'],
+]);
+
+/** "MAINDECK :" y "MainDeck:" son el mismo encabezado escrito por dos programas. */
+function sectionKey(text) {
+  return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
+}
 
 /** Id estable a partir del nombre: sin acentos, sin espacios, minusculas. */
 export function slug(name) {
@@ -96,8 +123,13 @@ export function parseDecklist(text, { name } = {}) {
   }
 
   const errors = [];
-  const byId = new Map();
+  const zones = {
+    main: new Map(), sideboard: new Map(), battlefields: new Map(),
+    legend: new Map(), champion: new Map(), runes: new Map(),
+  };
   let deckName = null;
+  // Sin encabezados, todo es MainDeck: una lista pelada sigue funcionando igual.
+  let zone = 'main';
 
   text.split(/\r?\n/).forEach((raw, i) => {
     const line = i + 1;
@@ -111,6 +143,17 @@ export function parseDecklist(text, { name } = {}) {
     }
 
     const fail = (reason) => errors.push({ line, text: trimmed, reason });
+
+    const section = SECTION.exec(trimmed);
+    if (section) {
+      const key = SECTIONS.get(sectionKey(section[1]));
+      if (key) {
+        zone = key;
+        return;
+      }
+    }
+
+    const byId = zones[zone];
 
     const [left, ...costParts] = trimmed.split('|');
     const { qty, name: cardName } = splitQty(left.trim());
@@ -157,10 +200,13 @@ export function parseDecklist(text, { name } = {}) {
       text: '',
       img: null,
       source: 'pasted',
+      zone,
     });
   });
 
-  const cards = [...byId.values()];
+  const cards = [...zones.main.values()];
+  const sideboard = [...zones.sideboard.values()];
+  const battlefields = [...zones.battlefields.values()];
 
   const domains = [...new Set(cards.flatMap((c) => Object.keys(c.power)))].sort();
   const finalName = deckName ?? name ?? 'Mazo pegado';
@@ -173,6 +219,8 @@ export function parseDecklist(text, { name } = {}) {
       cards: cards.map((c) => ({ cardId: c.id, qty: c.qty })),
     },
     cards,
+    sideboard,
+    battlefields,
     needsCost: cards.filter((c) => c.needsCost).map((c) => c.id),
     errors,
   };

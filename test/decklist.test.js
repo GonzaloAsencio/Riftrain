@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseDecklist } from '../src/engine/decklist.js';
+import { expandDeck } from '../src/engine/scenario.js';
 
 /**
  * El parser de decklists pegadas. PURO: no sabe que existe un textarea.
@@ -161,4 +162,64 @@ test('AC-DCK-12: entradas invalidas explotan, no devuelven basura', () => {
   assert.throws(() => parseDecklist(null), TypeError);
   assert.throws(() => parseDecklist(42), TypeError);
   assert.throws(() => parseDecklist(), TypeError);
+});
+
+// ------------------------------------------------- secciones del export (SEC)
+
+test('AC-SEC-01: los encabezados de seccion no son cartas', () => {
+  const r = parseDecklist(PILTOVER_EXPORT);
+  const zones = [r.cards, r.sideboard, r.battlefields];
+  for (const zone of zones) {
+    for (const c of zone) {
+      assert.ok(!c.name.endsWith(':'), `se colo un encabezado como carta: ${c.name}`);
+    }
+  }
+  assert.equal(byName(r, 'MainDeck'), undefined);
+  assert.equal(byName(r, 'Sideboard'), undefined);
+});
+
+test('AC-SEC-02: el encabezado se reconoce sin importar mayusculas ni espacios', () => {
+  const r = parseDecklist('MAINDECK :\n3 Chispa | 1\nsideboard:\n2 Chispa | 1');
+  assert.equal(r.errors.length, 0);
+  assert.equal(byName(r, 'Chispa').qty, 3, 'el sideboard no sumo');
+  assert.equal(totalQty(r.sideboard), 2);
+});
+
+test('AC-SEC-04: solo el MainDeck alimenta la mano', () => {
+  const r = parseDecklist(PILTOVER_EXPORT);
+  assert.equal(r.errors.length, 0, JSON.stringify(r.errors));
+  assert.equal(totalQty(r.cards), 39, 'el MainDeck son 39 cartas, no 72');
+  assert.equal(totalQty(r.deck.cards), 39);
+
+  for (const fuera of ['Chaos Rune', 'Zaun Warrens', 'Ravenbloom Prefect',
+                       'Kennen, Heart of the Tempest', 'Kennen, Storm of Shuriken']) {
+    assert.equal(byName(r, fuera), undefined, `${fuera} no va en la mano`);
+  }
+});
+
+test('AC-SEC-05: una lista sin secciones sigue siendo todo MainDeck', () => {
+  const r = parseDecklist('3 Chispa | 1\n2 Descarga | 2 + 1 fury');
+  assert.equal(totalQty(r.cards), 5);
+  assert.deepEqual(r.sideboard, []);
+  assert.deepEqual(r.battlefields, []);
+});
+
+test('AC-SEC-06: el sideboard NO suma copias al mazo', () => {
+  const r = parseDecklist(PILTOVER_EXPORT);
+  // Gust y Salvage estan en las dos zonas: 1 + 1. El rival tiene UNA copia.
+  assert.equal(byName(r, 'Gust').qty, 1);
+  assert.equal(byName(r, 'Salvage').qty, 1);
+  assert.ok(r.sideboard.some((c) => c.name === 'Gust'), 'el sideboard no se tira');
+  assert.equal(totalQty(r.sideboard), 10);
+});
+
+test('AC-SEC-14: expandDeck no reparte ni la Legend ni el Champion', () => {
+  const r = parseDecklist(PILTOVER_EXPORT);
+  const cardsById = new Map(r.cards.map((c) => [c.id, c]));
+  const mazo = expandDeck(r.deck, cardsById);
+
+  assert.equal(mazo.length, 39);
+  for (const c of mazo) {
+    assert.ok(!c.name.startsWith('Kennen'), 'la Legend/Champion quedan afuera del mazo');
+  }
 });
