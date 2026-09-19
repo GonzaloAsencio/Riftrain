@@ -185,6 +185,21 @@ test('AC-SEC-02: el encabezado se reconoce sin importar mayusculas ni espacios',
   assert.equal(totalQty(r.sideboard), 2);
 });
 
+test('AC-SEC-03: una seccion desconocida devuelve su motivo y no adivina zona', () => {
+  const r = parseDecklist('MainDeck:\n3 Chispa | 1\nTokens:\n2 Fantasma | 1');
+
+  assert.equal(r.errors.length, 1);
+  assert.match(r.errors[0].reason, /Tokens/, 'el motivo nombra la seccion');
+  assert.equal(r.errors[0].line, 3);
+
+  // Meterla en la zona anterior seria adivinar: el MainDeck no se ensucia.
+  assert.equal(byName(r, 'Fantasma'), undefined);
+  for (const zona of [r.sideboard, r.battlefields]) {
+    assert.ok(!zona.some((c) => c.name === 'Fantasma'));
+  }
+  assert.equal(totalQty(r.cards), 3);
+});
+
 test('AC-SEC-04: solo el MainDeck alimenta la mano', () => {
   const r = parseDecklist(PILTOVER_EXPORT);
   assert.equal(r.errors.length, 0, JSON.stringify(r.errors));

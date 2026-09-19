@@ -151,7 +151,15 @@ export function parseDecklist(text, { name } = {}) {
         zone = key;
         return;
       }
+      // Seccion que no conozco: DESCARTO lo que viene abajo en vez de meterlo en
+      // la zona anterior. Adivinar la zona es adivinar si la carta entra a la
+      // mano, y eso cambia el entrenamiento.
+      zone = 'skip';
+      const conocidas = [...new Set(SECTIONS.values())].join(', ');
+      return fail(`no se que zona es "${section[1]}" (las que conozco son ${conocidas})`);
     }
+
+    if (zone === 'skip') return;
 
     const byId = zones[zone];
 
