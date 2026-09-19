@@ -50,10 +50,17 @@ export function normalizeCard(item) {
   if (!item || typeof item !== 'object') {
     return { card: null, error: 'el item no es un objeto' };
   }
-  const name = typeof item.name === 'string' ? item.name.trim() : '';
-  if (!name) {
+  const base = typeof item.name === 'string' ? item.name.trim() : '';
+  if (!base) {
     return { card: null, error: `item sin nombre (${item.publicCode ?? item.id ?? 'sin codigo'})` };
   }
+
+  // EL SUBTITULO ES PARTE DE LA IDENTIDAD, no un adorno: "Ahri, Inquisitive"
+  // cuesta 3 + 1 Mind y "Ahri, Alluring" cuesta 5 + 1 Calm. Son dos cartas.
+  // Ademas es exactamente como las escriben las decklists exportadas
+  // ("Fizz, Trickster"), asi que este es el nombre con el que hay que cruzar.
+  const subtitle = typeof item.subtitle === 'string' ? item.subtitle.trim() : '';
+  const name = subtitle ? `${base}, ${subtitle}` : base;
 
   const energy = num(item.energy);
   const powerTotal = num(item.power);
@@ -86,6 +93,8 @@ export function normalizeCard(item) {
     card: {
       id: slug(name),
       name,
+      baseName: base,
+      subtitle: subtitle || null,
       code: item.publicCode ?? null,
       collectorNumber: item.collectorNumber ?? null,
       energy,

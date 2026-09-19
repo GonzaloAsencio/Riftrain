@@ -82,12 +82,44 @@ test('AC-CAT-08: deduplica las impresiones: una carta por nombre', () => {
   const { cards } = buildCatalog(ITEMS);
   const nombres = cards.map((c) => c.name);
   assert.equal(nombres.length, new Set(nombres).size, 'no quedan nombres repetidos');
-  assert.equal(cards.length, 7, 'los 11 items son 7 cartas distintas');
+  assert.equal(cards.length, 10, 'los 19 items son 10 cartas distintas');
 
   // Y se queda con la impresion base, no con el art alternativo.
   const baron = cards.find((c) => c.name === 'Baron Nashor');
   assert.ok(!baron.code.includes('*'), `quedo una variante: ${baron.code}`);
   assert.ok(!/\d+[a-z]\//.test(baron.code), `quedo un art alternativo: ${baron.code}`);
+});
+
+test('AC-CAT-13: el subtitulo es parte de la identidad — "Ahri" son DOS cartas', () => {
+  // Ahri, Inquisitive cuesta 3 + 1 Mind. Ahri, Alluring cuesta 5 + 1 Calm.
+  // Deduplicar por "Ahri" a secas perderia una de las dos, y ademas es el
+  // nombre que exportan las decklists: "Fizz, Trickster".
+  const { cards, errors } = buildCatalog(ITEMS);
+  assert.equal(errors.length, 0, JSON.stringify(errors));
+
+  const ahris = cards.filter((c) => c.name.startsWith('Ahri'));
+  assert.equal(ahris.length, 2, 'las dos Ahri sobreviven');
+  assert.deepEqual(ahris.map((c) => c.name).sort(), ['Ahri, Alluring', 'Ahri, Inquisitive']);
+
+  const inq = ahris.find((c) => c.name === 'Ahri, Inquisitive');
+  assert.equal(inq.energy, 3);
+  assert.deepEqual(inq.power, { mind: 1 });
+
+  const all = ahris.find((c) => c.name === 'Ahri, Alluring');
+  assert.equal(all.energy, 5);
+  assert.deepEqual(all.power, { calm: 1 });
+});
+
+test('AC-CAT-14: el nombre completo es el que usan las decklists pegadas', () => {
+  const { cards } = buildCatalog(ITEMS);
+  const porId = new Map(cards.map((c) => [c.id, c]));
+
+  // Tal cual lo escribe el export de Piltover Archive.
+  const pegado = parseDecklist('MainDeck:\n2 Fizz, Trickster');
+  assert.equal(pegado.errors.length, 0);
+  const [entry] = pegado.deck.cards;
+  assert.ok(porId.has(entry.cardId), `el catalogo no tiene ${entry.cardId}`);
+  assert.equal(porId.get(entry.cardId).name, 'Fizz, Trickster');
 });
 
 test('AC-CAT-09: dos impresiones del mismo nombre con costos distintos se reportan', () => {
