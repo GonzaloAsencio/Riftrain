@@ -257,7 +257,13 @@ export function parseDecklist(text, { name } = {}) {
     });
   }
 
-  const domains = [...new Set(cards.flatMap((c) => Object.keys(c.power)))].sort();
+  // De donde salen los dominios: de los costos Y del Mazo de Runas. Una lista
+  // pegada casi nunca trae costos (ver needsCost), asi que sin las runas el
+  // mazo quedaria sin dominios y el motor no podria proyectar la mesa.
+  const domains = [...new Set([
+    ...cards.flatMap((c) => Object.keys(c.power)),
+    ...Object.keys(runes),
+  ])].sort();
   const finalName = deckName ?? name ?? 'Mazo pegado';
 
   return {

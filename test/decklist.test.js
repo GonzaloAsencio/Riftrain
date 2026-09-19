@@ -285,6 +285,17 @@ test('AC-SEC-11: dos Legends devuelve su motivo — la Legend es una sola', () =
   assert.match(dos.errors[0].reason, /Champion/i);
 });
 
+test('AC-SEC-13: los dominios tambien salen de las runas, no solo de los costos', () => {
+  // El export no trae un solo costo: sin esto, domains queda vacio y el motor
+  // no puede armar la mesa de runas del rival.
+  const r = parseDecklist(PILTOVER_EXPORT);
+  assert.deepEqual(r.deck.domains, ['chaos', 'order']);
+
+  // Y se unen con los de los costos, sin duplicar.
+  const mix = parseDecklist('Runes:\n9 Chaos Rune\n3 Order Rune\nMainDeck:\n2 Descarga | 2 + 1 fury\n1 Motin | 1 chaos');
+  assert.deepEqual(mix.deck.domains, ['chaos', 'fury', 'order']);
+});
+
 test('AC-SEC-14: expandDeck no reparte ni la Legend ni el Champion', () => {
   const r = parseDecklist(PILTOVER_EXPORT);
   const cardsById = new Map(r.cards.map((c) => [c.id, c]));
