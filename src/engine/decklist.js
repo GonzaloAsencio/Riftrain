@@ -183,6 +183,12 @@ export function parseDecklist(text, { name } = {}) {
       return fail(`la cantidad tiene que ser 1 o mas, y dice ${qty}`);
     }
 
+    // La Legend y el Champion quedan AFUERA del mazo (no se roban), y son una
+    // sola cada uno. Una segunda es un error de la lista, no una copia extra.
+    if ((zone === 'legend' || zone === 'champion') && (qty > 1 || zones[zone].size)) {
+      return fail(`la seccion ${zone === 'legend' ? 'Legend' : 'Champion'} lleva una sola carta`);
+    }
+
     // Las runas no son cartas de mano: son la composicion del Mazo de Runas.
     if (zone === 'runes') {
       const domain = runeDomain(cardName);
@@ -260,6 +266,11 @@ export function parseDecklist(text, { name } = {}) {
       name: finalName,
       domains,
       cards: cards.map((c) => ({ cardId: c.id, qty: c.qty })),
+      // Viajan en el deck para que la UI los saque del mismo find() por deckId
+      // que ya usa, sin que scenario.js tenga que enterarse de que existen.
+      legend: [...zones.legend.values()][0] ?? null,
+      champion: [...zones.champion.values()][0] ?? null,
+      runes,
     },
     cards,
     sideboard,

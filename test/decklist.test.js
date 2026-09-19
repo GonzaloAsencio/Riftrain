@@ -256,6 +256,35 @@ test('AC-SEC-09: una runa de un dominio que no existe devuelve su motivo', () =>
   assert.deepEqual(r.runes, {});
 });
 
+test('AC-SEC-10: la Legend, el Champion y las battlefields salen en campos propios', () => {
+  const r = parseDecklist(PILTOVER_EXPORT);
+
+  assert.equal(r.deck.legend.name, 'Kennen, Heart of the Tempest');
+  assert.equal(r.deck.champion.name, 'Kennen, Storm of Shuriken');
+  assert.equal(r.battlefields.length, 3);
+  assert.deepEqual(
+    r.battlefields.map((c) => c.name).sort(),
+    ['Minefield', 'Shadow Temple', 'Zaun Warrens'],
+  );
+});
+
+test('AC-SEC-10b: sin seccion Legend, los campos son null y no un objeto vacio', () => {
+  const r = parseDecklist('3 Chispa | 1');
+  assert.equal(r.deck.legend, null);
+  assert.equal(r.deck.champion, null);
+});
+
+test('AC-SEC-11: dos Legends devuelve su motivo — la Legend es una sola', () => {
+  const r = parseDecklist('Legend:\n1 Kennen\n1 Jinx\nMainDeck:\n3 Chispa | 1');
+  assert.equal(r.errors.length, 1);
+  assert.match(r.errors[0].reason, /Legend/i);
+  assert.equal(r.errors[0].line, 3, 'apunta a la carta de mas, no a la primera');
+
+  const dos = parseDecklist('Champion:\n2 Kennen');
+  assert.equal(dos.errors.length, 1, 'qty 2 tambien es de mas');
+  assert.match(dos.errors[0].reason, /Champion/i);
+});
+
 test('AC-SEC-14: expandDeck no reparte ni la Legend ni el Champion', () => {
   const r = parseDecklist(PILTOVER_EXPORT);
   const cardsById = new Map(r.cards.map((c) => [c.id, c]));
