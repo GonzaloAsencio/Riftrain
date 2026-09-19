@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseDecklist } from '../src/engine/decklist.js';
 import { expandDeck } from '../src/engine/scenario.js';
+import { RUNE_DECK_SIZE } from '../src/engine/runes.js';
 
 /**
  * El parser de decklists pegadas. PURO: no sabe que existe un textarea.
@@ -226,6 +227,33 @@ test('AC-SEC-06: el sideboard NO suma copias al mazo', () => {
   assert.equal(byName(r, 'Salvage').qty, 1);
   assert.ok(r.sideboard.some((c) => c.name === 'Gust'), 'el sideboard no se tira');
   assert.equal(totalQty(r.sideboard), 10);
+});
+
+test('AC-SEC-07: las runas salen como composicion de dominios', () => {
+  const r = parseDecklist(PILTOVER_EXPORT);
+  assert.deepEqual(r.runes, { chaos: 9, order: 3 });
+
+  const total = Object.values(r.runes).reduce((a, n) => a + n, 0);
+  assert.equal(total, RUNE_DECK_SIZE, 'el Mazo de Runas es 12 (regla 1)');
+  assert.equal(r.errors.length, 0);
+});
+
+test('AC-SEC-08: un Mazo de Runas que no suma 12 devuelve su motivo, pero las runas vienen igual', () => {
+  const r = parseDecklist('Runes:\n8 Chaos Rune\n3 Order Rune');
+
+  assert.equal(r.errors.length, 1);
+  assert.match(r.errors[0].reason, /12/, 'el motivo dice cuantas tiene que haber');
+  assert.equal(r.errors[0].line, 1, 'apunta al encabezado Runes:');
+
+  // No se descartan: hay que poder mostrar el problema, no esconderlo.
+  assert.deepEqual(r.runes, { chaos: 8, order: 3 });
+});
+
+test('AC-SEC-09: una runa de un dominio que no existe devuelve su motivo', () => {
+  const r = parseDecklist('Runes:\n12 Lunar Rune');
+  assert.equal(r.errors.length, 1);
+  assert.match(r.errors[0].reason, /Lunar/i, 'el motivo nombra la runa');
+  assert.deepEqual(r.runes, {});
 });
 
 test('AC-SEC-14: expandDeck no reparte ni la Legend ni el Champion', () => {

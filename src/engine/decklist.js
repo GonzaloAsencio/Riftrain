@@ -23,7 +23,7 @@
  *    | 5 + 1 calm + 1 order -> 5 de energia y un poder de cada dominio
  */
 
-import { DOMAINS } from './runes.js';
+import { DOMAINS, RUNE_DECK_SIZE } from './runes.js';
 
 const COMMENT = /^\/\//;
 const HEADER = /^#\s*(.*)$/;
@@ -53,6 +53,12 @@ const SECTIONS = new Map([
 /** "MAINDECK :" y "MainDeck:" son el mismo encabezado escrito por dos programas. */
 function sectionKey(text) {
   return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
+}
+
+/** "Chaos Rune" -> "chaos". Devuelve null si no es un dominio que exista. */
+function runeDomain(name) {
+  const key = sectionKey(name).replace(/runas?$|rune?s?$/, '');
+  return DOMAINS.includes(key) ? key : null;
 }
 
 /** Id estable a partir del nombre: sin acentos, sin espacios, minusculas. */
@@ -130,6 +136,9 @@ export function parseDecklist(text, { name } = {}) {
   let deckName = null;
   // Sin encabezados, todo es MainDeck: una lista pelada sigue funcionando igual.
   let zone = 'main';
+  const runes = {};
+  let runesLine = null;
+  let runesBroken = false;
 
   text.split(/\r?\n/).forEach((raw, i) => {
     const line = i + 1;
@@ -149,6 +158,7 @@ export function parseDecklist(text, { name } = {}) {
       const key = SECTIONS.get(sectionKey(section[1]));
       if (key) {
         zone = key;
+        if (key === 'runes' && runesLine === null) runesLine = line;
         return;
       }
       // Seccion que no conozco: DESCARTO lo que viene abajo en vez de meterlo en
@@ -171,6 +181,17 @@ export function parseDecklist(text, { name } = {}) {
     }
     if (!Number.isInteger(qty) || qty < 1) {
       return fail(`la cantidad tiene que ser 1 o mas, y dice ${qty}`);
+    }
+
+    // Las runas no son cartas de mano: son la composicion del Mazo de Runas.
+    if (zone === 'runes') {
+      const domain = runeDomain(cardName);
+      if (!domain) {
+        runesBroken = true;
+        return fail(`no reconozco la runa "${cardName}" (los dominios son ${DOMAINS.join(', ')})`);
+      }
+      runes[domain] = (runes[domain] ?? 0) + qty;
+      return;
     }
 
     let cost = null;
@@ -216,6 +237,20 @@ export function parseDecklist(text, { name } = {}) {
   const sideboard = [...zones.sideboard.values()];
   const battlefields = [...zones.battlefields.values()];
 
+  // Regla 1: el Mazo de Runas tiene 12. Si la lista dice otra cosa, lo informo
+  // pero devuelvo las runas igual: esconderlas no arregla la lista.
+  //
+  // Si alguna linea de runa ya fallo, me callo: el total no puede dar 12 porque
+  // falta esa runa, y un segundo motivo derivado del primero es ruido.
+  const runeTotal = Object.values(runes).reduce((a, n) => a + n, 0);
+  if (runesLine !== null && !runesBroken && runeTotal !== RUNE_DECK_SIZE) {
+    errors.push({
+      line: runesLine,
+      text: 'Runes:',
+      reason: `el Mazo de Runas tiene que sumar ${RUNE_DECK_SIZE} y esta lista suma ${runeTotal}`,
+    });
+  }
+
   const domains = [...new Set(cards.flatMap((c) => Object.keys(c.power)))].sort();
   const finalName = deckName ?? name ?? 'Mazo pegado';
 
@@ -229,6 +264,7 @@ export function parseDecklist(text, { name } = {}) {
     cards,
     sideboard,
     battlefields,
+    runes,
     needsCost: cards.filter((c) => c.needsCost).map((c) => c.id),
     errors,
   };
