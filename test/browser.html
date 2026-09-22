@@ -161,6 +161,23 @@ check('Sin img, la ventana de arte se dibuja igual',
 check('Sin img, el nombre sigue visible', sinArte.querySelector('.card__name').textContent === 'Sin Arte');
 sinArte.remove();
 
+// ---- Con arte, la carta ES la imagen: sin marco blanco, sin pips, sin texto dibujado
+const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+const conArte = renderCard({ ...card('y', 'Con Arte'), img: PNG }, { faceUp: true });
+document.body.appendChild(conArte);
+const oculto = (sel) => {
+  const n = conArte.querySelector(sel);
+  return !n || getComputedStyle(n).display === 'none';
+};
+check('Con img, no se dibuja el cuerpo blanco', oculto('.card__body'));
+check('Con img, no se dibujan los pips de coste', oculto('.card__costs'));
+check('Con img, no se dibuja la banda de dominio', oculto('.card__band'));
+const faceBox = conArte.querySelector('.card__face--front').getBoundingClientRect();
+const artBox = conArte.querySelector('.card__art').getBoundingClientRect();
+check('Con img, el arte ocupa toda la carta',
+  Math.abs(artBox.height - faceBox.height) <= 2, `${artBox.height.toFixed(1)} / ${faceBox.height.toFixed(1)}`);
+conArte.remove();
+
 // ---- QUIEN DESBORDA A LO ANCHO (esto es lo que el screenshot mostro)
 const docW = document.documentElement.clientWidth;
 

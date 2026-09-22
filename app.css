@@ -219,6 +219,13 @@ button { font: inherit; color: inherit; }
   background: repeating-linear-gradient(135deg, rgba(255,255,255,.5) 0 8px, transparent 8px 16px);
 }
 
+/* Con la imagen oficial, solo la imagen: el marco dibujado es el respaldo si falla. */
+.card__face--image { border: 0; background: #14171c; }
+.card__face--image .card__band,
+.card__face--image .card__costs,
+.card__face--image .card__body { display: none; }
+.card__face--image .card__art { flex: 1 1 auto; background: none; }
+
 .card__body { flex: 1; padding: 5px 6px 4px; display: flex; flex-direction: column; min-height: 0; }
 .card__name {
   font-size: 10px; font-weight: 700; line-height: 1.15; letter-spacing: -.01em;
