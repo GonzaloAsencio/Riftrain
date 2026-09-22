@@ -32,6 +32,7 @@
 <script type="module">
 import { Hand } from '../src/ui/hand.js';
 import { renderCard } from '../src/ui/card.js';
+import { renderRune } from '../src/ui/rune.js';
 
 const out = document.getElementById('out');
 let pass = 0, fail = 0;
@@ -177,6 +178,27 @@ const artBox = conArte.querySelector('.card__art').getBoundingClientRect();
 check('Con img, el arte ocupa toda la carta',
   Math.abs(artBox.height - faceBox.height) <= 2, `${artBox.height.toFixed(1)} / ${faceBox.height.toFixed(1)}`);
 conArte.remove();
+
+// ---- Las runas en mesa son CARTAS de runa, no circulos con una letra
+const runaAbierta = renderRune({ domain: 'fury', ready: true });
+const runaAgotada = renderRune({ domain: 'order', ready: false });
+document.body.append(runaAbierta, runaAgotada);
+const imgRuna = runaAbierta.querySelector('img');
+check('Runa: se dibuja con la imagen oficial de su dominio', !!imgRuna && /f95ed6ba/.test(imgRuna.src));
+check('Runa: sin letra suelta como texto', runaAbierta.textContent.trim().length > 1,
+  runaAbierta.textContent);
+const rAbierta = runaAbierta.querySelector('.rune__card').getBoundingClientRect();
+check('Runa abierta: parada, en proporcion de carta', rAbierta.height > rAbierta.width,
+  `${rAbierta.width.toFixed(1)}x${rAbierta.height.toFixed(1)}`);
+check('Runa agotada: tumbada como en la mesa',
+  /matrix\(0, 1, -1, 0|matrix\(6\.1/.test(getComputedStyle(runaAgotada.querySelector('.rune__card')).transform),
+  getComputedStyle(runaAgotada.querySelector('.rune__card')).transform);
+check('Runa: el lector de pantalla sabe dominio y estado',
+  runaAgotada.getAttribute('aria-label') === 'Order agotada');
+check('Runa: se lee su dominio debajo', runaAbierta.querySelector('.rune__label')?.textContent === 'Fury');
+check('Runa agotada: lo dice en palabras', runaAgotada.querySelector('.rune__label')?.textContent === 'Order · agotada');
+check('Runa: grande, al menos 48px de ancho', rAbierta.width >= 48, rAbierta.width.toFixed(1));
+runaAbierta.remove(); runaAgotada.remove();
 
 // ---- QUIEN DESBORDA A LO ANCHO (esto es lo que el screenshot mostro)
 const docW = document.documentElement.clientWidth;

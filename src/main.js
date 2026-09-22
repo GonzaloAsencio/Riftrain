@@ -7,7 +7,7 @@
  */
 
 import { generateScenario, QUESTION } from './engine/scenario.js';
-import { DOMAIN_COLOR, DOMAIN_LABEL, projectRunes, RUNE_DECK_SIZE } from './engine/runes.js';
+import { projectRunes, RUNE_DECK_SIZE } from './engine/runes.js';
 import { cardCost, costLabel, availableRunes } from './engine/cost.js';
 import { search, resolve } from './engine/match.js';
 import { scoreNaming } from './engine/scoring.js';
@@ -15,6 +15,7 @@ import * as prog from './engine/progression.js';
 import * as store from './store.js';
 import { Hand } from './ui/hand.js';
 import { renderCard } from './ui/card.js';
+import { renderRune } from './ui/rune.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => {
@@ -145,17 +146,19 @@ function paintTable() {
   ui.deck.textContent = s.deckName;
 
   ui.runes.textContent = '';
-  for (const r of s.runes) {
-    const n = el('div', 'rune' + (r.ready ? '' : ' rune--spent'), DOMAIN_LABEL[r.domain][0]);
-    n.style.background = DOMAIN_COLOR[r.domain];
-    n.title = `${DOMAIN_LABEL[r.domain]}${r.ready ? '' : ' (agotada)'}`;
-    ui.runes.appendChild(n);
-  }
-  const avail = availableRunes(s.runes);
-  const meta = el('span', 'runes__meta',
-    avail.total === s.runes.length
-      ? `${avail.total} abiertas`
-      : `${avail.total} abiertas de ${s.runes.length} en mesa`);
+  for (const r of s.runes) ui.runes.appendChild(renderRune(r));
+  // El resumen en palabras: abiertas, agotadas y lo que queda en el Mazo de Runas.
+  const open = availableRunes(s.runes).total;
+  const parts = [
+    [open, open === 1 ? 'abierta' : 'abiertas'],
+    [s.runes.length - open, s.runes.length - open === 1 ? 'agotada' : 'agotadas'],
+    [RUNE_DECK_SIZE - s.runes.length, 'en el Mazo de Runas'],
+  ];
+  const meta = el('span', 'runes__meta');
+  parts.forEach(([n, txt], i) => {
+    if (i) meta.append(' · ');
+    meta.append(el('b', 'num', String(n)), ` ${txt}`);
+  });
   ui.runes.appendChild(meta);
 }
 
