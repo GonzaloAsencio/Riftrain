@@ -11,6 +11,8 @@
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
+<!-- shell: contenedor de consulta, mide el ancho real de la pantalla -->
+<div class="shell">
 <div class="app">
 
   <header class="topbar">
@@ -34,7 +36,11 @@
         <span class="chip hidden" id="chip-seed"></span>
       </div>
 
-      <div class="runes" id="runes" aria-label="Runas en mesa"></div>
+      <div class="board">
+        <!-- La leyenda del rival: publica en la mesa real, dice que mazo es -->
+        <div class="legend" id="legend" aria-label="Leyenda del rival"></div>
+        <div class="runes" id="runes" aria-label="Runas en mesa"></div>
+      </div>
 
       <!-- La mano esta boca abajo desde el primer segundo -->
       <div class="hand" id="hand"></div>
@@ -65,6 +71,7 @@
 
     <p class="ph-banner hidden" id="ph-banner"></p>
   </main>
+</div>
 </div>
 
 <script type="module" src="src/main.js"></script>

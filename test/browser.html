@@ -19,6 +19,10 @@
 <div class="app" id="stage">
   <main>
     <section class="table">
+      <div class="board">
+        <div class="legend" id="legend"></div>
+        <div class="runes" id="runes"></div>
+      </div>
       <div class="hand" id="hand"></div>
     </section>
     <p class="ask">Pregunta de ejemplo con un texto largo para ver si fuerza el ancho de la pagina</p>
@@ -206,6 +210,39 @@ check('Runa: se lee su dominio debajo', runaAbierta.querySelector('.rune__label'
 check('Runa agotada: lo dice en palabras', runaAgotada.querySelector('.rune__label')?.textContent === 'Order · agotada');
 check('Runa: grande, al menos 48px de ancho', rAbierta.width >= 48, rAbierta.width.toFixed(1));
 runaAbierta.remove(); runaAgotada.remove();
+
+// ---- La leyenda del rival, boca arriba a la IZQUIERDA de las runas: dice que mazo es
+const PNG_L = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+const legendEl = document.getElementById('legend');
+legendEl.appendChild(renderCard({ id: 'ley', name: 'Leyenda', type: 'legend', domain: 'chaos', img: PNG_L },
+  { faceUp: true }));
+for (let i = 0; i < 7; i++) {
+  document.getElementById('runes').appendChild(renderRune({ domain: i % 2 ? 'chaos' : 'order', ready: true }));
+}
+const legBox = legendEl.querySelector('.card').getBoundingClientRect();
+const runasBox = document.getElementById('runes').getBoundingClientRect();
+check('Leyenda: boca arriba', legendEl.querySelector('.card').dataset.face === 'up');
+check('Leyenda: a la izquierda de las runas', legBox.right <= runasBox.left + 1,
+  `${legBox.right.toFixed(0)} vs ${runasBox.left.toFixed(0)}`);
+check('Leyenda: en la misma fila que las runas', legBox.top < runasBox.bottom && runasBox.top < legBox.bottom);
+check('Leyenda: mas grande que una runa', legBox.width >= 64, legBox.width.toFixed(1));
+
+// En pantalla ancha sobra margen: la leyenda sale del panel negro, a su izquierda.
+// (Container query: se prueba con un contenedor de ancho fijo, no con la ventana.)
+const ancha = document.createElement('div');
+ancha.style.cssText = 'container-type: inline-size; width: 1200px; position: absolute; left: -99999px; top: 0;';
+ancha.innerHTML = '<div class="app"><section class="table"><div class="board">' +
+  '<div class="legend"></div><div class="runes"></div></div></section></div>';
+document.body.appendChild(ancha);
+ancha.querySelector('.legend').appendChild(renderCard(
+  { id: 'ley2', name: 'Leyenda', type: 'legend', domain: 'chaos', img: PNG_L }, { faceUp: true }));
+const legAncha = ancha.querySelector('.legend .card').getBoundingClientRect();
+const mesaAncha = ancha.querySelector('.table').getBoundingClientRect();
+check('Leyenda ancha: FUERA del panel, a la izquierda', legAncha.right <= mesaAncha.left - 8,
+  `${legAncha.right.toFixed(0)} vs ${mesaAncha.left.toFixed(0)}`);
+check('Leyenda ancha: alineada arriba con el panel', Math.abs(legAncha.top - mesaAncha.top) <= 2,
+  `${legAncha.top.toFixed(0)} vs ${mesaAncha.top.toFixed(0)}`);
+ancha.remove();
 
 // ---- QUIEN DESBORDA A LO ANCHO (esto es lo que el screenshot mostro)
 const docW = document.documentElement.clientWidth;

@@ -105,6 +105,22 @@ button { font: inherit; color: inherit; }
 .table__deck { color: #b9c0cb; }
 .chip { border: 1px solid #333842; border-radius: 999px; padding: 2px 8px; font-size: 11px; }
 
+/* La fila de la mesa: la leyenda del rival a la izquierda (dice QUE mazo es),
+   las runas a la derecha. */
+.board { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px; min-width: 0; }
+.legend { flex: 0 0 76px; }
+.legend:empty { display: none; }
+.board .runes { flex: 1 1 auto; min-width: 0; margin-bottom: 0; }
+
+/* Con margen de sobra (pantalla ancha), la leyenda sale del panel negro y queda
+   a su izquierda, alineada arriba. En el telefono no hay afuera: se queda adentro.
+   Container query y no media query: asi el test la prueba con un ancho fijo. */
+.shell { container-type: inline-size; }
+@container (min-width: 960px) {
+  .table { position: relative; }
+  .legend { position: absolute; top: 0; right: calc(100% + 16px); width: 110px; }
+}
+
 /* Runas en mesa */
 .runes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; align-items: flex-end; }
 /* Cada runa es su carta oficial, con su dominio escrito debajo. El asiento de la
