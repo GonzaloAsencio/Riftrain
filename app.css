@@ -108,7 +108,7 @@ button { font: inherit; color: inherit; }
 /* La fila de la mesa: la leyenda del rival a la izquierda (dice QUE mazo es),
    las runas a la derecha. */
 .board { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px; min-width: 0; }
-.legend { flex: 0 0 76px; }
+.legend { flex: 0 0 76px; display: flex; flex-direction: column; gap: 8px; }   /* leyenda arriba, campeon abajo */
 .legend:empty { display: none; }
 .board .runes { flex: 1 1 auto; min-width: 0; margin-bottom: 0; }
 

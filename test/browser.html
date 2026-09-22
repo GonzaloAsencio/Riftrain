@@ -227,6 +227,14 @@ check('Leyenda: a la izquierda de las runas', legBox.right <= runasBox.left + 1,
 check('Leyenda: en la misma fila que las runas', legBox.top < runasBox.bottom && runasBox.top < legBox.bottom);
 check('Leyenda: mas grande que una runa', legBox.width >= 64, legBox.width.toFixed(1));
 
+// El campeon elegido tambien esta boca arriba en la mesa: debajo de la leyenda, misma columna
+legendEl.appendChild(renderCard({ id: 'camp', name: 'Campeon', type: 'unit', domain: 'chaos', img: PNG_L },
+  { faceUp: true }));
+const [cLey, cCamp] = [...legendEl.querySelectorAll('.card')].map((c) => c.getBoundingClientRect());
+check('Campeon: debajo de la leyenda, separado', cCamp.top >= cLey.bottom + 6,
+  `${cCamp.top.toFixed(0)} vs ${cLey.bottom.toFixed(0)}`);
+check('Campeon: en la misma columna', Math.abs(cCamp.left - cLey.left) <= 1);
+
 // En pantalla ancha sobra margen: la leyenda sale del panel negro, a su izquierda.
 // (Container query: se prueba con un contenedor de ancho fijo, no con la ventana.)
 const ancha = document.createElement('div');
