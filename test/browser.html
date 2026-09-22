@@ -7,7 +7,8 @@
 <link rel="stylesheet" href="../app.css">
 <style>
   body { padding: 0; }
-  #out { font-family: ui-monospace, monospace; font-size: 12px; padding: 10px; }
+  /* pre-wrap: un mensaje largo no puede ensanchar la pagina y romper los checks de layout */
+  #out { font-family: ui-monospace, monospace; font-size: 12px; padding: 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
   .t-pass { color: #2f7d5a; }
   .t-fail { color: #c0453c; font-weight: 700; }
   #stage { padding: 0 12px; }
@@ -32,6 +33,7 @@
 <script type="module">
 import { Hand } from '../src/ui/hand.js';
 import { renderCard } from '../src/ui/card.js';
+import { renderRune } from '../src/ui/rune.js';
 
 const out = document.getElementById('out');
 let pass = 0, fail = 0;
@@ -153,6 +155,12 @@ const cardBox = document.querySelector('#hand .card').getBoundingClientRect();
 const ratio = cardBox.width / cardBox.height;
 check('Carta en proporcion 63:88', Math.abs(ratio - 63 / 88) < 0.02, ratio.toFixed(3));
 
+// ---- El dorso es el dorso real de la carta, no un dibujo
+const dorso = getComputedStyle(document.querySelector('#hand .card__face--back'));
+check('Dorso: usa la imagen real', dorso.backgroundImage.includes('assets/card-back.png'),
+  dorso.backgroundImage.slice(0, 60));
+check('Dorso: sin el circulo dibujado', !document.querySelector('#hand .card__back-mark'));
+
 // ---- Sin arte, la carta sigue siendo legible: nunca un hueco
 const sinArte = renderCard(card('x', 'Sin Arte'), { faceUp: true });
 document.body.appendChild(sinArte);
@@ -160,6 +168,44 @@ check('Sin img, la ventana de arte se dibuja igual',
   sinArte.querySelector('.card__art').classList.contains('card__art--empty'));
 check('Sin img, el nombre sigue visible', sinArte.querySelector('.card__name').textContent === 'Sin Arte');
 sinArte.remove();
+
+// ---- Con arte, la carta ES la imagen: sin marco blanco, sin pips, sin texto dibujado
+const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+const conArte = renderCard({ ...card('y', 'Con Arte'), img: PNG }, { faceUp: true });
+document.body.appendChild(conArte);
+const oculto = (sel) => {
+  const n = conArte.querySelector(sel);
+  return !n || getComputedStyle(n).display === 'none';
+};
+check('Con img, no se dibuja el cuerpo blanco', oculto('.card__body'));
+check('Con img, no se dibujan los pips de coste', oculto('.card__costs'));
+check('Con img, no se dibuja la banda de dominio', oculto('.card__band'));
+const faceBox = conArte.querySelector('.card__face--front').getBoundingClientRect();
+const artBox = conArte.querySelector('.card__art').getBoundingClientRect();
+check('Con img, el arte ocupa toda la carta',
+  Math.abs(artBox.height - faceBox.height) <= 2, `${artBox.height.toFixed(1)} / ${faceBox.height.toFixed(1)}`);
+conArte.remove();
+
+// ---- Las runas en mesa son CARTAS de runa, no circulos con una letra
+const runaAbierta = renderRune({ domain: 'fury', ready: true });
+const runaAgotada = renderRune({ domain: 'order', ready: false });
+document.body.append(runaAbierta, runaAgotada);
+const imgRuna = runaAbierta.querySelector('img');
+check('Runa: se dibuja con la imagen oficial de su dominio', !!imgRuna && /f95ed6ba/.test(imgRuna.src));
+check('Runa: sin letra suelta como texto', runaAbierta.textContent.trim().length > 1,
+  runaAbierta.textContent);
+const rAbierta = runaAbierta.querySelector('.rune__card').getBoundingClientRect();
+check('Runa abierta: parada, en proporcion de carta', rAbierta.height > rAbierta.width,
+  `${rAbierta.width.toFixed(1)}x${rAbierta.height.toFixed(1)}`);
+check('Runa agotada: tumbada como en la mesa',
+  /matrix\(0, 1, -1, 0|matrix\(6\.1/.test(getComputedStyle(runaAgotada.querySelector('.rune__card')).transform),
+  getComputedStyle(runaAgotada.querySelector('.rune__card')).transform);
+check('Runa: el lector de pantalla sabe dominio y estado',
+  runaAgotada.getAttribute('aria-label') === 'Order agotada');
+check('Runa: se lee su dominio debajo', runaAbierta.querySelector('.rune__label')?.textContent === 'Fury');
+check('Runa agotada: lo dice en palabras', runaAgotada.querySelector('.rune__label')?.textContent === 'Order · agotada');
+check('Runa: grande, al menos 48px de ancho', rAbierta.width >= 48, rAbierta.width.toFixed(1));
+runaAbierta.remove(); runaAgotada.remove();
 
 // ---- QUIEN DESBORDA A LO ANCHO (esto es lo que el screenshot mostro)
 const docW = document.documentElement.clientWidth;
@@ -197,10 +243,10 @@ if (docSW > docW + 1) {
 check('El documento no scrollea en horizontal', docSW <= docW + 1,
   `scrollWidth ${docSW} vs ${docW} — primero: ${quien || 'nadie'}`);
 
-// Y la mano SI tiene que scrollear sola cuando no entra.
+// Abierta tampoco scrollea: las cartas se achican hasta entrar. Sin barra.
 const manoAbierta = document.getElementById('hand');
-check('La mano abierta contiene su propio scroll',
-  manoAbierta.scrollWidth >= manoAbierta.clientWidth,
+check('La mano abierta no tiene scroll horizontal',
+  manoAbierta.scrollWidth <= manoAbierta.clientWidth + 1,
   `hand ${manoAbierta.scrollWidth} / ${manoAbierta.clientWidth}`);
 
 // ---- ANCHO DE TELEFONO REAL.
@@ -231,6 +277,15 @@ for (const ancho of [320, 360, 390]) {
   check(`Mano de 10 cartas entra en ${ancho}px`, desbordan === 0, `${desbordan} slots se salen`);
   check(`Sin scroll horizontal en ${ancho}px`,
     h.scrollWidth <= h.clientWidth + 1, `${h.scrollWidth} vs ${h.clientWidth}`);
+
+  // Y al cerrar, tampoco: la fila abierta entra entera.
+  peor.revealRest({ stagger: 0 });
+  check(`Cerrada, sin scroll horizontal en ${ancho}px`,
+    h.scrollWidth <= h.clientWidth + 1, `${h.scrollWidth} vs ${h.clientWidth}`);
+
+  // La ronda siguiente monta otra mano en el MISMO contenedor: arranca cerrada.
+  new Hand(h, mano);
+  check(`Mano nueva arranca sin abrir en ${ancho}px`, !h.classList.contains('hand--open'));
   box.remove();
 }
 

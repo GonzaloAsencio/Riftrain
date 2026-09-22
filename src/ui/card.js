@@ -63,14 +63,17 @@ function frontFace(card) {
 
   const art = el('div', 'card__art');
   if (card.img) {
+    // La imagen oficial ya trae coste, nombre y texto: la carta ES la imagen.
+    face.classList.add('card__face--image');
     const img = el('img');
     img.loading = 'lazy';
     img.decoding = 'async';
     img.alt = '';
     img.src = card.img;
-    // Si el arte falla, la carta NO se rompe: se cae al marco rayado.
+    // Si el arte falla, la carta NO se rompe: vuelve al marco dibujado.
     img.addEventListener('error', () => {
       img.remove();
+      face.classList.remove('card__face--image');
       art.classList.add('card__art--empty');
     }, { once: true });
     art.appendChild(img);
@@ -95,10 +98,9 @@ function frontFace(card) {
   return face;
 }
 
+/** El dorso real de la carta: la imagen la pone el CSS (assets/card-back.png). */
 function backFace() {
-  const face = el('div', 'card__face card__face--back');
-  face.appendChild(el('div', 'card__back-mark'));
-  return face;
+  return el('div', 'card__face card__face--back');
 }
 
 /**
