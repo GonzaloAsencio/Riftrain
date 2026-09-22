@@ -28,7 +28,7 @@ const el = (tag, cls, text) => {
 const ui = {
   streak: $('streak'), streakN: $('streak').querySelector('.streak__n'),
   level: $('level'), timer: $('timer'),
-  turn: $('turn'), deck: $('deck'), runes: $('runes'),
+  turn: $('turn'), deck: $('deck'), runes: $('runes'), legend: $('legend'),
   hand: $('hand'), ask: $('ask'),
   picks: $('input-picks'), type: $('input-type'), field: $('type-field'),
   suggest: $('suggest'), num: $('input-num'), named: $('named'),
@@ -144,6 +144,12 @@ function paintTable() {
   const s = app.scenario;
   ui.turn.textContent = `Turno ${s.turn}`;
   ui.deck.textContent = s.deckName;
+
+  // La leyenda esta boca arriba en la mesa real: se muestra. Si el mazo no la trae, no hay hueco.
+  const deck = app.data.decks.find((d) => d.id === s.deckId);
+  const legend = deck?.legend && app.cardsById.get(deck.legend);
+  ui.legend.textContent = '';
+  if (legend) ui.legend.appendChild(renderCard(legend, { faceUp: true }));
 
   ui.runes.textContent = '';
   for (const r of s.runes) ui.runes.appendChild(renderRune(r));
