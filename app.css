@@ -179,16 +179,10 @@ button { font: inherit; color: inherit; }
   overflow: hidden;
 }
 
-/* Dorso: distinto y reconocible de un vistazo */
+/* Dorso: el dorso real de la carta. El color de fondo es el mismo verde, por si
+   la imagen tarda: nunca un hueco. */
 .card__face--back {
-  background: repeating-linear-gradient(45deg, #232733 0 6px, #1c2029 6px 12px);
-  border: 1px solid #3a4150;
-  display: grid; place-items: center;
-}
-.card__back-mark {
-  width: 42%; aspect-ratio: 1; border-radius: 50%;
-  border: 2px solid #4b5464;
-  background: radial-gradient(circle at 38% 32%, #39414f, #21262f 70%);
+  background: #1d4f57 url("assets/card-back.png") center / cover no-repeat;
 }
 
 /* Frente */

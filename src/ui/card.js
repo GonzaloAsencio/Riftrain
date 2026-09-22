@@ -98,10 +98,9 @@ function frontFace(card) {
   return face;
 }
 
+/** El dorso real de la carta: la imagen la pone el CSS (assets/card-back.png). */
 function backFace() {
-  const face = el('div', 'card__face card__face--back');
-  face.appendChild(el('div', 'card__back-mark'));
-  return face;
+  return el('div', 'card__face card__face--back');
 }
 
 /**

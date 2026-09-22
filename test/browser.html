@@ -7,7 +7,8 @@
 <link rel="stylesheet" href="../app.css">
 <style>
   body { padding: 0; }
-  #out { font-family: ui-monospace, monospace; font-size: 12px; padding: 10px; }
+  /* pre-wrap: un mensaje largo no puede ensanchar la pagina y romper los checks de layout */
+  #out { font-family: ui-monospace, monospace; font-size: 12px; padding: 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
   .t-pass { color: #2f7d5a; }
   .t-fail { color: #c0453c; font-weight: 700; }
   #stage { padding: 0 12px; }
@@ -153,6 +154,12 @@ check('R3 acertadas y grises en la MISMA fila', tops.size <= 2, `${tops.size} al
 const cardBox = document.querySelector('#hand .card').getBoundingClientRect();
 const ratio = cardBox.width / cardBox.height;
 check('Carta en proporcion 63:88', Math.abs(ratio - 63 / 88) < 0.02, ratio.toFixed(3));
+
+// ---- El dorso es el dorso real de la carta, no un dibujo
+const dorso = getComputedStyle(document.querySelector('#hand .card__face--back'));
+check('Dorso: usa la imagen real', dorso.backgroundImage.includes('assets/card-back.png'),
+  dorso.backgroundImage.slice(0, 60));
+check('Dorso: sin el circulo dibujado', !document.querySelector('#hand .card__back-mark'));
 
 // ---- Sin arte, la carta sigue siendo legible: nunca un hueco
 const sinArte = renderCard(card('x', 'Sin Arte'), { faceUp: true });
