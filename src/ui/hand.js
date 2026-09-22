@@ -45,6 +45,8 @@ export class Hand {
   /** Monta la mano entera BOCA ABAJO. Esto pasa antes de la primera pregunta. */
   mount() {
     this.container.textContent = '';
+    // El contenedor se reusa entre rondas: la mano nueva arranca cerrada.
+    this.container.classList.remove('hand--open');
     this.container.setAttribute('role', 'group');
     this.container.setAttribute('aria-label', `Mano del rival: ${this.cards.length} cartas`);
 

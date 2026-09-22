@@ -214,10 +214,10 @@ if (docSW > docW + 1) {
 check('El documento no scrollea en horizontal', docSW <= docW + 1,
   `scrollWidth ${docSW} vs ${docW} — primero: ${quien || 'nadie'}`);
 
-// Y la mano SI tiene que scrollear sola cuando no entra.
+// Abierta tampoco scrollea: las cartas se achican hasta entrar. Sin barra.
 const manoAbierta = document.getElementById('hand');
-check('La mano abierta contiene su propio scroll',
-  manoAbierta.scrollWidth >= manoAbierta.clientWidth,
+check('La mano abierta no tiene scroll horizontal',
+  manoAbierta.scrollWidth <= manoAbierta.clientWidth + 1,
   `hand ${manoAbierta.scrollWidth} / ${manoAbierta.clientWidth}`);
 
 // ---- ANCHO DE TELEFONO REAL.
@@ -248,6 +248,15 @@ for (const ancho of [320, 360, 390]) {
   check(`Mano de 10 cartas entra en ${ancho}px`, desbordan === 0, `${desbordan} slots se salen`);
   check(`Sin scroll horizontal en ${ancho}px`,
     h.scrollWidth <= h.clientWidth + 1, `${h.scrollWidth} vs ${h.clientWidth}`);
+
+  // Y al cerrar, tampoco: la fila abierta entra entera.
+  peor.revealRest({ stagger: 0 });
+  check(`Cerrada, sin scroll horizontal en ${ancho}px`,
+    h.scrollWidth <= h.clientWidth + 1, `${h.scrollWidth} vs ${h.clientWidth}`);
+
+  // La ronda siguiente monta otra mano en el MISMO contenedor: arranca cerrada.
+  new Hand(h, mano);
+  check(`Mano nueva arranca sin abrir en ${ancho}px`, !h.classList.contains('hand--open'));
   box.remove();
 }
 

@@ -118,16 +118,16 @@ button { font: inherit; color: inherit; }
 /* ---------- LA MANO EN ABANICO ---------- */
 .hand {
   display: flex; justify-content: center; align-items: flex-end;
-  min-height: 172px; padding: 6px 0 2px;
+  min-height: 210px; padding: 6px 0 2px;
   perspective: 1100px;
   max-width: 100%;
 }
-/* El slot pide 96px pero PUEDE encogerse (flex-shrink 1 + min-width 0). Asi la
+/* El slot pide 120px pero PUEDE encogerse (flex-shrink 1 + min-width 0). Asi la
    mano se adapta al ancho real del contenedor sin depender de unidades vw: con 7
    cartas mas un par de falsos positivos, se aprietan en vez de partir la pagina. */
 .hand__slot {
-  width: 96px;
-  margin-inline: -22px;                    /* solapado */
+  width: 120px;
+  margin-inline: -26px;                    /* solapado */
   flex: 0 1 auto;
   min-width: 0;
   transition: transform var(--flip) var(--ease);
@@ -140,19 +140,12 @@ button { font: inherit; color: inherit; }
 
 /* AL CERRAR el abanico se ABRE. Durante la ronda el solapado esta bien: son
    dorsos, no hay nada que leer. Pero el cierre existe para poder LEER que se te
-   escapo, y unas cartas pisadas entre si no se leen. Siguen en la misma fila;
-   si no entran, la fila scrollea sola sin romper la pagina. */
-.hand--open {
-  overflow-x: auto;
-  overflow-y: hidden;
-  justify-content: safe center;
-  scrollbar-width: thin;
-  padding-bottom: 6px;
-}
+   escapo, y unas cartas pisadas entre si no se leen. Siguen en la misma fila y
+   sin scroll: si no entran, se achican (mantener pulsado amplia cualquiera). */
+.hand--open { gap: 4px; }
 .hand--open .hand__slot {
-  flex: 0 0 auto;              /* dejan de apretarse: se leen */
-  margin-inline: -6px;
-  width: 88px;
+  margin-inline: 0;            /* dejan de pisarse: se leen */
+  width: 110px;
 }
 
 /* ---------- LA CARTA ---------- */
@@ -262,6 +255,7 @@ button { font: inherit; color: inherit; }
   position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
   font-size: 8px; font-weight: 700; color: #fff; background: var(--bad);
   padding: 1px 5px; border-radius: 3px; z-index: 3; white-space: nowrap;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis;   /* nunca mas ancha que su carta */
 }
 
 /* ---------- OVERLAY DE CARTA AMPLIADA ---------- */
