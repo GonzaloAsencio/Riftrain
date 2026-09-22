@@ -145,11 +145,13 @@ function paintTable() {
   ui.turn.textContent = `Turno ${s.turn}`;
   ui.deck.textContent = s.deckName;
 
-  // La leyenda esta boca arriba en la mesa real: se muestra. Si el mazo no la trae, no hay hueco.
+  // Leyenda y campeon estan boca arriba en la mesa real: se muestran. Si el mazo no los trae, no hay hueco.
   const deck = app.data.decks.find((d) => d.id === s.deckId);
-  const legend = deck?.legend && app.cardsById.get(deck.legend);
   ui.legend.textContent = '';
-  if (legend) ui.legend.appendChild(renderCard(legend, { faceUp: true }));
+  for (const id of [deck?.legend, deck?.champion]) {
+    const card = id && app.cardsById.get(id);
+    if (card) ui.legend.appendChild(renderCard(card, { faceUp: true }));
+  }
 
   ui.runes.textContent = '';
   for (const r of s.runes) ui.runes.appendChild(renderRune(r));
