@@ -1,5 +1,5 @@
 /** Pure recall reducer: answers never mutate the original runes or previous state. */
-import { validateGroup, isExactCountFor, checkCard } from './deck-combos.js';
+import { validateGroup, isExactCountFor, checkCard, payableCards } from './deck-combos.js';
 import { costLabel } from './cost.js';
 
 const fail = (reason) => ({ ok: false, reason });
@@ -62,6 +62,62 @@ export function advanceRecall(state, scenario, index, target) {
   if (!next.ok) return next;
   next.state.history = [...state.history, { identity: state.scenario.identity,
     level: state.scenario.level, found: state.found, omitted: state.target.count === 0n }];
+  return next;
+}
+
+/**
+ * Muro del mazo: la unidad de respuesta es un cardId. `payable` es el objetivo (sincrono),
+ * `found` lo acertado y `misses` los falsos positivos DEL INTENTO (nunca se persisten).
+ * Nombres V2 temporales: conviven con el reducer de combinaciones hasta que se lo elimine.
+ */
+export function startRecallV2(scenario, index) {
+  if (!Number.isSafeInteger(scenario?.level) || scenario.level < 1 || scenario.level > 12 ||
+      !Array.isArray(scenario.runes) || typeof scenario.identity !== 'string' || !scenario.identity) {
+    return fail('Escenario inválido');
+  }
+  const payable = payableCards(index, scenario);
+  if (!payable.ok) return payable;
+  return { ok: true, state: { scenario, payable: payable.cardIds, found: [], misses: [], history: [],
+    status: payable.cardIds.length ? 'active' : 'empty' } };
+}
+
+export function reduceRecallV2(state, event, index) {
+  const closeLevel = (finalStatus) => state.scenario.level === 12 ? { ...state, status: finalStatus } :
+    { ...state, status: 'next', nextLevel: state.scenario.level + 1 };
+  if (event?.type === 'skip') {
+    if (state?.status !== 'empty') return { kind: 'invalid', state, reason: 'Sólo se puede saltar un nivel sin cartas pagables' };
+    return { kind: 'skipped', state: closeLevel('omitted') };
+  }
+  if (event?.type === 'finish') {
+    if (state?.status !== 'active') return { kind: 'invalid', state, reason: 'Sólo podés terminar un nivel con cartas por nombrar' };
+    const complete = state.misses.length === 0 && state.payable.every((id) => state.found.includes(id));
+    if (!complete) return { kind: 'review', state: { ...state, status: 'review' } };
+    return { kind: 'finished', state: closeLevel('complete') };
+  }
+  if (event?.type === 'repeat') {
+    if (state?.status !== 'review') return { kind: 'invalid', state, reason: 'No hay revisión para continuar' };
+    return { kind: 'repeated', state: { ...state, status: 'active', misses: [] } };
+  }
+  if (event?.type !== 'name') return { kind: 'invalid', state, reason: 'Acción desconocida' };
+  if (!['active', 'empty'].includes(state?.status)) return { kind: 'invalid', state, reason: 'El nivel ya está cerrado' };
+  const { cardId } = event;
+  if (state.found.includes(cardId) || state.misses.includes(cardId)) {
+    return { kind: 'duplicate', state, reason: 'Carta ya nombrada' };
+  }
+  const check = checkCard(cardId, state.scenario, index);
+  if (check.ok) return { kind: 'accepted', state: { ...state, found: [...state.found, cardId] } };
+  if (check.detail === null) return { kind: 'invalid', state, reason: check.reason };
+  return { kind: 'false-positive', reason: check.reason, detail: check.detail,
+    state: { ...state, misses: [...state.misses, cardId] } };
+}
+
+/** Entra al nivel siguiente, generado aparte: nunca se empareja una mesa vieja con un nivel nuevo. */
+export function advanceRecallV2(state, scenario, index) {
+  if (state?.status !== 'next' || scenario?.level !== state.nextLevel) return fail('Avance de nivel inválido');
+  const next = startRecallV2(scenario, index);
+  if (!next.ok) return next;
+  next.state.history = [...state.history, { identity: state.scenario.identity,
+    level: state.scenario.level, found: state.found, omitted: state.payable.length === 0 }];
   return next;
 }
 

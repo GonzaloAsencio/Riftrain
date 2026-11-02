@@ -334,6 +334,98 @@ for (const ancho of [320, 360, 390]) {
   box.remove();
 }
 
+// ---- MURO DEL MAZO (AC-ARC-31, AC-ARC-59): una celda por carta distinta, todas boca abajo.
+const { mountDeckWall } = await import('../src/ui/deck-wall.js');
+const wallHost = document.createElement('div');
+document.querySelector('#stage main').appendChild(wallHost);
+const wallCards = [
+  { ...card('w1', 'Chispa', 1, {}, 'order'), img: PNG },
+  { ...card('w2', 'Descarga', 2, { chaos: 1 }, 'chaos'), img: PNG },
+  { ...card('w3', 'Granada', 3, { order: 2 }, 'order'), img: null },
+  { ...card('w4', 'Motin', 9, {}, 'chaos'), img: PNG },
+];
+const wall = mountDeckWall(wallHost, { cards: wallCards });
+const wslot = (id) => wallHost.querySelector(`.wall__slot[data-card-id="${id}"]`);
+const wstates = () => wallCards.map((c) => wslot(c.id)?.dataset.state).join(',');
+check('AC-ARC-31: el muro tiene una celda por carta distinta, con ids unicos y todas boca abajo',
+  wallHost.querySelectorAll('.wall__slot').length === 4 &&
+  new Set([...wallHost.querySelectorAll('.wall__slot')].map((s) => s.dataset.cardId)).size === 4 &&
+  wstates() === 'down,down,down,down' &&
+  [...wallHost.querySelectorAll('.wall__slot > .card')].every((c) => c.dataset.face === 'down'));
+check('AC-ARC-31: el dorso es el real, sin texto "desconocido", sin contadores ni tabindex',
+  /card-back\.png/.test(getComputedStyle(wslot('w1').querySelector('.card__face--back')).backgroundImage) &&
+  !/desconocid/i.test(wallHost.textContent) && !wallHost.querySelector('[tabindex]') &&
+  wslot('w1').querySelector('.card').getAttribute('aria-label') === 'Carta boca abajo');
+wall.reveal('w2', { fresh: true });
+check('AC-ARC-31: reveal da vuelta SOLO esa celda, en su lugar, con el brillo de su dominio',
+  wstates() === 'down,found,down,down' && wslot('w2').querySelector('.card').dataset.face === 'up' &&
+  wslot('w2').dataset.glow === 'chaos' && wslot('w2').hasAttribute('data-fresh') &&
+  wslot('w2').style.getPropertyValue('--glow') === '#7a4fa3' &&
+  getComputedStyle(wslot('w2').querySelector('.card')).boxShadow !== 'none' &&
+  !wslot('w1').hasAttribute('data-fresh') && !wslot('w1').hasAttribute('data-glow'));
+check('AC-ARC-59: la carta revelada es la imagen oficial (renderCard), no un placeholder de texto',
+  wslot('w2').querySelector('.card__face--image img')?.getAttribute('src') === PNG);
+wall.reveal('w1', { fresh: true });
+check('AC-ARC-31: el brillo vive sólo en la ultima revelada; la anterior sigue levantada sin brillo',
+  wstates() === 'found,found,down,down' && wslot('w1').dataset.glow === 'order' &&
+  wallHost.querySelectorAll('[data-fresh]').length === 1 && !wslot('w2').hasAttribute('data-glow'));
+wall.setFound(['w3']);
+check('AC-ARC-31: setFound deja levantadas sólo esas, sin brillo, y tapa el resto',
+  wstates() === 'down,down,found,down' && wallHost.querySelectorAll('[data-fresh],[data-glow]').length === 0 &&
+  wslot('w1').querySelector('.card').dataset.face === 'down');
+wall.showOutcomes([
+  { cardId: 'w1', outcome: 'hit', reason: null },
+  { cardId: 'w2', outcome: 'missed', reason: 'Se podía pagar: 2 + 1 Chaos' },
+  { cardId: 'w3', outcome: 'false-positive', reason: 'Pide 2 Order y no hay runas Order disponibles' },
+  { cardId: 'w4', outcome: 'irrelevant', reason: null },
+]);
+check('AC-ARC-31: showOutcomes marca los cuatro estados; irrelevante queda boca abajo',
+  wstates() === 'found,missed,false-positive,irrelevant' &&
+  ['w1', 'w2', 'w3'].every((id) => wslot(id).querySelector('.card').dataset.face === 'up') &&
+  wslot('w4').querySelector('.card').dataset.face === 'down' &&
+  wslot('w1').dataset.glow === 'order' && !wslot('w1').hasAttribute('data-fresh'));
+check('AC-ARC-31: sólo missed y falso positivo explican; son focusables y llevan el motivo en el aria-label',
+  wslot('w2').tabIndex === 0 && wslot('w3').tabIndex === 0 &&
+  wslot('w2').getAttribute('aria-label').includes('Se podía pagar: 2 + 1 Chaos') &&
+  wslot('w3').getAttribute('aria-label').includes('no hay runas Order') &&
+  !wslot('w1').hasAttribute('tabindex') && !wslot('w4').hasAttribute('tabindex') &&
+  !wslot('w4').hasAttribute('data-reason') && wslot('w3').querySelector('.wall__tag')?.textContent === 'NO ENTRABA');
+const why = wallHost.querySelector('.wall__why');
+check('AC-ARC-31: el motivo vive en una region role=status siempre presente y vacía (así el lector la anuncia al llenarse)',
+  why?.getAttribute('role') === 'status' && why.hidden === false && why.textContent === '');
+wslot('w2').dispatchEvent(new Event('focusin', { bubbles: true }));
+const whyFocus = why.textContent === 'Se podía pagar: 2 + 1 Chaos';
+wslot('w3').dispatchEvent(new Event('pointerenter'));
+const whyHover = why.textContent.includes('no hay runas Order');
+wslot('w2').click();
+check('AC-ARC-31: focusin, pointerenter y click muestran el motivo de esa celda',
+  whyFocus && whyHover && why.textContent === 'Se podía pagar: 2 + 1 Chaos');
+wslot('w4').dispatchEvent(new Event('pointerenter'));
+check('AC-ARC-31: una celda sin motivo vacía la explicación: nunca queda el motivo de otra carta',
+  why.textContent === '' && (() => {
+    wslot('w3').dispatchEvent(new Event('focusin', { bubbles: true }));
+    wslot('w1').dispatchEvent(new Event('pointerenter'));
+    return why.textContent === '';
+  })());
+wall.showOutcomes([
+  { cardId: 'w1', outcome: 'hit', reason: 'motivo suelto' },
+  { cardId: 'w3', outcome: 'false-positive', reason: 'Pide 2 Order y no hay runas Order disponibles' },
+]);
+check('AC-ARC-31: un acierto nunca explica ni se vuelve focusable, aunque le llegue un motivo',
+  !wslot('w1').hasAttribute('tabindex') && !wslot('w1').hasAttribute('data-reason'));
+wall.reveal('w3');
+check('AC-ARC-31: reveal sobre una celda con resultado le quita motivo, foco y etiqueta',
+  wslot('w3').dataset.state === 'found' && !wslot('w3').hasAttribute('tabindex') &&
+  !wslot('w3').hasAttribute('data-reason') && !wslot('w3').hasAttribute('aria-label') && !wslot('w3').querySelector('.wall__tag'));
+wall.reset();
+check('AC-ARC-31: reset vuelve todo boca abajo, sin motivos, etiquetas ni foco',
+  wstates() === 'down,down,down,down' && why.textContent === '' && why.hidden === false &&
+  !wallHost.querySelector('[tabindex], [data-reason], .wall__tag, [data-glow]') &&
+  wallHost.querySelectorAll('.wall__slot > .card[data-face="up"]').length === 0);
+wall.destroy();
+check('AC-ARC-31: destroy deja el contenedor vacio', wallHost.children.length === 0);
+wallHost.remove();
+
 // U6: ejercicio de búsqueda visual, separado de la mano legacy.
 const recallMount = document.createElement('div');
 recallMount.id = 'recall-browser-stage';
