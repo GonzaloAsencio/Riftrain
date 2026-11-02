@@ -35,6 +35,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
   let runSeed = seed;
   let composer = null;
   let wall = null;
+  let outcomes = [];
   const normalized = normalizeDeck(deck, cards, { policy: 'positive-energy' });
   const cardsById = new Map(cards.map((card) => [card.id, card]));
   const panel = node('section', 'recall');
@@ -173,8 +174,14 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     repeat.hidden = state.status !== 'review';
     message.textContent = MESSAGES[state.status] ?? '';
     if (CLOSED.includes(state.status)) {
-      wall.showOutcomes(levelCardOutcomes(normalized.index, state.scenario, state.found, state.misses).cards);
+      outcomes = levelCardOutcomes(normalized.index, state.scenario, state.found, state.misses).cards;
+      wall.showOutcomes(outcomes);
     }
+  }
+
+  /** El boton que se toco se oculta: el foco pasa a lo que sigue en vez de caer al <body>. */
+  function focusNextAction() {
+    [repeat, next].find((item) => !item.hidden)?.focus();
   }
 
   function name(cardId) {
@@ -203,6 +210,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     composer.clear();
     draw();
     save();
+    focusNextAction();
   });
   finish.addEventListener('click', () => {
     if (disposed || state?.status !== 'active') return;
@@ -213,6 +221,9 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     composer.clear();
     draw();
     save();
+    // Las que faltaron las marca el motor (missed); un falso positivo solo no es "faltar".
+    if (outcomes.some((card) => card.outcome === 'missed')) feedback.notify('Te faltaron cartas. Revisá las que están en gris');
+    focusNextAction();
   });
   repeat.addEventListener('click', () => {
     if (disposed || state?.status !== 'review') return;
@@ -242,7 +253,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     state = started.state;
     mountWall();
     draw();
-    if (previous) save();
+    if (previous) { save(); composer?.focus(); }
   }
 
   if (!normalized.ok) {

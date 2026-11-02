@@ -764,7 +764,10 @@ action('finish').click();
 check('AC-ARC-45: lo pagable completo y cero falsos positivos ofrece avanzar, sin Repetir ni grises',
   action('next').hidden === false && action('repeat').hidden === true &&
   fstates() === 'found,irrelevant,found' && flowMount.querySelectorAll('[data-state="missed"]').length === 0 && saves === 5);
+check('AC-ARC-60: completo, el foco pasa a Siguiente nivel y no hay toast de faltantes',
+  document.activeElement === action('next') && toastText() === null);
 action('next').click();
+check('AC-ARC-60: en el nivel nuevo el foco vuelve al input', document.activeElement === flowInput());
 check('AC-ARC-21: avanzar genera el nivel 4 con otra mesa y un muro nuevo boca abajo',
   flowMount.textContent.includes('Nivel 4') && flowMount.querySelectorAll('.rune:not(.rune--spent)').length === 4 &&
   fstates() === 'down,down,down' && saves === 6 && actualStore.load({}).recall.schema === 2);
@@ -882,6 +885,11 @@ closeFinish.click();
 closeMount.getAnimations({ subtree: true }).forEach((animation) => animation.finish());
 const opacityOf = (slot) => Number(getComputedStyle(slot).opacity);
 check('AC-ARC-41: Terminé pasa la pantalla a fase closed', closeMount.querySelector('.recall').dataset.phase === 'closed');
+check('AC-ARC-46: si faltó alguna pagable, avisa en un toast y ofrece Repetir nivel, sin avanzar',
+  closeMount.querySelector('.recall-feedback__toast:not([hidden])')?.textContent === 'Te faltaron cartas. Revisá las que están en gris' &&
+  closeMount.querySelector('[data-action="repeat"]').hidden === false && closeMount.querySelector('[data-action="next"]').hidden === true);
+check('AC-ARC-60: al cerrar, el foco pasa a Repetir nivel (Terminé se oculta y no lo pierde)',
+  document.activeElement === closeMount.querySelector('[data-action="repeat"]'));
 check('AC-ARC-42: acierto levantado y con el brillo de su dominio',
   cslot('alpha').dataset.state === 'found' && cslot('alpha').dataset.glow === 'order' &&
   cslot('alpha').querySelector('.card').dataset.face === 'up' && opacityOf(cslot('alpha')) === 1);
