@@ -389,7 +389,9 @@ button { font: inherit; color: inherit; }
 /* La leyenda se queda dentro de la banda aunque la pantalla sea ancha. */
 .recall-band .legend { position: static; width: auto; }
 /* La mano del rival: siete dorsos en abanico, sólo para dar contexto. */
-.recall-hand { display: flex; justify-content: center; padding: 12px 0 0; pointer-events: none; }
+/* flex-start: si la fila de la banda crece (runas en dos filas), los dorsos NO se estiran:
+   con aspect-ratio, estirarlos los agranda y el abanico se sale de la pantalla. */
+.recall-hand { display: flex; align-items: flex-start; justify-content: center; padding: 12px 0 0; pointer-events: none; }
 .recall-hand__back {
   flex: 0 0 auto; width: 44px; aspect-ratio: 63 / 88; border-radius: 5px; margin-inline: -7px;
   box-shadow: 0 2px 6px rgba(0,0,0,.55);
@@ -487,6 +489,13 @@ button { font: inherit; color: inherit; }
   .recall-band .board { grid-area: board; margin: 0; }
   .recall-band .legend { flex-direction: row; flex-basis: auto; }
   .recall-band .legend .card { width: 56px; }
+  /* La mesa mas ancha (12 runas, 9 tumbadas) tiene que entrar en UNA fila: si se parte en dos,
+     la banda crece y el muro pierde el alto que necesita. 44px = el ancho de los dorsos. */
+  .recall-band .runes { gap: 8px 6px; }
+  .recall-band .rune__seat { width: 44px; height: 62px; }
+  .recall-band .rune__card { width: 44px; }
+  .recall-band .rune--spent .rune__seat { width: 62px; }
+  .recall-band .rune__state { display: none; }   /* el rotulo no ensancha la runa; aria-label lo conserva */
   .recall-hand { grid-area: hand; padding: 8px 20px 0; }
   .recall__wall { position: relative; min-height: 0; }
   .wall { position: absolute; inset: 0; margin: 0; container-type: size; }

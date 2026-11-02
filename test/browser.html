@@ -941,7 +941,20 @@ const phoneShape = [...liveDoc.querySelectorAll('.recall > *')].map((item) => it
 liveFrame.remove();
 
 // ---- DESKTOP (AC-ARC-54, 57): pantalla completa 1280x800, sin scroll de página.
+// Peor caso FIJO, no el seed al azar de la app: seed 1234 nivel 3 = 12 runas con 9 agotadas (tumbadas,
+// las mas anchas), asi las runas van en dos filas y la banda crece. La historia se juega de verdad.
 actualStore.clear();
+const deskIndex = normalizeDeck(liveDeck, realData.cards, { policy: 'positive-energy' }).index;
+const deskScenario = (level) => createRecallScenario(liveDeck, deskIndex, 1234, level).scenario;
+let deskState = startRecall(deskScenario(1), deskIndex).state;
+for (let level = 2; level <= 3; level++) {
+  for (const cardId of deskState.payable) deskState = reduceRecall(deskState, { type: 'name', cardId }, deskIndex).state;
+  deskState = reduceRecall(deskState, { type: deskState.payable.length ? 'finish' : 'skip' }, deskIndex).state;
+  deskState = advanceRecall(deskState, deskScenario(level), deskIndex).state;
+}
+check('AC-ARC-54: el fixture de escritorio es la mesa más ancha (12 runas, 9 agotadas), guardada por el store real',
+  deskState.scenario.level === 3 && deskState.scenario.runes.length === 12 && deskState.scenario.runes.filter((r) => !r.ready).length === 9 && actualStore.saveRecallSnapshot(deskState).ok === true,
+  `${deskState.scenario.level} / ${deskState.scenario.runes.length}`);
 const deskFrame = document.createElement('iframe');
 deskFrame.title = 'App real en escritorio';
 deskFrame.style.cssText = 'width:1280px;height:800px;border:0;display:block';
@@ -962,6 +975,10 @@ check('AC-ARC-54: a 1280x800 el orden es banda, muro, dock (de arriba hacia abaj
 check('AC-ARC-54: la página entera cabe en 1280x800 sin scroll, ni vertical ni horizontal',
   deskDoc.documentElement.scrollHeight <= deskWin.innerHeight && deskDoc.documentElement.scrollWidth <= deskDoc.documentElement.clientWidth + 1,
   `${deskDoc.documentElement.scrollHeight} / ${deskWin.innerHeight}`);
+check('AC-ARC-54: la mesa más ancha entra en una sola fila de runas y la mano no se estira',
+  new Set([...deskDoc.querySelectorAll('.recall-band .rune')].map((rune) => Math.round(rune.getBoundingClientRect().bottom))).size === 1 &&
+  [...deskDoc.querySelectorAll('.recall-hand__back')].every((back) => Math.abs(back.offsetHeight - 44 * 88 / 63) < 2),
+  `${new Set([...deskDoc.querySelectorAll('.recall-band .rune')].map((rune) => Math.round(rune.getBoundingClientRect().bottom))).size} filas; runes=${Math.round(rect('.recall-band .runes').width)} w=${[...deskDoc.querySelectorAll('.recall-band .rune')].map((r) => Math.round(r.getBoundingClientRect().width) + '/' + r.querySelector('.rune__label').offsetWidth).join(' ')}`);
 check('AC-ARC-54: runas, leyenda y los siete dorsos quedan dentro de la banda',
   deskDoc.querySelectorAll('.recall-band .rune').length > 0 &&
   [...deskDoc.querySelectorAll('.recall-band .rune, .recall-band .legend .card, .recall-hand__back')]
@@ -971,7 +988,7 @@ check('AC-ARC-54: todo el muro es visible dentro de su zona, en 7 columnas y con
   const cards = wallSlots.map((slot) => slot.querySelector('.card').getBoundingClientRect());
   return wallSlots.length > 10 && lefts.size === 7 && wallSlots.every((slot) => inside(slot.getBoundingClientRect(), rect('.wall'))) &&
     cards.every((box) => Math.abs(box.width / box.height - 63 / 88) < 0.02) && cards[0].width > 60;
-})());
+})(), (() => { const c = wallSlots.map((slot) => slot.querySelector('.card').getBoundingClientRect()); const w = rect('.wall'); return `n=${wallSlots.length} cols=${new Set(wallSlots.map((slot) => Math.round(slot.getBoundingClientRect().left))).size} out=${wallSlots.filter((slot) => !inside(slot.getBoundingClientRect(), w)).length} w=${Math.round(c[0].width)} h=${Math.round(c[0].height)} wall=${Math.round(w.width)}x${Math.round(w.height)}`; })());
 check('AC-ARC-54: la mesa es oscura de punta a punta y no hay un panel claro suelto',
   (getComputedStyle(deskDoc.body).backgroundColor.match(/\d+/g) ?? []).slice(0, 3).every((value) => Number(value) < 60));
 check('AC-ARC-57: en escritorio la pantalla es una grilla de cuatro filas; en una ventana baja vuelve a fluir',
@@ -989,6 +1006,15 @@ check('AC-ARC-54: las sugerencias se abren hacia arriba y no agregan scroll a la
   dq('.recall-composer__list').getBoundingClientRect().bottom <= deskInput.getBoundingClientRect().top + 1 &&
   deskDoc.documentElement.scrollHeight <= deskWin.innerHeight,
   `${deskDoc.querySelectorAll('.recall [role="option"]').length} ${dq('.recall-composer__list').getBoundingClientRect().bottom} ${deskInput.getBoundingClientRect().top} ${deskDoc.documentElement.scrollHeight}`);
+// Escritorio angosto: la misma mesa ancha ya no entra en una fila. Partida en dos, la mano no se estira.
+deskFrame.style.width = '1024px';
+const narrowRows = new Set([...deskDoc.querySelectorAll('.recall-band .rune')].map((rune) => Math.round(rune.getBoundingClientRect().bottom))).size;
+check('AC-ARC-54: a 1024 con las runas en dos filas, los dorsos conservan su tamaño y nada desborda',
+  narrowRows > 1 && getComputedStyle(dq('.recall')).display === 'grid' &&
+  [...deskDoc.querySelectorAll('.recall-hand__back')].every((back) => Math.abs(back.offsetHeight - 44 * 88 / 63) < 2) &&
+  deskDoc.documentElement.scrollWidth <= deskDoc.documentElement.clientWidth + 1,
+  `${narrowRows} filas, sw=${deskDoc.documentElement.scrollWidth}`);
+deskFrame.style.width = '1280px';
 deskFrame.style.height = '600px';
 check('AC-ARC-57: con ventana baja (1280x600) la misma pantalla deja de ser grilla de pantalla completa',
   getComputedStyle(dq('.recall')).display !== 'grid');

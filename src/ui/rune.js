@@ -47,7 +47,13 @@ export function renderRune(r) {
 
   const domain = DOMAIN_LABEL[r.domain] ?? r.domain;
   const caption = el('span', 'rune__label');
-  caption.textContent = r.ready ? domain : `${domain} · agotada`;
+  caption.textContent = domain;
+  if (!r.ready) {
+    // Aparte, para que la banda de escritorio lo pueda ocultar: tumbada ya se ve agotada.
+    const state = el('span', 'rune__state');
+    state.textContent = ' · agotada';
+    caption.appendChild(state);
+  }
   node.appendChild(caption);
 
   const label = `${domain}${r.ready ? '' : ' agotada'}`;
