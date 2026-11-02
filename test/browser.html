@@ -544,6 +544,7 @@ dockMount.remove();
 
 // ---- LA RONDA COMPLETA: dock + muro + motor, con el store real (AC-ARC-12..24, 31..40, 50, 51).
 const { startRecall, reduceRecall, advanceRecall } = await import('../src/engine/recall-progress.js');
+const { rejectionRunes } = await import('../src/engine/cost.js');
 const actualStore = await import('../src/store.js');
 const { mountRecall } = await import('../src/ui/recall.js');
 const realData = await (await fetch('../data/cards.json')).json();
@@ -582,6 +583,8 @@ const mountFlow = () => mountRecall(flowMount, { deck: flowDeck, cards: flowCard
 const fslot = (id) => flowMount.querySelector(`.wall__slot[data-card-id="${id}"]`);
 const fstates = () => ['alpha', 'beta', 'gamma'].map((id) => fslot(id)?.dataset.state).join(',');
 const stampShown = () => { const s = flowMount.querySelector('.recall-stamp'); return !!s && !s.hidden; };
+const lit = (root) => [...root.querySelectorAll('.rune')].flatMap((rune, i) => (rune.dataset.highlight === 'true' ? [i] : []));
+const missingMark = (root) => root.querySelector('.runes__missing:not([hidden])');
 const toastText = () => flowMount.querySelector('.recall-feedback__toast:not([hidden])')?.textContent ?? null;
 const action = (name) => flowMount.querySelector(`[data-action="${name}"]`);
 const removedUi = (root) => !root.querySelector('.recall-tray, .recall-results, .recall-missed, .recall-composer__preview, .recall-composer__choice, [data-action="inc"], [data-action="dec"], [data-page], .recall-feedback__fan, .recall-feedback__slot, .recall-feedback__badge') &&
@@ -633,11 +636,50 @@ check('AC-ARC-35: carta impagable muestra el sello NO ENTRA con el motivo exacto
   flowMount.querySelector('.recall-stamp').getAttribute('aria-live') === 'polite');
 check('AC-ARC-35: la celda sigue boca abajo, no se guarda nada y no hay toast duplicado',
   fstates() === 'down,down,down' && saves === 0 && toastText() === null);
+check('AC-ARC-35: el input queda marcado como rechazado mientras el sello está visible',
+  flowInput().getAttribute('aria-invalid') === 'true');
+const betaRunes = rejectionRunes(checkCard('beta', scenarioAt(3), flowIndex).detail, scenarioAt(3).runes);
+check('AC-ARC-36: sin runas del dominio pedido se marca el dominio y NO se resalta ninguna runa ajena',
+  betaRunes.missingDomain === 'chaos' && betaRunes.indices.length === 0 && lit(flowMount).length === 0 &&
+  missingMark(flowMount)?.dataset.domain === 'chaos' && /Chaos/.test(missingMark(flowMount).textContent));
 type(flowMount, 'g');
-check('AC-ARC-37: editar el input limpia el sello', !stampShown());
+check('AC-ARC-37: editar el input limpia el sello y la marca del dominio',
+  !stampShown() && !missingMark(flowMount) && lit(flowMount).length === 0 &&
+  flowInput().getAttribute('aria-invalid') !== 'true');
+// Los falsos positivos son de la sesión: remontar deja volver a sellar beta sin tocar el store.
+flow.destroy();
+flow = mountFlow();
+await flow.ready;
+press(type(flowMount, 'bet'), 'Enter');
+check('AC-ARC-35: tras remontar, beta vuelve a sellar y a marcar el dominio',
+  stampShown() && !!missingMark(flowMount) && flowInput().getAttribute('aria-invalid') === 'true' && saves === 0);
+press(type(flowMount, 'zzzz'), 'Enter');
+check('AC-ARC-37: nombrar otra cosa (otro aviso) limpia el sello y la marca del dominio',
+  !stampShown() && !missingMark(flowMount) && flowInput().getAttribute('aria-invalid') !== 'true' && toastText() !== null);
+type(flowMount, 'g');
 press(type(flowMount, ''), 'Enter');
 check('AC-ARC-40: Enter con el input vacío avisa en un toast y no cambia nada',
   toastText() === 'Nombrá una carta antes de seguir' && fstates() === 'down,down,down' && saves === 0);
+
+// Rechazo por Energía: se resaltan EXACTAMENTE las runas abiertas, ninguna agotada.
+const energyMount = document.createElement('div');
+document.querySelector('#stage main').appendChild(energyMount);
+const energyDeck = { id: 'energy', name: 'Mazo de energía', runes: { order: 12 },
+  cards: [{ cardId: 'alpha', qty: 1 }, { cardId: 'gamma', qty: 1 }] };
+const energyFlow = mountRecall(energyMount, { deck: energyDeck, cards: flowCards, seed: 7, feedbackOptions, storage: {
+  load: (fallback) => fallback, loadRecallSnapshot: () => ({ ok: false }), saveRecallSnapshot: () => ({ ok: true, persisted: true }),
+} });
+await energyFlow.ready;
+press(type(energyMount, 'gam'), 'Enter');
+const openRunes = [...energyMount.querySelectorAll('.rune')].flatMap((rune, i) => (rune.classList.contains('rune--spent') ? [] : [i]));
+check('AC-ARC-36: un rechazo por Energía resalta exactamente las runas abiertas y no marca dominio',
+  energyMount.querySelector('.recall-stamp:not([hidden])') !== null && openRunes.length > 0 &&
+  lit(energyMount).join() === openRunes.join() && !missingMark(energyMount),
+  `${lit(energyMount)} vs ${openRunes}`);
+type(energyMount, 'a');
+check('AC-ARC-37: editar el input apaga el resaltado de las runas', lit(energyMount).length === 0);
+energyFlow.destroy();
+energyMount.remove();
 
 // Acierto: se da vuelta SOLO esa celda, con el brillo de su dominio.
 press(type(flowMount, 'alp'), 'Enter');

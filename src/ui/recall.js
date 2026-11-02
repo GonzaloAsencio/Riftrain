@@ -1,6 +1,8 @@
 /** Mountable controller for the deck wall; the engine alone decides validity. */
 import { normalizeDeck } from '../engine/deck-combos.js';
 import { createRecallScenario } from '../engine/recall-scenario.js';
+import { rejectionRunes } from '../engine/cost.js';
+import { DOMAIN_LABEL } from '../engine/runes.js';
 import { startRecall, reduceRecall, advanceRecall, levelCardOutcomes } from '../engine/recall-progress.js';
 import * as defaultStore from '../store.js';
 import { renderCard } from './card.js';
@@ -50,6 +52,9 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
   const runes = node('div', 'runes');
   runes.setAttribute('aria-label', 'Runas en mesa');
   board.append(publicCards, runes);
+  const missing = node('span', 'runes__missing');
+  missing.setAttribute('role', 'note');
+  missing.hidden = true;
   // La mano del rival: siete dorsos, puro contexto. El abanico lo da el CSS con --i.
   const hand = node('div', 'recall-hand');
   hand.setAttribute('aria-hidden', 'true');
@@ -108,6 +113,29 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     runes.appendChild(node('span', 'runes__meta',
       `${open} ${open === 1 ? 'abierta' : 'abiertas'} · ${exhausted} ${exhausted === 1 ? 'agotada' : 'agotadas'} · ${scenario.deckRemaining} en el Mazo de Runas`));
     for (const rune of scenario.runes) runes.appendChild(renderRune(rune));
+    missing.hidden = true;
+    runes.appendChild(missing);
+  }
+
+  /** Rechazo visible: las runas que lo explican, o el dominio que falta. El motor decide cuales. */
+  function markRejection(detail) {
+    const { indices, missingDomain } = rejectionRunes(detail, state.scenario.runes);
+    const nodes = runes.querySelectorAll('.rune');
+    for (const i of indices) nodes[i]?.setAttribute('data-highlight', 'true');
+    if (missingDomain) {
+      missing.dataset.domain = missingDomain;
+      missing.textContent = `Sin runas ${DOMAIN_LABEL[missingDomain] ?? missingDomain} en mesa`;
+      missing.hidden = false;
+    }
+    composer?.flagRejected(true);
+  }
+
+  /** Sello, aviso, runas resaltadas y marca del input se van juntos. */
+  function clearRejection() {
+    feedback.reset();
+    for (const rune of runes.querySelectorAll('[data-highlight]')) rune.removeAttribute('data-highlight');
+    missing.hidden = true;
+    composer?.flagRejected(false);
   }
 
   function save() {
@@ -133,7 +161,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     showBoard(state.scenario);
     const playable = ['active', 'empty'].includes(state.status);
     if (!composer && normalized.ok) composer = mountComposer(inputHost, {
-      cards: searchCards, onName: name, onUserEdit: () => feedback.reset(),
+      cards: searchCards, onName: name, onUserEdit: clearRejection,
     });
     composer?.setDisabled(!playable);
     skip.hidden = state.status !== 'empty';
@@ -148,11 +176,11 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
 
   function name(cardId) {
     if (disposed || !state || !['active', 'empty'].includes(state.status)) return;
+    clearRejection();
     if (cardId == null) { feedback.notify('Nombrá una carta antes de seguir'); return; }
     const answer = reduceRecall(state, { type: 'name', cardId }, normalized.index);
     if (answer.kind === 'accepted') {
       state = answer.state;
-      feedback.reset();
       wall.reveal(cardId, { fresh: true });
       composer.clear();
       draw();
@@ -160,6 +188,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     } else if (answer.kind === 'false-positive') {
       state = answer.state;
       feedback.reject(answer.reason);
+      markRejection(answer.detail);
     } else feedback.notify(answer.reason);
   }
   skip.addEventListener('click', () => {
@@ -167,7 +196,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     const answer = reduceRecall(state, { type: 'skip' }, normalized.index);
     if (answer.kind !== 'skipped') { message.textContent = answer.reason; return; }
     state = answer.state;
-    feedback.reset();
+    clearRejection();
     composer.clear();
     draw();
     save();
@@ -177,7 +206,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     const answer = reduceRecall(state, { type: 'finish' }, normalized.index);
     if (!['review', 'finished'].includes(answer.kind)) { message.textContent = answer.reason; return; }
     state = answer.state;
-    feedback.reset();
+    clearRejection();
     composer.clear();
     draw();
     save();
@@ -187,7 +216,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     const answer = reduceRecall(state, { type: 'repeat' }, normalized.index);
     if (answer.kind !== 'repeated') { message.textContent = answer.reason; return; }
     state = answer.state;
-    feedback.reset();
+    clearRejection();
     wall.setFound(state.found);
     draw();
     save();
@@ -201,7 +230,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
   /** Arranca (o avanza a) un nivel: todo es sincrono, no hay objetivo que calcular aparte. */
   function prepare(level, previous = null) {
     if (disposed) return;
-    feedback.reset();
+    clearRejection();
     const created = createRecallScenario(deck, normalized.index, runSeed, level);
     if (!created.ok) { message.textContent = created.reason; return; }
     const started = previous ? advanceRecall(previous, created.scenario, normalized.index) :
