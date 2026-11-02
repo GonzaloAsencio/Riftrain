@@ -14,6 +14,7 @@
   --accent-ink: #ffffff;
   --ok: #2f7d5a;
   --bad: #c0453c;
+  --warn: #865510;           /* avisos: no es un error, es "ojo" (>= 5:1 sobre --bg) */
 
   --fury: #c0453c;  --calm: #3e8e6e;  --mind: #3a6ea5;
   --body: #b07333;  --order: #c0a02a; --chaos: #7a4fa3;
@@ -136,6 +137,10 @@ button { font: inherit; color: inherit; }
 .rune__label { font-size: 10px; font-weight: 650; color: #d3d8e0; white-space: nowrap; }
 .rune--spent .rune__seat { width: 70px; }
 .rune--spent .rune__card { transform: rotate(90deg); filter: brightness(.5); }
+.rune[data-highlight="true"] .rune__card { box-shadow: 0 0 0 2px var(--bad), 0 0 10px var(--bad); }
+/* En la mesa oscura el rojo de --bad no llega a 4.5:1 como texto: rojo claro, borde rojo. */
+.runes__missing { display: inline-block; margin-left: 8px; padding: 0 6px; border: 1px dashed var(--bad); border-radius: 4px; color: #f2a39b; font-size: 12px; font-weight: 600; }
+.runes__missing[hidden] { display: none; }
 .rune--spent .rune__label { color: #7d8594; font-weight: 500; }
 .runes__meta {
   flex-basis: 100%; order: -1;                    /* el resumen arriba, en palabras */
@@ -197,7 +202,7 @@ button { font: inherit; color: inherit; }
 
 /* Dorso: el dorso real de la carta. El color de fondo es el mismo verde, por si
    la imagen tarda: nunca un hueco. */
-.card__face--back {
+.card__face--back, .recall-hand__back {
   background: #1d4f57 url("assets/card-back.png") center / cover no-repeat;
 }
 
@@ -379,10 +384,22 @@ button { font: inherit; color: inherit; }
 
 /* Recall: la mesa y las cartas existentes siguen siendo el centro de la tarea. */
 .recall { padding-bottom: 28px; min-width: 0; }
-.recall__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 14px 0 12px; }
+.recall__head { display: flex; align-items: baseline; gap: 12px; margin: 14px 0 12px; }
 .recall__head h1 { margin: 0; font-size: clamp(20px, 5vw, 26px); letter-spacing: -.025em; line-height: 1.2; }
-.recall__level { flex: 0 0 auto; font-size: 13px; font-weight: 700; color: var(--ink-soft); }
+.recall__level { flex: 0 0 auto; font-size: 15px; font-weight: 700; color: var(--ink); }
 .recall__table { min-width: 0; }
+/* La leyenda se queda dentro de la banda aunque la pantalla sea ancha. */
+.recall-band .legend { position: static; width: auto; }
+/* La mano del rival: siete dorsos en abanico, sólo para dar contexto. */
+/* flex-start: si la fila de la banda crece (runas en dos filas), los dorsos NO se estiran:
+   con aspect-ratio, estirarlos los agranda y el abanico se sale de la pantalla. */
+.recall-hand { display: flex; align-items: flex-start; justify-content: center; padding: 12px 0 0; pointer-events: none; }
+.recall-hand__back {
+  flex: 0 0 auto; width: 44px; aspect-ratio: 63 / 88; border-radius: 5px; margin-inline: -7px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.55);
+  transform-origin: 50% 120%;
+  transform: rotate(calc((var(--i) - 3) * 4deg));
+}
 .recall__table .board { margin-bottom: 0; }
 .recall__feedback { min-height: 1.5em; margin-top: 8px; }
 .recall-feedback { min-width: 0; }
@@ -391,6 +408,7 @@ button { font: inherit; color: inherit; }
 .recall-stamp strong { padding: 2px 8px; border-radius: 4px; background: var(--bad); color: #fff; letter-spacing: .06em; }
 .recall-feedback__toast { font-size: 13px; font-weight: 700; color: var(--ink-soft); }
 .recall-feedback__toast[hidden] { display: none; }
+.recall-feedback__toast[data-tone="warning"] { color: var(--warn); }
 .recall__message { min-height: 1.5em; margin: 9px 0; font-size: 13px; color: var(--ink-soft); }
 .recall__controls { display: flex; margin-top: 12px; }
 .recall__controls button[hidden] { display: none; }
@@ -401,6 +419,7 @@ button { font: inherit; color: inherit; }
   background: var(--surface); color: var(--ink); caret-color: var(--accent);
 }
 .recall-composer__input::placeholder { color: var(--ink-soft); }
+.recall-composer__input[aria-invalid="true"] { border-color: var(--bad); }
 .recall-composer__list { max-height: 260px; overflow-y: auto; border-radius: 8px; }
 .recall-composer__option {
   display: flex; align-items: center; gap: 12px; min-height: 68px; width: 100%;
@@ -424,9 +443,12 @@ button { font: inherit; color: inherit; }
 
 /* ---------- MURO DEL MAZO ---------- */
 /* Una celda por carta distinta. El estado se lee en la imagen (levantada, gris, inclinada), no en un numero. */
-.wall { min-width: 0; margin-top: 14px; }
-.wall__grid { display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); gap: 8px; }
-@media (min-width: 700px) { .wall__grid { --cols: 7; } }
+.wall { min-width: 0; margin-top: 14px; container: wall / inline-size; }
+.wall__grid { --gap: 8px; display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); gap: var(--gap); }
+/* Las columnas las decide el ancho REAL del muro, no el de la ventana. */
+@container wall (min-width: 420px) { .wall__grid { --cols: 5; } }
+@container wall (min-width: 560px) { .wall__grid { --cols: 6; } }
+@container wall (min-width: 760px) { .wall__grid { --cols: 7; } }
 .wall__slot { position: relative; min-width: 0; transition: transform var(--flip) var(--ease), opacity var(--flip) var(--ease); }
 /* El brillo del dominio vive sólo en la ultima carta nombrada (y en los aciertos al cerrar). */
 .wall__slot[data-glow] .card { box-shadow: 0 0 0 2px var(--glow), 0 0 18px 2px var(--glow); }
@@ -443,6 +465,65 @@ button { font: inherit; color: inherit; }
   font-size: 8px; font-weight: 700;
 }
 .wall__why { margin: 10px 0 0; font-size: 13px; color: var(--ink-soft); min-height: 1.5em; }
+
+/* ---------- ESCRITORIO: la pantalla completa, sin scroll de página ----------
+   Mismos elementos que en el teléfono; sólo cambia la disposición. Encabezado, banda,
+   muro y dock en cuatro filas; el muro se queda con todo el alto que sobra. */
+.recall-dock { min-width: 0; }
+.recall__info { display: flex; flex-wrap: wrap; column-gap: 16px; }
+@media (min-width: 1024px) and (min-height: 700px) {
+  body:has(.recall) {
+    --bg: #16181d; --surface: #22262d; --ink: #e8eaee; --ink-soft: #b9c0cb;
+    --muted: #98a0ad; --line: #333842; --line-soft: #2a2e36; --warn: #e3a94b;
+  }
+  .app:has(.recall) { max-width: none; height: 100dvh; min-height: 0; }
+  .app:has(.recall) #btn-mode { margin-left: auto; }   /* el nivel queda arriba a la izquierda */
+  .app:has(.recall) > main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  .app:has(.recall) #recall-root { flex: 1 1 auto; min-height: 0; }
+  .recall {
+    height: 100%; padding-bottom: 12px; row-gap: 10px;
+    display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto;
+  }
+  .recall__head { margin: 0; }
+  .recall-band {
+    display: grid; grid-template: "head head" auto "board hand" auto / minmax(0, 1fr) auto; column-gap: 24px;
+  }
+  .recall-band .table__head { grid-area: head; margin-bottom: 6px; }
+  .recall-band .board { grid-area: board; margin: 0; }
+  .recall-band .legend { flex-direction: row; flex-basis: auto; }
+  .recall-band .legend .card { width: 56px; }
+  /* La mesa mas ancha (12 runas, 9 tumbadas) tiene que entrar en UNA fila: si se parte en dos,
+     la banda crece y el muro pierde el alto que necesita. 44px = el ancho de los dorsos. */
+  .recall-band .runes { gap: 8px 6px; }
+  .recall-band .rune__seat { width: 44px; height: 62px; }
+  .recall-band .rune__card { width: 44px; }
+  .recall-band .rune--spent .rune__seat { width: 62px; }
+  .recall-band .rune__state { display: none; }   /* el rotulo no ensancha la runa; aria-label lo conserva */
+  .recall-hand { grid-area: hand; padding: 8px 20px 0; }
+  .recall__wall { position: relative; min-height: 0; }
+  .wall { position: absolute; inset: 0; margin: 0; container-type: size; }
+  /* Alto y ancho a la vez: la carta es la menor de las dos medidas, siempre en 63:88. */
+  .wall__grid {
+    --rows: round(up, calc(var(--n) / var(--cols)), 1);
+    --card-w: min(calc((100cqw - (var(--cols) - 1) * var(--gap)) / var(--cols)),
+      calc((100cqh - 2.4rem - (var(--rows) - 1) * var(--gap)) / var(--rows) * 63 / 88));
+    grid-template-columns: repeat(var(--cols), var(--card-w)); justify-content: center;
+  }
+  .wall__why { margin-top: 8px; text-align: center; }
+  .recall-dock {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; align-items: start;
+  }
+  .recall-dock .ask { grid-column: 1 / -1; margin: 0 0 4px; }
+  .recall-dock .ask__hint { display: inline; margin-left: 10px; }
+  .recall__controls { margin-top: 6px; }
+  .recall__info { grid-column: 1 / -1; }
+  .recall__feedback, .recall__message { margin: 0; }
+  .recall-composer { position: relative; }
+  .recall-composer__list {
+    position: absolute; left: 0; right: 0; bottom: 100%; z-index: 30;
+    border: 1px solid var(--line); box-shadow: 0 -12px 28px -16px rgba(0,0,0,.6);
+  }
+}
 
 /* ---------- MOTION ---------- */
 @media (prefers-reduced-motion: reduce) {

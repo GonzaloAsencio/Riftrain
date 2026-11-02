@@ -544,6 +544,7 @@ dockMount.remove();
 
 // ---- LA RONDA COMPLETA: dock + muro + motor, con el store real (AC-ARC-12..24, 31..40, 50, 51).
 const { startRecall, reduceRecall, advanceRecall } = await import('../src/engine/recall-progress.js');
+const { rejectionRunes } = await import('../src/engine/cost.js');
 const actualStore = await import('../src/store.js');
 const { mountRecall } = await import('../src/ui/recall.js');
 const realData = await (await fetch('../data/cards.json')).json();
@@ -582,6 +583,21 @@ const mountFlow = () => mountRecall(flowMount, { deck: flowDeck, cards: flowCard
 const fslot = (id) => flowMount.querySelector(`.wall__slot[data-card-id="${id}"]`);
 const fstates = () => ['alpha', 'beta', 'gamma'].map((id) => fslot(id)?.dataset.state).join(',');
 const stampShown = () => { const s = flowMount.querySelector('.recall-stamp'); return !!s && !s.hidden; };
+const lit = (root) => [...root.querySelectorAll('.rune')].flatMap((rune, i) => (rune.dataset.highlight === 'true' ? [i] : []));
+const missingMark = (root) => root.querySelector('.runes__missing:not([hidden])');
+// Contraste WCAG del texto contra el primer fondo opaco que tiene detrás (o blanco).
+const rgbOf = (value) => (value.match(/[\d.]+/g) ?? []).map(Number);
+const luminance = ([r, g, b]) => [r, g, b].map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; })
+  .reduce((sum, c, i) => sum + c * [0.2126, 0.7152, 0.0722][i], 0);
+const contrastOf = (node) => {
+  let bg = [255, 255, 255];
+  for (let at = node; at; at = at.parentElement) {
+    const [r, g, b, a = 1] = rgbOf(getComputedStyle(at).backgroundColor);
+    if (a > 0.5) { bg = [r, g, b]; break; }
+  }
+  const [hi, lo] = [luminance(rgbOf(getComputedStyle(node).color)), luminance(bg)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+};
 const toastText = () => flowMount.querySelector('.recall-feedback__toast:not([hidden])')?.textContent ?? null;
 const action = (name) => flowMount.querySelector(`[data-action="${name}"]`);
 const removedUi = (root) => !root.querySelector('.recall-tray, .recall-results, .recall-missed, .recall-composer__preview, .recall-composer__choice, [data-action="inc"], [data-action="dec"], [data-page], .recall-feedback__fan, .recall-feedback__slot, .recall-feedback__badge') &&
@@ -603,6 +619,27 @@ check('AC-CMB-19: la mesa del nivel 3 muestra 3 abiertas y el total de doce',
   flowMount.querySelectorAll('.rune:not(.rune--spent)').length === 3 &&
   flowMount.textContent.includes('3 abiertas') && flowMount.textContent.includes('en el Mazo de Runas'));
 
+// La banda superior: la mesa del rival (runas) y su mano de siete dorsos, sólo contexto.
+const flowBand = flowMount.querySelector('.recall-band');
+const flowHand = flowBand?.querySelector('.recall-hand');
+const flowBacks = [...(flowHand?.children ?? [])];
+check('AC-ARC-30: la banda es lo primero tras el encabezado y trae la mesa con sus runas',
+  !!flowBand && flowBand.previousElementSibling?.classList.contains('recall__head') &&
+  flowBand.querySelectorAll('.runes .rune').length === scenarioAt(3).runes.length && flowBand.querySelectorAll('.rune:not(.rune--spent)').length === 3,
+  `${flowBand?.querySelectorAll('.runes .rune').length} / ${flowBand?.previousElementSibling?.className}`);
+check('AC-ARC-30: la mano del rival son exactamente siete dorsos reales',
+  flowBacks.length === 7 && flowBacks.every((back) => getComputedStyle(back).backgroundImage.includes('card-back.png')) &&
+  !flowHand.querySelector('img, button, input, a, [tabindex], [data-card-id], [data-face]'));
+check('AC-ARC-30: la mano está estática (aria-hidden, sin handlers) y abierta en abanico por CSS',
+  flowHand.getAttribute('aria-hidden') === 'true' && getComputedStyle(flowHand).pointerEvents === 'none' &&
+  flowBacks.map((back) => back.style.getPropertyValue('--i')).join() === '0,1,2,3,4,5,6' &&
+  new Set(flowBacks.map((back) => getComputedStyle(back).transform)).size === 7);
+check('AC-ARC-30: la mano queda dentro de la banda y no ensancha la página',
+  flowBacks.every((back) => back.getBoundingClientRect().right <= flowBand.getBoundingClientRect().right + 1) &&
+  document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1);
+check('AC-ARC-53: el nivel real es lo primero del encabezado, a la izquierda',
+  flowMount.querySelector('.recall__head').firstElementChild.textContent === 'Nivel 3');
+
 // Falso positivo: el sello lleva el motivo EXACTO del motor y la celda no se da vuelta.
 press(type(flowMount, 'bet'), 'Enter');
 const betaReason = checkCard('beta', scenarioAt(3), flowIndex).reason;
@@ -612,11 +649,53 @@ check('AC-ARC-35: carta impagable muestra el sello NO ENTRA con el motivo exacto
   flowMount.querySelector('.recall-stamp').getAttribute('aria-live') === 'polite');
 check('AC-ARC-35: la celda sigue boca abajo, no se guarda nada y no hay toast duplicado',
   fstates() === 'down,down,down' && saves === 0 && toastText() === null);
+check('AC-ARC-35: el input queda marcado como rechazado mientras el sello está visible',
+  flowInput().getAttribute('aria-invalid') === 'true');
+const betaRunes = rejectionRunes(checkCard('beta', scenarioAt(3), flowIndex).detail, scenarioAt(3).runes);
+check('AC-ARC-36: sin runas del dominio pedido se marca el dominio y NO se resalta ninguna runa ajena',
+  betaRunes.missingDomain === 'chaos' && betaRunes.indices.length === 0 && lit(flowMount).length === 0 &&
+  missingMark(flowMount)?.dataset.domain === 'chaos' && /Chaos/.test(missingMark(flowMount).textContent));
+check('AC-ARC-36: la marca del dominio va en la línea de resumen, sin ocupar lugar en la fila de runas, y se lee (contraste >= 4.5)',
+  !!missingMark(flowMount).closest('.runes__meta') && missingMark(flowMount).parentElement !== flowMount.querySelector('.runes') &&
+  contrastOf(missingMark(flowMount)) >= 4.5, contrastOf(missingMark(flowMount)).toFixed(2));
 type(flowMount, 'g');
-check('AC-ARC-37: editar el input limpia el sello', !stampShown());
+check('AC-ARC-37: editar el input limpia el sello y la marca del dominio',
+  !stampShown() && !missingMark(flowMount) && lit(flowMount).length === 0 &&
+  flowInput().getAttribute('aria-invalid') !== 'true');
+// Los falsos positivos son de la sesión: remontar deja volver a sellar beta sin tocar el store.
+flow.destroy();
+flow = mountFlow();
+await flow.ready;
+press(type(flowMount, 'bet'), 'Enter');
+check('AC-ARC-35: tras remontar, beta vuelve a sellar y a marcar el dominio',
+  stampShown() && !!missingMark(flowMount) && flowInput().getAttribute('aria-invalid') === 'true' && saves === 0);
+press(type(flowMount, 'zzzz'), 'Enter');
+check('AC-ARC-37: nombrar otra cosa (otro aviso) limpia el sello y la marca del dominio',
+  !stampShown() && !missingMark(flowMount) && flowInput().getAttribute('aria-invalid') !== 'true' && toastText() !== null);
+type(flowMount, 'g');
 press(type(flowMount, ''), 'Enter');
 check('AC-ARC-40: Enter con el input vacío avisa en un toast y no cambia nada',
   toastText() === 'Nombrá una carta antes de seguir' && fstates() === 'down,down,down' && saves === 0);
+
+// Rechazo por Energía: se resaltan EXACTAMENTE las runas abiertas, ninguna agotada.
+const energyMount = document.createElement('div');
+document.querySelector('#stage main').appendChild(energyMount);
+const energyDeck = { id: 'energy', name: 'Mazo de energía', runes: { order: 12 },
+  cards: [{ cardId: 'alpha', qty: 1 }, { cardId: 'gamma', qty: 1 }] };
+const energyFlow = mountRecall(energyMount, { deck: energyDeck, cards: flowCards, seed: 7, feedbackOptions, storage: {
+  load: (fallback) => fallback, loadRecallSnapshot: () => ({ ok: false }), saveRecallSnapshot: () => ({ ok: true, persisted: true }),
+} });
+await energyFlow.ready;
+press(type(energyMount, 'gam'), 'Enter');
+const openRunes = [...energyMount.querySelectorAll('.rune')].flatMap((rune, i) => (rune.classList.contains('rune--spent') ? [] : [i]));
+check('AC-ARC-36: un rechazo por Energía resalta exactamente las runas abiertas y no marca dominio',
+  energyMount.querySelector('.recall-stamp:not([hidden])') !== null && openRunes.length > 0 &&
+  lit(energyMount).join() === openRunes.join() && !missingMark(energyMount),
+  `${lit(energyMount)} vs ${openRunes}`);
+type(energyMount, 'a');
+check('AC-ARC-37: editar el input apaga el resaltado de las runas', lit(energyMount).length === 0);
+energyFlow.destroy();
+energyMount.remove();
 
 // Acierto: se da vuelta SOLO esa celda, con el brillo de su dominio.
 press(type(flowMount, 'alp'), 'Enter');
@@ -650,6 +729,13 @@ check('AC-ARC-39: un texto fuera del mazo avisa con el motivo del motor, sin toc
 press(type(flowMount, 'cer'), 'Enter');
 check('AC-ARC-39: una carta de Energía 0 avisa su motivo y no es un falso positivo',
   /Energía 0/.test(toastText()) && fstates() === 'found,down,found' && !stampShown());
+const liveToast = flowMount.querySelector('.recall-feedback__toast:not([hidden])');
+check('AC-ARC-60: el aviso vive en una región aria-live y se lee como advertencia, distinto del texto neutro',
+  liveToast?.getAttribute('role') === 'status' && liveToast.getAttribute('aria-live') === 'polite' &&
+  liveToast.dataset.tone === 'warning' &&
+  getComputedStyle(liveToast).color !== getComputedStyle(flowMount.querySelector('.recall__message') ?? flowMount).color &&
+  contrastOf(liveToast) >= 4.5,
+  `${liveToast?.dataset.tone} ${liveToast && getComputedStyle(liveToast).color} contraste ${liveToast && contrastOf(liveToast).toFixed(2)}`);
 
 // Terminé con un falso positivo: revisión, no avanza.
 action('finish').click();
@@ -828,6 +914,16 @@ check('AC-CMB-01/19: index arranca en recall nivel 1, no en el cuestionario lega
   !!liveDoc.querySelector('#recall-root input[role="combobox"]') &&
   liveDoc.querySelector('#recall-root').textContent.includes('Nivel 1') &&
   getComputedStyle(liveDoc.querySelector('#legacy-mode')).display === 'none');
+check('AC-ARC-30: en la app real la banda muestra leyenda y campeón con sus imágenes oficiales',
+  liveDoc.querySelectorAll('#recall-root .recall-band .legend .card img').length === 2 &&
+  liveDoc.querySelectorAll('#recall-root .recall-band .recall-hand > *').length === 7);
+check('AC-ARC-53: un solo indicador de nivel visible, "Nivel 1" arriba a la izquierda; el #level viejo no se ve', (() => {
+  const visible = [...liveDoc.querySelectorAll('.level, .recall__level, #level')]
+    .filter((item) => item.getClientRects().length && getComputedStyle(item).visibility !== 'hidden');
+  const box = visible[0]?.getBoundingClientRect();
+  return visible.length === 1 && visible[0].textContent === 'Nivel 1' && box.left < 40 && box.top < 140 &&
+    getComputedStyle(liveDoc.getElementById('level')).display === 'none';
+})());
 check('AC-ARC-31: la app real muestra un muro con una celda por carta distinta con Energía > 0, boca abajo',
   liveDoc.querySelectorAll('#recall-root .wall__slot').length === mainCards.size && mainCards.size > 10 &&
   [...mainCards].every((id) => liveSlot(id)?.dataset.state === 'down') &&
@@ -864,7 +960,88 @@ check('AC-CMB-27: volver a recall restaura Gust levantada, sin reiniciar progres
 check('AC-CMB-21: la app completa no desborda el documento a 320px',
   liveDoc.documentElement.scrollWidth <= liveDoc.documentElement.clientWidth + 1,
   `${liveDoc.documentElement.scrollWidth} / ${liveDoc.documentElement.clientWidth}`);
+const phoneShape = [...liveDoc.querySelectorAll('.recall > *')].map((item) => item.className).join('|');
 liveFrame.remove();
+
+// ---- DESKTOP (AC-ARC-54, 57): pantalla completa 1280x800, sin scroll de página.
+// Peor caso FIJO, no el seed al azar de la app: seed 1234 nivel 3 = 12 runas con 9 agotadas (tumbadas,
+// las mas anchas), asi las runas van en dos filas y la banda crece. La historia se juega de verdad.
+actualStore.clear();
+const deskIndex = normalizeDeck(liveDeck, realData.cards, { policy: 'positive-energy' }).index;
+const deskScenario = (level) => createRecallScenario(liveDeck, deskIndex, 1234, level).scenario;
+let deskState = startRecall(deskScenario(1), deskIndex).state;
+for (let level = 2; level <= 3; level++) {
+  for (const cardId of deskState.payable) deskState = reduceRecall(deskState, { type: 'name', cardId }, deskIndex).state;
+  deskState = reduceRecall(deskState, { type: deskState.payable.length ? 'finish' : 'skip' }, deskIndex).state;
+  deskState = advanceRecall(deskState, deskScenario(level), deskIndex).state;
+}
+check('AC-ARC-54: el fixture de escritorio es la mesa más ancha (12 runas, 9 agotadas), guardada por el store real',
+  deskState.scenario.level === 3 && deskState.scenario.runes.length === 12 && deskState.scenario.runes.filter((r) => !r.ready).length === 9 && actualStore.saveRecallSnapshot(deskState).ok === true,
+  `${deskState.scenario.level} / ${deskState.scenario.runes.length}`);
+const deskFrame = document.createElement('iframe');
+deskFrame.title = 'App real en escritorio';
+deskFrame.style.cssText = 'width:1280px;height:800px;border:0;display:block';
+deskFrame.src = '../index.html';
+document.querySelector('#stage main').appendChild(deskFrame);
+await new Promise((resolve) => { deskFrame.onload = resolve; });
+await deskFrame.contentWindow.__riftrainReady;
+const deskWin = deskFrame.contentWindow;
+const deskDoc = deskFrame.contentDocument;
+const dq = (selector) => deskDoc.querySelector(selector);
+const rect = (selector) => dq(selector).getBoundingClientRect();
+const inside = (inner, outer) => inner.left >= outer.left - 1 && inner.right <= outer.right + 1 &&
+  inner.top >= outer.top - 1 && inner.bottom <= outer.bottom + 1;
+const wallSlots = [...deskDoc.querySelectorAll('.recall .wall__slot')];
+check('AC-ARC-54: a 1280x800 el orden es banda, muro, dock (de arriba hacia abajo)',
+  rect('.recall-band').bottom <= rect('.wall').top + 1 && rect('.wall').bottom <= rect('.recall-dock').top + 1 &&
+  rect('.recall__head').bottom <= rect('.recall-band').top + 1);
+check('AC-ARC-54: la página entera cabe en 1280x800 sin scroll, ni vertical ni horizontal',
+  deskDoc.documentElement.scrollHeight <= deskWin.innerHeight && deskDoc.documentElement.scrollWidth <= deskDoc.documentElement.clientWidth + 1,
+  `${deskDoc.documentElement.scrollHeight} / ${deskWin.innerHeight}`);
+check('AC-ARC-54: la mesa más ancha entra en una sola fila de runas y la mano no se estira',
+  new Set([...deskDoc.querySelectorAll('.recall-band .rune')].map((rune) => Math.round(rune.getBoundingClientRect().bottom))).size === 1 &&
+  [...deskDoc.querySelectorAll('.recall-hand__back')].every((back) => Math.abs(back.offsetHeight - 44 * 88 / 63) < 2),
+  `${new Set([...deskDoc.querySelectorAll('.recall-band .rune')].map((rune) => Math.round(rune.getBoundingClientRect().bottom))).size} filas; runes=${Math.round(rect('.recall-band .runes').width)} w=${[...deskDoc.querySelectorAll('.recall-band .rune')].map((r) => Math.round(r.getBoundingClientRect().width) + '/' + r.querySelector('.rune__label').offsetWidth).join(' ')}`);
+check('AC-ARC-54: runas, leyenda y los siete dorsos quedan dentro de la banda',
+  deskDoc.querySelectorAll('.recall-band .rune').length > 0 &&
+  [...deskDoc.querySelectorAll('.recall-band .rune, .recall-band .legend .card, .recall-hand__back')]
+    .every((item) => inside(item.getBoundingClientRect(), rect('.recall-band'))));
+check('AC-ARC-54: todo el muro es visible dentro de su zona, en 7 columnas y con la proporción de la carta', (() => {
+  const lefts = new Set(wallSlots.map((slot) => Math.round(slot.getBoundingClientRect().left)));
+  const cards = wallSlots.map((slot) => slot.querySelector('.card').getBoundingClientRect());
+  return wallSlots.length > 10 && lefts.size === 7 && wallSlots.every((slot) => inside(slot.getBoundingClientRect(), rect('.wall'))) &&
+    cards.every((box) => Math.abs(box.width / box.height - 63 / 88) < 0.02) && cards[0].width > 60;
+})(), (() => { const c = wallSlots.map((slot) => slot.querySelector('.card').getBoundingClientRect()); const w = rect('.wall'); return `n=${wallSlots.length} cols=${new Set(wallSlots.map((slot) => Math.round(slot.getBoundingClientRect().left))).size} out=${wallSlots.filter((slot) => !inside(slot.getBoundingClientRect(), w)).length} w=${Math.round(c[0].width)} h=${Math.round(c[0].height)} wall=${Math.round(w.width)}x${Math.round(w.height)}`; })());
+check('AC-ARC-54: la mesa es oscura de punta a punta y no hay un panel claro suelto',
+  (getComputedStyle(deskDoc.body).backgroundColor.match(/\d+/g) ?? []).slice(0, 3).every((value) => Number(value) < 60));
+check('AC-ARC-57: en escritorio la pantalla es una grilla de cuatro filas; en una ventana baja vuelve a fluir',
+  getComputedStyle(dq('.recall')).display === 'grid' && deskDoc.querySelectorAll('.recall > *').length === 4 &&
+  [...deskDoc.querySelectorAll('.recall > *')].map((item) => item.className).join('|') === phoneShape);
+const deskInput = dq('.recall input[role="combobox"]');
+deskInput.focus();
+const focusStyle = getComputedStyle(deskInput);
+check('AC-ARC-60: el input enfocado tiene un anillo visible',
+  focusStyle.outlineStyle !== 'none' && parseFloat(focusStyle.outlineWidth) >= 2);
+deskInput.value = 'gust';
+deskInput.dispatchEvent(new Event('input', { bubbles: true }));
+check('AC-ARC-54: las sugerencias se abren hacia arriba y no agregan scroll a la página',
+  deskDoc.querySelectorAll('.recall [role="option"]').length > 0 &&
+  dq('.recall-composer__list').getBoundingClientRect().bottom <= deskInput.getBoundingClientRect().top + 1 &&
+  deskDoc.documentElement.scrollHeight <= deskWin.innerHeight,
+  `${deskDoc.querySelectorAll('.recall [role="option"]').length} ${dq('.recall-composer__list').getBoundingClientRect().bottom} ${deskInput.getBoundingClientRect().top} ${deskDoc.documentElement.scrollHeight}`);
+// Escritorio angosto: la misma mesa ancha ya no entra en una fila. Partida en dos, la mano no se estira.
+deskFrame.style.width = '1024px';
+const narrowRows = new Set([...deskDoc.querySelectorAll('.recall-band .rune')].map((rune) => Math.round(rune.getBoundingClientRect().bottom))).size;
+check('AC-ARC-54: a 1024 con las runas en dos filas, los dorsos conservan su tamaño y nada desborda',
+  narrowRows > 1 && getComputedStyle(dq('.recall')).display === 'grid' &&
+  [...deskDoc.querySelectorAll('.recall-hand__back')].every((back) => Math.abs(back.offsetHeight - 44 * 88 / 63) < 2) &&
+  deskDoc.documentElement.scrollWidth <= deskDoc.documentElement.clientWidth + 1,
+  `${narrowRows} filas, sw=${deskDoc.documentElement.scrollWidth}`);
+deskFrame.style.width = '1280px';
+deskFrame.style.height = '600px';
+check('AC-ARC-57: con ventana baja (1280x600) la misma pantalla deja de ser grilla de pantalla completa',
+  getComputedStyle(dq('.recall')).display !== 'grid');
+deskFrame.remove();
 
 const head = document.createElement('div');
 head.textContent = `\n=== ${pass} PASS / ${fail} FAIL ===`;

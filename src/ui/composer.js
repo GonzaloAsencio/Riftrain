@@ -98,6 +98,8 @@ export function mountComposer(root, { cards, onName, onUserEdit = () => {} }) {
   return {
     clear() { input.value = ''; close(); status.textContent = ''; },
     focus() { input.focus(); },
+    /** Marca el input mientras el sello NO ENTRA esta a la vista. */
+    flagRejected(value) { if (value) input.setAttribute('aria-invalid', 'true'); else input.removeAttribute('aria-invalid'); },
     setDisabled(value) { input.disabled = value; if (value) close(); },
     destroy() { root.replaceChildren(); },
   };
