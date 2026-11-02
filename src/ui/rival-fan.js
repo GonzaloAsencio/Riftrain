@@ -5,6 +5,9 @@
  * al costado. No calcula reglas: quien la monta le dice el tamaño y que mostrar.
  */
 
+import { DOMAIN_COLOR } from '../engine/runes.js';
+import { renderCard, flipUp } from './card.js';
+
 const el = (tag, cls, text) => {
   const node = document.createElement(tag);
   if (cls) node.className = cls;
@@ -51,8 +54,53 @@ export function mountRivalFan(root, { size }) {
   zone.append(fan);
   root.replaceChildren(zone);
 
+  /** Da vuelta un slot con esta carta: la carta real reemplaza al dorso anonimo y gira. */
+  function lift(slot, card, state) {
+    const node = renderCard(card, { faceUp: false });
+    slot.replaceChildren(node);
+    void node.offsetWidth;   // que el giro arranque desde el dorso, no aparezca ya dado vuelta
+    flipUp(node, card);
+    slot.dataset.cardId = card.id;
+    slot.dataset.state = state;
+  }
+  function lower(slot) {
+    slot.replaceChildren(back());
+    slot.dataset.state = 'down';
+    delete slot.dataset.cardId;
+    glow(slot, false);
+  }
+  function glow(slot, on, fresh = false) {
+    slot.toggleAttribute('data-fresh', on && fresh);
+    if (on) {
+      slot.dataset.glow = slot.card?.domain ?? 'none';
+      slot.style.setProperty('--glow', DOMAIN_COLOR[slot.card?.domain] ?? '#797f8b');
+    } else {
+      delete slot.dataset.glow;
+      slot.style.removeProperty('--glow');
+    }
+  }
+  const nextDown = () => slots.find((slot) => slot.dataset.state === 'down');
+
+  function reveal(card, { fresh = false } = {}) {
+    const slot = nextDown();
+    if (!slot || !card) return;
+    if (fresh) for (const other of slots) glow(other, false);
+    slot.card = card;
+    lift(slot, card, 'found');
+    glow(slot, fresh, true);
+  }
+  function reset() {
+    for (const slot of slots) { slot.card = null; lower(slot); }
+  }
+
   return {
-    slots,
+    reveal,
+    /** Restaurar o repetir: lo hallado en los primeros slots, en orden, sin brillo. */
+    setFound(cards) {
+      reset();
+      for (const card of cards) reveal(card);
+    },
+    reset,
     destroy() { root.replaceChildren(); },
   };
 }

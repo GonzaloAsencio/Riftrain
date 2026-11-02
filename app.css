@@ -531,6 +531,31 @@ button { font: inherit; color: inherit; }
   }
 }
 
+/* ---------- LA MANO DEL RIVAL EN ABANICO ---------- */
+/* Todas las cartas apoyadas en el mismo punto y giradas alrededor de un centro lejano, abajo.
+   Geometria (centro de giro al 260% del alto): las de las puntas bajan ~0.55 de su alto, el
+   abanico ocupa ~2.7 cartas de alto y ~6.4 de ancho. De ahi sale el tamaño de carta. */
+@property --lift { syntax: '<length>'; inherits: false; initial-value: 0px; }
+.fan-zone { position: relative; min-width: 0; height: clamp(250px, 46vw, 470px); container-type: size; }
+.fan { position: absolute; inset: 0; }
+.fan__card {
+  --w: clamp(48px, min(36cqh, 15cqw), 150px);
+  position: absolute; left: 50%; bottom: calc(var(--w) * .8);
+  width: var(--w); margin-left: calc(var(--w) / -2);
+  transform-origin: 50% 260%;
+  transform: rotate(calc(var(--a) * var(--k, 1))) translateY(var(--lift));
+  z-index: var(--z);
+  transition: transform var(--flip) var(--ease), --lift var(--flip) var(--ease);
+}
+.fan__card .card { box-shadow: -3px 4px 10px rgba(0,0,0,.55); }
+/* Lo que se da vuelta sube y pasa al frente: tapado por sus vecinas no se leeria. */
+.fan__card[data-state="found"], .fan__card[data-state="missed"] { --lift: calc(var(--w) * -.3); z-index: calc(var(--z) + 100); }
+.fan__card[data-glow] .card { box-shadow: 0 0 0 2px var(--glow), 0 0 22px 3px var(--glow); }
+/* En una pantalla angosta el arco se cierra para entrar en el ancho. */
+@container (max-width: 480px) {
+  .fan__card { --k: .6; --w: clamp(48px, min(36cqh, 21cqw), 150px); }
+}
+
 /* ---------- MOTION ---------- */
 /* La clase la pone recall.js con la misma preferencia: cambia el movimiento, nunca el estado visible. */
 .recall--reduced .card, .recall--reduced .wall__slot { transition: none !important; animation: none !important; }

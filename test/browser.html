@@ -452,6 +452,32 @@ check('AC-FAN-21: la mano es un grupo "Mano del rival"; los dorsos no tienen ide
   fanHost.querySelector('.fan')?.getAttribute('role') === 'group' &&
   fanHost.querySelector('.fan').getAttribute('aria-label') === 'Mano del rival' &&
   !fanHost.querySelector('.fan [data-card-id], .fan [tabindex]'));
+fan.reveal(wallCards[1], { fresh: true });
+const slot0 = fanSlots()[0];
+check('AC-FAN-04: un acierto da vuelta el PRIMER dorso con esa carta, su imagen, nombre y brillo de dominio',
+  fanStates() === 'found,down,down' && slot0.dataset.cardId === 'w2' && slot0.dataset.glow === 'chaos' &&
+  slot0.querySelector('.card').dataset.face === 'up' && !!slot0.querySelector('.card__face--image img') &&
+  /Descarga/.test(slot0.querySelector('.card').getAttribute('aria-label')));
+fan.reveal(wallCards[0], { fresh: true });
+check('AC-FAN-05: el segundo acierto va al slot siguiente, en orden de nombrado, y sólo el último brilla como nuevo',
+  fanStates() === 'found,found,down' && fanSlots()[1].dataset.cardId === 'w1' &&
+  fanSlots()[1].hasAttribute('data-fresh') && !fanSlots()[0].hasAttribute('data-fresh'));
+fanHost.getAnimations({ subtree: true }).forEach((animation) => animation.finish());
+const zOf = (slot) => Number(getComputedStyle(slot).zIndex);
+check('AC-FAN-06: la carta acertada queda al frente y levantada respecto de un dorso',
+  fanSlots().slice(0, 2).every((slot) => zOf(slot) > zOf(fanSlots()[2])) &&
+  parseFloat(getComputedStyle(fanSlots()[0]).getPropertyValue('--lift')) < 0 &&
+  !parseFloat(getComputedStyle(fanSlots()[2]).getPropertyValue('--lift')),
+  `${fanSlots().map(zOf)} | lift ${fanSlots().map((slot) => getComputedStyle(slot).getPropertyValue('--lift'))}`);
+fan.setFound([wallCards[3], wallCards[2]]);
+check('AC-FAN-14: setFound llena los primeros slots en orden, sin brillo, y tapa el resto',
+  fanStates() === 'found,found,down' && fanSlots()[0].dataset.cardId === 'w4' && fanSlots()[1].dataset.cardId === 'w3' &&
+  !fanHost.querySelector('[data-glow], [data-fresh]') && !fanSlots()[2].hasAttribute('data-card-id') &&
+  fanSlots()[2].querySelector('.card').dataset.face === 'down');
+fan.reveal(wallCards[0]);
+fan.reveal(wallCards[1]);
+check('AC-FAN-04: con la mano llena, un acierto de más no rompe nada ni agrega cartas',
+  fanSlots().length === 3 && fanStates() === 'found,found,found');
 fan.destroy();
 fan = mountRivalFan(fanHost, { size: 0 });
 check('AC-FAN-02: un nivel sin pagables tiene la mano vacía', fanSlots().length === 0 && !!fanHost.querySelector('.fan'));
