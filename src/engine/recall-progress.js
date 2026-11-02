@@ -1,5 +1,6 @@
 /** Pure recall reducer: answers never mutate the original runes or previous state. */
-import { validateGroup, isExactCountFor } from './deck-combos.js';
+import { validateGroup, isExactCountFor, checkCard } from './deck-combos.js';
+import { costLabel } from './cost.js';
 
 const fail = (reason) => ({ ok: false, reason });
 
@@ -62,4 +63,29 @@ export function advanceRecall(state, scenario, index, target) {
   next.state.history = [...state.history, { identity: state.scenario.identity,
     level: state.scenario.level, found: state.found, omitted: state.target.count === 0n }];
   return next;
+}
+
+/**
+ * Resultado por carta distinta del muro al cerrar el nivel, en el orden del indice:
+ *   hit            -> esta en `found`.
+ *   missed         -> se pagaba sola y nadie la nombro ("Se podía pagar: ...").
+ *   false-positive -> esta en `misses` y no se paga sola (motivo del motor).
+ *   irrelevant     -> no se paga sola y nadie la nombro; sin motivo: una carta boca
+ *                     abajo no se explica sola.
+ * Pura: no muta nada.
+ */
+export function levelCardOutcomes(index, scenario, found = [], misses = []) {
+  if (!Array.isArray(index?.cards) || !(index.byId instanceof Map)) return fail('Índice de mazo inválido');
+  const hits = new Set(found ?? []);
+  const named = new Set(misses ?? []);
+  const cards = [];
+  for (const { id } of index.cards) {
+    const check = checkCard(id, scenario, index);
+    if (!check.ok && check.detail === null) return fail(check.reason);
+    if (hits.has(id)) cards.push({ cardId: id, outcome: 'hit', reason: null });
+    else if (check.ok) cards.push({ cardId: id, outcome: 'missed', reason: `Se podía pagar: ${costLabel(check.cost)}` });
+    else if (named.has(id)) cards.push({ cardId: id, outcome: 'false-positive', reason: check.reason });
+    else cards.push({ cardId: id, outcome: 'irrelevant', reason: null });
+  }
+  return { ok: true, cards };
 }

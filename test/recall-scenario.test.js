@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeDeck } from '../src/engine/deck-combos.js';
-import { createRecallScenario, recallIdentity } from '../src/engine/recall-scenario.js';
+import { createRecallScenario, recallIdentity, RECALL_VERSION } from '../src/engine/recall-scenario.js';
 
 const cards = [{ id: 'a', energy: 1, power: {} }];
 const deck = { cards: [{ cardId: 'a', qty: 2 }], runes: { chaos: 9, order: 3 } };
@@ -96,4 +96,14 @@ test('AC-CMB-51: misma semilla y runas, identidad distinta para política positi
   const changed = { ...source, cards: [deck.cards[0], { cardId: 'zero', qty: 2 }] };
   const changedPaid = normalizeDeck(changed, catalog, { policy: 'positive-energy' }).index;
   assert.notEqual(createRecallScenario(changed, changedPaid, 42, 3).scenario.identity, b.scenario.identity);
+});
+
+// Guarda de regresión (AC-ARC-25): RECALL_VERSION entra al seed del PRNG y a la identidad.
+// Cambiarlo regenera TODAS las mesas; para cambiar el formato guardado se sube `schema`.
+test('AC-ARC-25: RECALL_VERSION y la mesa de un seed fijo no cambian', () => {
+  assert.equal(RECALL_VERSION, 2);
+  const table = (seed, level) => createRecallScenario(deck, index, seed, level).scenario.runes
+    .map((r) => `${r.domain[0]}${r.ready ? 1 : 0}`).join(' ');
+  assert.equal(table(42, 3), 'o1 c1 o1 c0 c0 c0 c0');
+  assert.equal(table(108, 6), 'o1 c1 c1 c1 c1 c1 c0 c0');
 });

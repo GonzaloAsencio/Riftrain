@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cardCost, canPlayCard, canPlaySet, availableRunes, boardAfterPaying, costLabel } from '../src/engine/cost.js';
+import { cardCost, rejectionRunes, canPlayCard, canPlaySet, availableRunes, boardAfterPaying, costLabel } from '../src/engine/cost.js';
 import { makeBoard } from '../src/engine/runes.js';
 
 const card = (id, energy, power = {}, extra = {}) => ({
@@ -171,4 +171,41 @@ test('AC-COST-10: costLabel arma el texto que se muestra en la carta', () => {
 
 test('AC-COST-11: el conjunto vacio siempre se puede jugar', () => {
   assert.equal(canPlaySet([], makeBoard([])).ok, true);
+});
+
+// ---- Muro del mazo: rejectionRunes (AC-ARC-05..08) ----
+// Forma pinneada: { indices: number[], missingDomain: string|null }. El design pedia
+// number[]; el AC-ARC-06 exige missingDomain, asi que los indices viven en `.indices`.
+const tableRunes = () => [
+  { domain: 'fury', ready: true }, { domain: 'order', ready: false },
+  { domain: 'fury', ready: false }, { domain: 'order', ready: true },
+];
+
+test('AC-ARC-05: detail de dominio con have>0 devuelve las runas de ese dominio en mesa, abiertas o agotadas', () => {
+  const result = rejectionRunes({ kind: 'domain', domain: 'fury', need: 3, have: 2 }, tableRunes());
+  assert.deepEqual(result, { indices: [0, 2], missingDomain: null });
+});
+
+test('AC-ARC-06: dominio ausente devuelve indices vacíos y el dominio faltante, sin lanzar', () => {
+  const result = rejectionRunes({ kind: 'domain', domain: 'calm', need: 1, have: 0 }, tableRunes());
+  assert.deepEqual(result, { indices: [], missingDomain: 'calm' });
+  assert.deepEqual(rejectionRunes({ kind: 'domain', domain: 'calm', need: 1, have: 0 }, []),
+    { indices: [], missingDomain: 'calm' });
+});
+
+test('AC-ARC-07: detail de energía devuelve sólo las runas abiertas', () => {
+  const result = rejectionRunes({ kind: 'energy', need: 5, have: 2 }, tableRunes());
+  assert.deepEqual(result, { indices: [0, 3], missingDomain: null });
+});
+
+test('AC-ARC-08: detail nulo, ok, desconocido o runas inválidas devuelven vacío; es pura y determinista', () => {
+  const empty = { indices: [], missingDomain: null };
+  for (const detail of [null, undefined, { kind: 'ok', recycled: 0, exhausted: 1 }, { kind: 'otra' }, {}]) {
+    assert.deepEqual(rejectionRunes(detail, tableRunes()), empty);
+  }
+  assert.deepEqual(rejectionRunes({ kind: 'energy', need: 1, have: 0 }, null), empty);
+  const frozen = Object.freeze(tableRunes().map((r) => Object.freeze(r)));
+  const detail = Object.freeze({ kind: 'domain', domain: 'order', need: 2, have: 2 });
+  assert.deepEqual(rejectionRunes(detail, frozen), rejectionRunes(detail, frozen));
+  assert.deepEqual(frozen, tableRunes());
 });

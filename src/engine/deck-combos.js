@@ -1,6 +1,6 @@
 /** Main-deck index for recall; other deck zones are not draws. */
 import { DOMAINS } from './runes.js';
-import { canPay, availableRunes } from './cost.js';
+import { canPay, availableRunes, cardCost } from './cost.js';
 
 const fail = (reason) => ({ ok: false, reason });
 const quantity = (n) => Number.isSafeInteger(n) && n > 0;
@@ -130,6 +130,41 @@ export function validateGroup(entries, scenario, index) {
   const cost = { energy, power, powerTotal, runes: Math.max(energy, powerTotal) };
   const check = canPay(cost, resources.available);
   return { ok: check.ok, key: canonical.key, group: canonical.group, cost, reason: check.reason };
+}
+
+/**
+ * Puede el rival pagar ESTA carta sola con las runas del escenario?
+ * Devuelve siempre el motivo; `detail` es el de canPay y es null cuando el rechazo
+ * es previo a la pagabilidad (id vacio, fuera del mazo, Energia 0, runas invalidas).
+ */
+export function checkCard(cardId, scenario, index) {
+  const reject = (reason) => ({ ok: false, cardId, cost: null, reason, detail: null });
+  if (!(index?.byId instanceof Map)) return reject('Índice de mazo inválido');
+  if (typeof cardId !== 'string' || !cardId) return reject('Falta el nombre de la carta');
+  const card = index.byId.get(cardId);
+  if (!card) {
+    return reject(index.excludedEnergyZero?.has(cardId)
+      ? 'Las cartas de Energía 0 no cuentan en este entrenamiento'
+      : `La carta ${cardId} no está en el mazo principal`);
+  }
+  if (!validCost(card)) return reject(`Coste desconocido o inválido para ${cardId}`);
+  const resources = budget(scenario?.runes);
+  if (!resources.ok) return reject(resources.reason);
+  const cost = cardCost(card);
+  const check = canPay(cost, resources.available);
+  return { ok: check.ok, cardId, cost, reason: check.reason, detail: check.detail };
+}
+
+/**
+ * Cartas DISTINTAS del mazo principal que el rival paga solas con estas runas, en el
+ * orden del indice. Las copias no cuentan y la Energia 0 queda fuera del indice.
+ * Sincrono: son a lo sumo ~21 llamadas a checkCard, no hace falta contar combinaciones.
+ */
+export function payableCards(index, scenario) {
+  if (!validIndex(index)) return fail('Índice de mazo inválido');
+  const resources = budget(scenario?.runes);
+  if (!resources.ok) return resources;
+  return { ok: true, cardIds: index.cards.filter(({ id }) => checkCard(id, scenario, index).ok).map(({ id }) => id) };
 }
 
 /** Yields one cooperative checkpoint per quantity-vector transition. */
