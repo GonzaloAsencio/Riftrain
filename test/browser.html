@@ -426,6 +426,39 @@ wall.destroy();
 check('AC-ARC-31: destroy deja el contenedor vacio', wallHost.children.length === 0);
 wallHost.remove();
 
+// ---- LA MANO DEL RIVAL EN ABANICO (AC-FAN): tantos dorsos como cartas pagables, sin identidad.
+const { mountRivalFan, fanAngles } = await import('../src/ui/rival-fan.js');
+const near = (a, b) => Math.abs(a - b) < 0.51;
+check('AC-FAN-03: fanAngles abre un arco simétrico y creciente de min(96, 4.4*N) grados',
+  [3, 6, 21, 30].every((n) => {
+    const angles = fanAngles(n);
+    const spread = Math.min(96, 4.4 * n);
+    return angles.length === n && near(angles[0], -spread / 2) && near(angles.at(-1), spread / 2) &&
+      angles.every((a, i) => i === 0 || a > angles[i - 1]) && near(angles[0], -angles.at(-1));
+  }) && fanAngles(1).join() === '0' && fanAngles(0).length === 0, fanAngles(3).join());
+const fanHost = document.createElement('div');
+document.querySelector('#stage main').appendChild(fanHost);
+let fan = mountRivalFan(fanHost, { size: 3 });
+const fanSlots = () => [...fanHost.querySelectorAll('.fan__card')];
+const fanStates = () => fanSlots().map((slot) => slot.dataset.state).join(',');
+check('AC-FAN-01: la mano tiene exactamente N cartas boca abajo con el dorso real, sin "desconocido" ni números',
+  fanSlots().length === 3 && fanStates() === 'down,down,down' &&
+  fanSlots().every((slot) => slot.querySelector('.card[data-face="down"] .card__face--back') &&
+    getComputedStyle(slot.querySelector('.card__face--back')).backgroundImage.includes('card-back')) &&
+  !/desconocid|\d/i.test(fanHost.textContent));
+check('AC-FAN-03: cada carta lleva su ángulo de fanAngles en --a',
+  fanSlots().map((slot) => parseFloat(slot.style.getPropertyValue('--a'))).every((a, i) => near(a, fanAngles(3)[i])));
+check('AC-FAN-21: la mano es un grupo "Mano del rival"; los dorsos no tienen identidad ni foco',
+  fanHost.querySelector('.fan')?.getAttribute('role') === 'group' &&
+  fanHost.querySelector('.fan').getAttribute('aria-label') === 'Mano del rival' &&
+  !fanHost.querySelector('.fan [data-card-id], .fan [tabindex]'));
+fan.destroy();
+fan = mountRivalFan(fanHost, { size: 0 });
+check('AC-FAN-02: un nivel sin pagables tiene la mano vacía', fanSlots().length === 0 && !!fanHost.querySelector('.fan'));
+fan.destroy();
+check('AC-FAN-21: destroy deja el contenedor vacío', fanHost.children.length === 0);
+fanHost.remove();
+
 // ---- EL DOCK (AC-ARC-32): un solo input; sugiere desde TODO el main y nombrar es un acto.
 const { normalizeDeck, checkCard } = await import('../src/engine/deck-combos.js');
 const { createRecallScenario } = await import('../src/engine/recall-scenario.js');
