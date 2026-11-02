@@ -1029,6 +1029,17 @@ check('AC-ARC-31: la app real muestra un muro con una celda por carta distinta c
   liveDoc.querySelectorAll('#recall-root .wall__slot').length === mainCards.size && mainCards.size > 10 &&
   [...mainCards].every((id) => liveSlot(id)?.dataset.state === 'down') &&
   liveDoc.documentElement.scrollWidth <= liveDoc.documentElement.clientWidth + 1);
+const liveRect = (selector) => liveDoc.querySelector(selector).getBoundingClientRect();
+check('AC-ARC-55: a 320 todo va en una columna: banda, muro y dock uno debajo del otro, sin grilla de escritorio',
+  getComputedStyle(liveDoc.querySelector('.recall')).display !== 'grid' &&
+  liveRect('.recall-band').bottom <= liveRect('.recall__wall').top + 1 && liveRect('.recall__wall').bottom <= liveRect('.recall-dock').top + 1);
+const phoneCols = new Set([...liveDoc.querySelectorAll('#recall-root .wall__slot')].map((slot) => Math.round(slot.getBoundingClientRect().left))).size;
+check('AC-ARC-55: el muro del teléfono usa menos columnas que el de escritorio (7)', phoneCols >= 3 && phoneCols < 7, `${phoneCols} columnas`);
+check('AC-ARC-59: las celdas boca abajo muestran el dorso real, sin texto de relleno', (() => {
+  const back = liveDoc.querySelector('#recall-root .wall__slot .card[data-face="down"] .card__face--back');
+  return !!back && getComputedStyle(back).backgroundImage.includes('card-back') &&
+    !/desconocid/i.test(liveDoc.querySelector('#recall-root .wall').textContent);
+})());
 check('AC-ARC-59: la app real sugiere desde todo el main (Gust) con su imagen oficial', (() => {
   const input = liveDoc.querySelector('#recall-root input[role="combobox"]');
   if (!input) return false;
@@ -1036,6 +1047,14 @@ check('AC-ARC-59: la app real sugiere desde todo el main (Gust) con su imagen of
   const option = liveDoc.querySelector('#recall-root [role="option"]');
   return !!option?.textContent.includes('Gust') && !!option.querySelector('img');
 })());
+check('AC-ARC-55: en el teléfono las sugerencias se abren debajo del input, con un único id de lista y opciones de 44px',
+  liveRect('.recall-composer__list').top >= liveRect('#recall-root input[role="combobox"]').bottom - 1 &&
+  liveDoc.querySelectorAll('#recall-root [role="listbox"]').length === 1 &&
+  [...liveDoc.querySelectorAll('#recall-root [role="option"]')].every((option) => option.getBoundingClientRect().height >= 44),
+  `lista ${Math.round(liveRect('.recall-composer__list').top)} input ${Math.round(liveRect('#recall-root input[role="combobox"]').bottom)} listbox ${liveDoc.querySelectorAll('#recall-root [role="listbox"]').length} alturas ${[...liveDoc.querySelectorAll('#recall-root [role="option"]')].map((o) => Math.round(o.getBoundingClientRect().height))}`);
+check('AC-ARC-55: el input y los botones visibles miden al menos 44px de alto',
+  [liveDoc.querySelector('#recall-root input[role="combobox"]'), ...liveDoc.querySelectorAll('#recall-root .recall__controls .btn:not([hidden])')]
+    .every((item) => item.getBoundingClientRect().height >= 44));
 liveDoc.querySelector('#recall-root [role="option"]')?.click();
 check('AC-ARC-33: en la app real nombrar Gust da vuelta su celda, con su imagen oficial, y el nivel sigue en 1',
   liveSlot('gust')?.dataset.state === 'found' && !!liveSlot('gust').querySelector('.card__face--image img') &&
@@ -1062,6 +1081,15 @@ check('AC-CMB-21: la app completa no desborda el documento a 320px',
   liveDoc.documentElement.scrollWidth <= liveDoc.documentElement.clientWidth + 1,
   `${liveDoc.documentElement.scrollWidth} / ${liveDoc.documentElement.clientWidth}`);
 const phoneShape = [...liveDoc.querySelectorAll('.recall > *')].map((item) => item.className).join('|');
+// Cierre a 320: ~21 celdas con sus cuatro estados, todas alcanzables sin scroll horizontal.
+liveDoc.querySelector('#recall-root [data-action="finish"]').click();
+liveFrame.contentDocument.getAnimations().forEach((animation) => animation.finish());
+const closedPhone = [...liveDoc.querySelectorAll('#recall-root .wall__slot')];
+check('AC-ARC-56: el cierre a 320 no desborda y todas las celdas quedan dentro del ancho',
+  liveDoc.querySelector('.recall').dataset.phase === 'closed' && closedPhone.length > 10 &&
+  liveDoc.documentElement.scrollWidth <= liveDoc.documentElement.clientWidth + 1 &&
+  closedPhone.every((slot) => slot.getBoundingClientRect().left >= -1 && slot.getBoundingClientRect().right <= liveDoc.documentElement.clientWidth + 1),
+  `${liveDoc.documentElement.scrollWidth} / ${liveDoc.documentElement.clientWidth}`);
 liveFrame.remove();
 
 // ---- DESKTOP (AC-ARC-54, 57): pantalla completa 1280x800, sin scroll de página.
@@ -1138,6 +1166,14 @@ check('AC-ARC-54: a 1024 con las runas en dos filas, los dorsos conservan su tam
   [...deskDoc.querySelectorAll('.recall-hand__back')].every((back) => Math.abs(back.offsetHeight - 44 * 88 / 63) < 2) &&
   deskDoc.documentElement.scrollWidth <= deskDoc.documentElement.clientWidth + 1,
   `${narrowRows} filas, sw=${deskDoc.documentElement.scrollWidth}`);
+deskFrame.style.width = '1200px';
+dq('.recall [data-action="finish"]').click();
+deskDoc.getAnimations().forEach((animation) => animation.finish());
+check('AC-ARC-56: el cierre a 1200 no desborda y todas las celdas quedan dentro del ancho',
+  dq('.recall').dataset.phase === 'closed' &&
+  deskDoc.documentElement.scrollWidth <= deskDoc.documentElement.clientWidth + 1 &&
+  [...deskDoc.querySelectorAll('.recall .wall__slot')].every((slot) => slot.getBoundingClientRect().right <= deskDoc.documentElement.clientWidth + 1),
+  `${deskDoc.documentElement.scrollWidth} / ${deskDoc.documentElement.clientWidth}`);
 deskFrame.style.width = '1280px';
 deskFrame.style.height = '600px';
 check('AC-ARC-57: con ventana baja (1280x600) la misma pantalla deja de ser grilla de pantalla completa',
