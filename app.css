@@ -14,7 +14,7 @@
   --accent-ink: #ffffff;
   --ok: #2f7d5a;
   --bad: #c0453c;
-  --warn: #9a6412;           /* avisos: no es un error, es "ojo" */
+  --warn: #865510;           /* avisos: no es un error, es "ojo" (>= 5:1 sobre --bg) */
 
   --fury: #c0453c;  --calm: #3e8e6e;  --mind: #3a6ea5;
   --body: #b07333;  --order: #c0a02a; --chaos: #7a4fa3;
@@ -138,7 +138,8 @@ button { font: inherit; color: inherit; }
 .rune--spent .rune__seat { width: 70px; }
 .rune--spent .rune__card { transform: rotate(90deg); filter: brightness(.5); }
 .rune[data-highlight="true"] .rune__card { box-shadow: 0 0 0 2px var(--bad), 0 0 10px var(--bad); }
-.runes__missing { align-self: center; padding: 2px 8px; border: 1px dashed var(--bad); border-radius: 4px; color: var(--bad); font-size: 12px; font-weight: 600; }
+/* En la mesa oscura el rojo de --bad no llega a 4.5:1 como texto: rojo claro, borde rojo. */
+.runes__missing { display: inline-block; margin-left: 8px; padding: 0 6px; border: 1px dashed var(--bad); border-radius: 4px; color: #f2a39b; font-size: 12px; font-weight: 600; }
 .runes__missing[hidden] { display: none; }
 .rune--spent .rune__label { color: #7d8594; font-weight: 500; }
 .runes__meta {

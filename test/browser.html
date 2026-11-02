@@ -585,6 +585,19 @@ const fstates = () => ['alpha', 'beta', 'gamma'].map((id) => fslot(id)?.dataset.
 const stampShown = () => { const s = flowMount.querySelector('.recall-stamp'); return !!s && !s.hidden; };
 const lit = (root) => [...root.querySelectorAll('.rune')].flatMap((rune, i) => (rune.dataset.highlight === 'true' ? [i] : []));
 const missingMark = (root) => root.querySelector('.runes__missing:not([hidden])');
+// Contraste WCAG del texto contra el primer fondo opaco que tiene detrás (o blanco).
+const rgbOf = (value) => (value.match(/[\d.]+/g) ?? []).map(Number);
+const luminance = ([r, g, b]) => [r, g, b].map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; })
+  .reduce((sum, c, i) => sum + c * [0.2126, 0.7152, 0.0722][i], 0);
+const contrastOf = (node) => {
+  let bg = [255, 255, 255];
+  for (let at = node; at; at = at.parentElement) {
+    const [r, g, b, a = 1] = rgbOf(getComputedStyle(at).backgroundColor);
+    if (a > 0.5) { bg = [r, g, b]; break; }
+  }
+  const [hi, lo] = [luminance(rgbOf(getComputedStyle(node).color)), luminance(bg)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+};
 const toastText = () => flowMount.querySelector('.recall-feedback__toast:not([hidden])')?.textContent ?? null;
 const action = (name) => flowMount.querySelector(`[data-action="${name}"]`);
 const removedUi = (root) => !root.querySelector('.recall-tray, .recall-results, .recall-missed, .recall-composer__preview, .recall-composer__choice, [data-action="inc"], [data-action="dec"], [data-page], .recall-feedback__fan, .recall-feedback__slot, .recall-feedback__badge') &&
@@ -642,6 +655,9 @@ const betaRunes = rejectionRunes(checkCard('beta', scenarioAt(3), flowIndex).det
 check('AC-ARC-36: sin runas del dominio pedido se marca el dominio y NO se resalta ninguna runa ajena',
   betaRunes.missingDomain === 'chaos' && betaRunes.indices.length === 0 && lit(flowMount).length === 0 &&
   missingMark(flowMount)?.dataset.domain === 'chaos' && /Chaos/.test(missingMark(flowMount).textContent));
+check('AC-ARC-36: la marca del dominio va en la línea de resumen, sin ocupar lugar en la fila de runas, y se lee (contraste >= 4.5)',
+  !!missingMark(flowMount).closest('.runes__meta') && missingMark(flowMount).parentElement !== flowMount.querySelector('.runes') &&
+  contrastOf(missingMark(flowMount)) >= 4.5, contrastOf(missingMark(flowMount)).toFixed(2));
 type(flowMount, 'g');
 check('AC-ARC-37: editar el input limpia el sello y la marca del dominio',
   !stampShown() && !missingMark(flowMount) && lit(flowMount).length === 0 &&
@@ -717,8 +733,9 @@ const liveToast = flowMount.querySelector('.recall-feedback__toast:not([hidden])
 check('AC-ARC-60: el aviso vive en una región aria-live y se lee como advertencia, distinto del texto neutro',
   liveToast?.getAttribute('role') === 'status' && liveToast.getAttribute('aria-live') === 'polite' &&
   liveToast.dataset.tone === 'warning' &&
-  getComputedStyle(liveToast).color !== getComputedStyle(flowMount.querySelector('.recall__message') ?? flowMount).color,
-  `${liveToast?.dataset.tone} ${liveToast && getComputedStyle(liveToast).color}`);
+  getComputedStyle(liveToast).color !== getComputedStyle(flowMount.querySelector('.recall__message') ?? flowMount).color &&
+  contrastOf(liveToast) >= 4.5,
+  `${liveToast?.dataset.tone} ${liveToast && getComputedStyle(liveToast).color} contraste ${liveToast && contrastOf(liveToast).toFixed(2)}`);
 
 // Terminé con un falso positivo: revisión, no avanza.
 action('finish').click();

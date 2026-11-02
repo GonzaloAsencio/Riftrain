@@ -110,11 +110,13 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     runes.replaceChildren();
     const open = scenario.runes.filter((r) => r.ready).length;
     const exhausted = scenario.runes.length - open;
-    runes.appendChild(node('span', 'runes__meta',
-      `${open} ${open === 1 ? 'abierta' : 'abiertas'} · ${exhausted} ${exhausted === 1 ? 'agotada' : 'agotadas'} · ${scenario.deckRemaining} en el Mazo de Runas`));
-    for (const rune of scenario.runes) runes.appendChild(renderRune(rune));
+    const meta = node('span', 'runes__meta',
+      `${open} ${open === 1 ? 'abierta' : 'abiertas'} · ${exhausted} ${exhausted === 1 ? 'agotada' : 'agotadas'} · ${scenario.deckRemaining} en el Mazo de Runas`);
+    // La marca del dominio ausente vive en la linea de resumen: nunca empuja las runas a otra fila.
     missing.hidden = true;
-    runes.appendChild(missing);
+    meta.appendChild(missing);
+    runes.appendChild(meta);
+    for (const rune of scenario.runes) runes.appendChild(renderRune(rune));
   }
 
   /** Rechazo visible: las runas que lo explican, o el dominio que falta. El motor decide cuales. */
