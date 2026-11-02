@@ -155,6 +155,18 @@ export function checkCard(cardId, scenario, index) {
   return { ok: check.ok, cardId, cost, reason: check.reason, detail: check.detail };
 }
 
+/**
+ * Cartas DISTINTAS del mazo principal que el rival paga solas con estas runas, en el
+ * orden del indice. Las copias no cuentan y la Energia 0 queda fuera del indice.
+ * Sincrono: son a lo sumo ~21 llamadas a checkCard, no hace falta contar combinaciones.
+ */
+export function payableCards(index, scenario) {
+  if (!validIndex(index)) return fail('Índice de mazo inválido');
+  const resources = budget(scenario?.runes);
+  if (!resources.ok) return resources;
+  return { ok: true, cardIds: index.cards.filter(({ id }) => checkCard(id, scenario, index).ok).map(({ id }) => id) };
+}
+
 /** Yields one cooperative checkpoint per quantity-vector transition. */
 function* countSteps(index, runes) {
   const resources = budget(runes);

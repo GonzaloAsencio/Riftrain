@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { normalizeDeck, checkCard, canonicalGroup, validateGroup, countGroups, countGroupsAsync, createMissingPager } from '../src/engine/deck-combos.js';
+import { createRecallScenario } from '../src/engine/recall-scenario.js';
+import { normalizeDeck, checkCard, payableCards, canonicalGroup, validateGroup, countGroups, countGroupsAsync, createMissingPager } from '../src/engine/deck-combos.js';
 import { canPlayCard } from '../src/engine/cost.js';
 
 const cards = [
@@ -407,4 +408,65 @@ test('AC-ARC-04: id fuera del mazo, Energía 0, id vacío o runas inválidas se 
     assert.ok(result.reason);
     assert.equal(result.detail, null);
   }
+});
+
+// ---- Muro del mazo: payableCards (AC-ARC-09..11) ----
+const deepFreeze = (value) => {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    for (const child of (value instanceof Map ? [...value.values()] : Object.values(value))) deepFreeze(child);
+  }
+  return value;
+};
+
+test('AC-ARC-09: payableCards devuelve ids distintos del mazo, sin repetir por copias', () => {
+  const runes = board(rune('fury'), rune('fury'), rune('fury'), rune('order'), rune('order'));
+  const result = payableCards(wallIndex, runes);
+  assert.deepEqual(result, { ok: true, cardIds: ['big', 'floater', 'ord2'] });
+  assert.equal(new Set(result.cardIds).size, result.cardIds.length);
+  for (const id of result.cardIds) assert.equal(checkCard(id, runes, wallIndex).ok, true);
+});
+
+test('AC-ARC-10: excluye Energía 0 e impagables, respeta el orden del índice y es determinista', () => {
+  const rich = board(...Array.from({ length: 5 }, () => rune('fury')), rune('order'), rune('order'));
+  const result = payableCards(wallIndex, rich);
+  assert.deepEqual(result.cardIds, wallIndex.cards.map((c) => c.id).filter((id) => id !== 'zero'));
+  assert.equal(result.cardIds.includes('zero'), false);
+  assert.deepEqual(payableCards(wallIndex, rich), result);
+  const poor = payableCards(wallIndex, board(rune('fury')));
+  assert.deepEqual(poor, { ok: true, cardIds: [] });
+});
+
+test('AC-ARC-10: payableCards no muta el índice ni el escenario', () => {
+  const frozenIndex = deepFreeze(normalizeDeck(wallDeck, wallCards, { policy: 'positive-energy' }).index);
+  const frozenScenario = deepFreeze(board(rune('fury'), rune('fury'), rune('fury')));
+  assert.deepEqual(payableCards(frozenIndex, frozenScenario).cardIds, ['floater']);
+});
+
+test('AC-ARC-10: entradas inválidas devuelven ok=false con motivo', () => {
+  for (const [index, scenario] of [[undefined, board()], [wallIndex, undefined], [wallIndex, board(rune('lunar'))], [wallIndex, { runes: null }]]) {
+    const result = payableCards(index, scenario);
+    assert.equal(result.ok, false);
+    assert.ok(result.reason);
+  }
+});
+
+test('AC-ARC-11: checkCard.ok equivale a estar en payableCards para todo el mazo real, en varios seeds y niveles', async () => {
+  const data = JSON.parse(await readFile(new URL('../data/cards.json', import.meta.url), 'utf8'));
+  const deck = data.decks[0];
+  const { index } = normalizeDeck(deck, data.cards, { policy: 'positive-energy' });
+  let some = 0;
+  for (const seed of [1, 7, 42, 108]) {
+    for (const level of [1, 3, 6, 9, 12]) {
+      const made = createRecallScenario(deck, index, seed, level);
+      assert.equal(made.ok, true);
+      const payable = payableCards(index, made.scenario);
+      assert.equal(payable.ok, true);
+      for (const { id } of index.cards) {
+        assert.equal(checkCard(id, made.scenario, index).ok, payable.cardIds.includes(id), `${id} seed ${seed} nivel ${level}`);
+      }
+      some += payable.cardIds.length;
+    }
+  }
+  assert.ok(some > 0, 'algún nivel tiene pagables');
 });
