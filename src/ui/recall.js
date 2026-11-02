@@ -1,4 +1,4 @@
-/** Mountable controller for the deck wall; the engine alone decides validity. */
+/** Mountable controller: la mano del rival en abanico; sólo el motor decide qué vale. */
 import { normalizeDeck } from '../engine/deck-combos.js';
 import { createRecallScenario } from '../engine/recall-scenario.js';
 import { rejectionRunes } from '../engine/cost.js';
@@ -8,7 +8,7 @@ import * as defaultStore from '../store.js';
 import { renderCard } from './card.js';
 import { renderRune } from './rune.js';
 import { mountComposer } from './composer.js';
-import { mountDeckWall } from './deck-wall.js';
+import { mountRivalFan } from './rival-fan.js';
 import { mountRecallFeedback } from './recall-feedback.js';
 
 const node = (tag, cls, text) => {
@@ -18,7 +18,6 @@ const node = (tag, cls, text) => {
   return item;
 };
 
-const HAND_SIZE = 7;
 const CLOSED =['review', 'next', 'complete', 'omitted'];
 const MESSAGES = {
   empty: 'Con esta mesa el rival no puede pagar ninguna carta; podés saltar el nivel',
@@ -36,7 +35,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
   let state = null;
   let runSeed = seed;
   let composer = null;
-  let wall = null;
+  let fan = null;
   let outcomes = [];
   const normalized = normalizeDeck(deck, cards, { policy: 'positive-energy' });
   const cardsById = new Map(cards.map((card) => [card.id, card]));
@@ -59,15 +58,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
   const missing = node('span', 'runes__missing');
   missing.setAttribute('role', 'note');
   missing.hidden = true;
-  // La mano del rival: siete dorsos, puro contexto. El abanico lo da el CSS con --i.
-  const hand = node('div', 'recall-hand');
-  hand.setAttribute('aria-hidden', 'true');
-  for (let i = 0; i < HAND_SIZE; i++) {
-    const back = node('span', 'recall-hand__back');
-    back.style.setProperty('--i', String(i));
-    hand.appendChild(back);
-  }
-  table.append(tableHead, board, hand);
+  table.append(tableHead, board);
   const prompt = node('p', 'ask', '¿Qué cartas del mazo puede pagar el rival con esta mesa?');
   prompt.appendChild(node('span', 'ask__hint', 'Las cartas de Energía 0 no cuentan en este entrenamiento.'));
   const feedbackHost = node('div', 'recall__feedback');
@@ -79,7 +70,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
   const notice = node('p', 'recall__notice');
   notice.setAttribute('role', 'status');
   notice.setAttribute('aria-live', 'polite');   // nunca hidden: vacio cuando no hay nada que avisar
-  const wallHost = node('div', 'recall__wall');
+  const fanHost = node('div', 'recall__fan');
   const inputHost = node('div', 'recall__input');
   const controls = node('div', 'recall__controls');
   const button = (label, action, ghost) => {
@@ -99,9 +90,8 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
   info.append(feedbackHost, notice, message);
   const dock = node('div', 'recall-dock');
   dock.append(prompt, inputHost, controls, info);
-  panel.append(head, table, wallHost, dock);
+  panel.append(head, table, fanHost, dock);
   root.replaceChildren(panel);
-  const wallCards = normalized.ok ? normalized.index.cards.map(({ id }) => cardsById.get(id)) : [];
   const searchCards = normalized.ok ? normalized.index.fullCards.map(({ id }) => cardsById.get(id)) : [];
 
   function showBoard(scenario) {
@@ -155,11 +145,13 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     }
   }
 
-  /** Muro nuevo para el nivel en curso: lo hallado queda a la vista, sin brillo. */
-  function mountWall() {
-    wall?.destroy();
-    wall = mountDeckWall(wallHost, { cards: wallCards });
-    wall.setFound(state.found);
+  const cardsOf = (ids) => ids.map((id) => cardsById.get(id)).filter(Boolean);
+
+  /** Mano nueva para el nivel: tantos dorsos como pagables (lo dice el motor); lo hallado, a la vista. */
+  function mountHand() {
+    fan?.destroy();
+    fan = mountRivalFan(fanHost, { size: state.payable.length });
+    fan.setFound(cardsOf(state.found));
   }
 
   function draw() {
@@ -178,7 +170,9 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     message.textContent = MESSAGES[state.status] ?? '';
     if (CLOSED.includes(state.status)) {
       outcomes = levelCardOutcomes(normalized.index, state.scenario, state.found, state.misses).cards;
-      wall.showOutcomes(outcomes);
+      const pick = (kind) => outcomes.filter((item) => item.outcome === kind)
+        .map((item) => ({ card: cardsById.get(item.cardId), reason: item.reason }));
+      fan.showOutcomes({ missed: pick('missed'), falsePositives: pick('false-positive') });
     }
   }
 
@@ -195,7 +189,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     const answer = reduceRecall(state, { type: 'name', cardId }, normalized.index);
     if (answer.kind === 'accepted') {
       state = answer.state;
-      wall.reveal(cardId, { fresh: true });
+      fan.reveal(cardsById.get(cardId), { fresh: true });
       composer.clear();
       draw();
       save();
@@ -235,7 +229,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     if (answer.kind !== 'repeated') { message.textContent = answer.reason; return; }
     state = answer.state;
     clearRejection();
-    wall.setFound(state.found);
+    fan.setFound(cardsOf(state.found));
     draw();
     save();
     composer.focus();
@@ -255,7 +249,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
       startRecall(created.scenario, normalized.index);
     if (!started.ok) { message.textContent = started.reason; return; }
     state = started.state;
-    mountWall();
+    mountHand();
     draw();
     if (previous) { save(); composer?.focus(); }
   }
@@ -268,7 +262,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     if (restored?.ok) {
       state = restored.state;
       runSeed = state.scenario.seed;
-      mountWall();
+      mountHand();
       draw();
     } else {
       try {
@@ -281,6 +275,6 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
   }
   return {
     ready: Promise.resolve(),
-    destroy() { disposed = true; feedback.destroy(); composer?.destroy(); wall?.destroy(); root.replaceChildren(); },
+    destroy() { disposed = true; feedback.destroy(); composer?.destroy(); fan?.destroy(); root.replaceChildren(); },
   };
 }

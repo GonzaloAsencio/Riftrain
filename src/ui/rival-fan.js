@@ -132,7 +132,8 @@ export function mountRivalFan(root, { size }) {
   function showOutcomes({ missed = [], falsePositives = [] } = {}) {
     for (const { card, reason } of missed) {
       const slot = nextDown();
-      if (!slot || !card) break;
+      if (!slot) break;
+      if (!card) continue;   // una carta sin datos no corta el resto del cierre
       slot.card = card;
       lift(slot, card, 'missed');
       if (reason) explain(slot, card, reason);
