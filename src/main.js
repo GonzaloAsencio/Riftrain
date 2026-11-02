@@ -16,6 +16,7 @@ import * as store from './store.js';
 import { Hand } from './ui/hand.js';
 import { renderCard } from './ui/card.js';
 import { renderRune } from './ui/rune.js';
+import { mountRecall } from './ui/recall.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => {
@@ -35,15 +36,18 @@ const ui = {
   primary: $('btn-primary'), skip: $('btn-skip'), verdict: $('verdict'),
   chipReview: $('chip-review'), chipSeed: $('chip-seed'), phBanner: $('ph-banner'),
   btnStats: $('btn-stats'), btnMode: $('btn-mode'),
+  recallRoot: $('recall-root'), legacy: $('legacy-mode'),
 };
 
-const MODE = { CARDS: 'cards', RUNES: 'runes' };
+const MODE = { RECALL: 'recall', CARDS: 'cards', RUNES: 'runes' };
 
 const app = {
   data: null,
   cardsById: new Map(),
   state: prog.emptyState(),
-  mode: MODE.CARDS,
+  mode: MODE.RECALL,
+  recallController: null,
+  recallSeed: null,
   scenario: null,
   next: null,          // pre-generado mientras respondo el actual
   hand: null,
@@ -60,6 +64,7 @@ async function boot() {
   const res = await fetch('data/cards.json');
   app.data = await res.json();
   app.cardsById = new Map(app.data.cards.map((c) => [c.id, c]));
+  app.recallSeed = crypto.getRandomValues(new Uint32Array(1))[0];
 
   app.state = store.load(prog.emptyState());
 
@@ -80,7 +85,23 @@ async function boot() {
   ui.field.addEventListener('input', onType);
   ui.field.addEventListener('keydown', onTypeKeys);
 
-  round();
+  await showRecall();
+}
+
+async function showRecall() {
+  stopTimer();
+  ui.legacy.classList.add('hidden');
+  ui.recallRoot.classList.remove('hidden');
+  for (const item of [ui.streak, ui.level, ui.timer, ui.btnStats]) item.classList.add('hidden');
+  ui.btnMode.textContent = 'Cartas';
+  ui.btnMode.title = 'Ir al modo cartas';
+  ui.btnMode.setAttribute('aria-label', ui.btnMode.title);
+  const deck = app.data.decks[0];
+  if (!deck) { ui.recallRoot.textContent = 'No hay mazo cargado. Cargá uno para practicar.'; return; }
+  app.recallController = mountRecall(ui.recallRoot, {
+    deck, cards: app.data.cards, seed: app.recallSeed, storage: store,
+  });
+  await app.recallController.ready;
 }
 
 function ctx(level = app.state.level) {
@@ -546,9 +567,22 @@ function hideInputs() {
 }
 
 function toggleMode() {
-  app.mode = app.mode === MODE.CARDS ? MODE.RUNES : MODE.CARDS;
-  ui.btnMode.textContent = app.mode === MODE.RUNES ? 'C' : 'R';
-  ui.btnMode.title = app.mode === MODE.RUNES ? 'Ir al modo cartas' : 'Ir al modo runas';
+  if (app.mode === MODE.RUNES) {
+    app.mode = MODE.RECALL;
+    window.__riftrainReady = showRecall();
+    return;
+  }
+  if (app.mode === MODE.RECALL) {
+    app.recallController?.destroy();
+    app.recallController = null;
+    ui.recallRoot.classList.add('hidden');
+    ui.legacy.classList.remove('hidden');
+    for (const item of [ui.streak, ui.level, ui.timer, ui.btnStats]) item.classList.remove('hidden');
+    app.mode = MODE.CARDS;
+  } else app.mode = MODE.RUNES;
+  ui.btnMode.textContent = app.mode === MODE.RUNES ? 'Jugadas' : 'Runas';
+  ui.btnMode.title = app.mode === MODE.RUNES ? 'Ir a jugadas del mazo' : 'Ir al modo runas';
+  ui.btnMode.setAttribute('aria-label', ui.btnMode.title);
   round();
 }
 
@@ -591,7 +625,8 @@ function stopTimer() {
   app.timerId = null;
 }
 
-boot().catch((err) => {
-  ui.ask.textContent = `No se pudieron cargar los datos: ${err.message}`;
+window.__riftrainReady = boot().catch((err) => {
+  if (app.mode === MODE.RECALL) ui.recallRoot.textContent = `No se pudieron cargar los datos: ${err.message}`;
+  else ui.ask.textContent = `No se pudieron cargar los datos: ${err.message}`;
   console.error(err);
 });
