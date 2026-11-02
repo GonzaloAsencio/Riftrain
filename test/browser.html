@@ -1201,7 +1201,8 @@ check('AC-FAN-18: la mano tiene tantos dorsos como pagables, todos dentro de su 
   const zone = rect('.fan-zone');
   const cards = fanCardsDesk();
   return cards.length > 0 && cards.length === deskState.payable.length && cards.every((slot) => inside(slot.getBoundingClientRect(), zone)) &&
-    zone.bottom <= rect('.recall-dock').top + 1 && cards[0].offsetWidth >= 80;
+    zone.bottom <= rect('.recall-dock').top + 1 && cards[0].offsetWidth >= 80 &&
+    cards.every((slot) => Math.abs(slot.offsetWidth / slot.querySelector('.card').offsetHeight - 63 / 88) < 0.02);
 })(), `${fanCardsDesk().length} cartas, ancho ${fanCardsDesk()[0]?.offsetWidth}, zona ${Math.round(rect('.fan-zone').width)}x${Math.round(rect('.fan-zone').height)}`);
 check('AC-ARC-54: la mesa es oscura de punta a punta y no hay un panel claro suelto',
   (getComputedStyle(deskDoc.body).backgroundColor.match(/\d+/g) ?? []).slice(0, 3).every((value) => Number(value) < 60));
@@ -1229,6 +1230,10 @@ check('AC-FAN-18: a 1024 la mano entra en su área y nada desborda',
   deskDoc.documentElement.scrollWidth <= deskDoc.documentElement.clientWidth + 1,
   `${narrowRows} filas, sw=${deskDoc.documentElement.scrollWidth}`);
 deskFrame.style.width = '1200px';
+// Cierre con MUCHOS falsos positivos: se nombran todas las que no entran en ese nivel (las elige el motor; son 4).
+const deskUnpayable = deskIndex.cards.filter(({ id }) => !checkCard(id, deskState.scenario, deskIndex).ok).slice(0, 5)
+  .map(({ id }) => realData.cards.find((item) => item.id === id).name);
+for (const cardName of deskUnpayable) press(type(dq('#recall-root'), cardName), 'Enter');
 dq('.recall [data-action="finish"]').click();
 deskDoc.getAnimations().forEach((animation) => animation.finish());
 check('AC-FAN-18: el cierre a 1200 no desborda: las que faltaron, en gris, quedan dentro del área de la mano',
@@ -1236,6 +1241,13 @@ check('AC-FAN-18: el cierre a 1200 no desborda: las que faltaron, en gris, queda
   deskDoc.documentElement.scrollWidth <= deskDoc.documentElement.clientWidth + 1 &&
   fanCardsDesk().every((slot) => inside(slot.getBoundingClientRect(), rect('.fan-zone'))),
   `${deskDoc.documentElement.scrollWidth} / ${deskDoc.documentElement.clientWidth}`);
+const deskExtras = [...deskDoc.querySelectorAll('.recall .fan__extra')];
+check('AC-FAN-18: con cuatro o más falsos positivos, las extras quedan dentro de la fila de la mano, sin pisar el dock ni el arco',
+  deskUnpayable.length >= 4 && deskExtras.length === deskUnpayable.length &&
+  deskExtras.every((item) => { const box = item.getBoundingClientRect();
+    return inside(box, rect('.fan-wrap')) && box.bottom <= rect('.recall-dock').top + 1 && !inside(box, rect('.fan-zone')); }) &&
+  deskDoc.documentElement.scrollHeight <= deskWin.innerHeight,
+  `${deskExtras.length} extras; ${deskExtras.map((item) => Math.round(item.getBoundingClientRect().bottom)).join(',')} vs fila ${Math.round(rect('.fan-wrap').bottom)} dock ${Math.round(rect('.recall-dock').top)}; enWrap ${deskExtras.map((i) => inside(i.getBoundingClientRect(), rect('.fan-wrap')))} enZona ${deskExtras.map((i) => inside(i.getBoundingClientRect(), rect('.fan-zone')))} x ${deskExtras.map((i) => Math.round(i.getBoundingClientRect().left) + '-' + Math.round(i.getBoundingClientRect().right))} wrap ${Math.round(rect('.fan-wrap').left)}-${Math.round(rect('.fan-wrap').right)} sh ${deskDoc.documentElement.scrollHeight}/${deskWin.innerHeight}`);
 deskFrame.style.width = '1280px';
 deskFrame.style.height = '600px';
 check('AC-ARC-57: con ventana baja (1280x600) la misma pantalla deja de ser grilla de pantalla completa',

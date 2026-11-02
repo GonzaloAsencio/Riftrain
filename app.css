@@ -474,6 +474,11 @@ button { font: inherit; color: inherit; }
   .recall__fan { min-height: 0; }
   .recall__fan .fan-wrap { height: 100%; grid-template-rows: minmax(0, 1fr) auto; }
   .recall__fan .fan-zone { height: auto; min-height: 0; }
+  /* Muchos falsos positivos: la columna se parte en varias antes de salirse de la fila. */
+  /* (grid y no flex column-wrap: un flex en columnas con wrap no se ensancha y la ultima columna cuelga) */
+  .recall__fan .fan__extras { min-height: 0; display: grid; grid-auto-flow: column; grid-template-rows: repeat(auto-fill, 128px);
+    grid-auto-columns: 84px; align-content: center; gap: 10px 16px; padding: 6px 10px; }
+  .recall__fan .fan__extra { width: 84px; }
   .recall-dock {
     display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; align-items: start;
   }
