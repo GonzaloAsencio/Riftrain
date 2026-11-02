@@ -863,6 +863,61 @@ check('AC-ARC-39: un mazo sólo de Energía 0 tiene muro vacío, se puede nombra
   !zeroMount.textContent.includes('Entrenamiento completado'));
 zeroFlow.destroy(); zeroMount.remove();
 
+// ---- CIERRE (AC-ARC-41..44): los cuatro estados a la vez, en el nivel 3 (3 runas Order abiertas).
+// alpha (1) se nombra: acierto. gamma (2) no: se te pasó. beta (Chaos) se nombra: no entraba. hard (13): irrelevante.
+const closeMount = document.createElement('div');
+document.querySelector('#stage main').appendChild(closeMount);
+const closeDeck = { id: 'close', name: 'Mazo de cierre', runes: { order: 12 },
+  cards: [{ cardId: 'alpha', qty: 2 }, { cardId: 'beta', qty: 1 }, { cardId: 'gamma', qty: 1 }, { cardId: 'hard', qty: 1 }] };
+const closeFlow = mountRecall(closeMount, { deck: closeDeck, cards: [...sampleCards, hard], seed: 5, initialLevel: 3, storage: stub, feedbackOptions });
+const cslot = (id) => closeMount.querySelector(`.wall__slot[data-card-id="${id}"]`);
+const closeFinish = closeMount.querySelector('[data-action="finish"]');
+check('AC-ARC-41: en la ronda la pantalla está en fase round y Terminé mide al menos 44px de alto',
+  closeMount.querySelector('.recall').dataset.phase === 'round' && closeFinish.getBoundingClientRect().height >= 44,
+  `${closeMount.querySelector('.recall').dataset.phase} ${closeFinish.getBoundingClientRect().height}`);
+press(type(closeMount, 'alp'), 'Enter');
+press(type(closeMount, 'bet'), 'Enter');
+closeFinish.click();
+// Se mide el estado FINAL, no un instante de la transición: se terminan las animaciones en curso.
+closeMount.getAnimations({ subtree: true }).forEach((animation) => animation.finish());
+const opacityOf = (slot) => Number(getComputedStyle(slot).opacity);
+check('AC-ARC-41: Terminé pasa la pantalla a fase closed', closeMount.querySelector('.recall').dataset.phase === 'closed');
+check('AC-ARC-42: acierto levantado y con el brillo de su dominio',
+  cslot('alpha').dataset.state === 'found' && cslot('alpha').dataset.glow === 'order' &&
+  cslot('alpha').querySelector('.card').dataset.face === 'up' && opacityOf(cslot('alpha')) === 1);
+check('AC-ARC-42: lo que se te pasó queda levantado, gris, hundido y apagado (~.32)',
+  cslot('gamma').dataset.state === 'missed' && cslot('gamma').querySelector('.card').dataset.face === 'up' &&
+  Math.abs(opacityOf(cslot('gamma')) - 0.32) < 0.02 && getComputedStyle(cslot('gamma')).transform !== 'none' &&
+  /grayscale\(1\)/.test(getComputedStyle(cslot('gamma').querySelector('.card__face--front')).filter),
+  `${opacityOf(cslot('gamma'))} ${getComputedStyle(cslot('gamma')).transform}`);
+const closeTag = cslot('beta').querySelector('.wall__tag');
+check('AC-ARC-42: el falso positivo queda inclinado con el rótulo NO ENTRABA legible (>= 11px)',
+  cslot('beta').dataset.state === 'false-positive' && getComputedStyle(cslot('beta')).transform !== 'none' &&
+  closeTag?.textContent === 'NO ENTRABA' && parseFloat(getComputedStyle(closeTag).fontSize) >= 11 &&
+  closeTag.scrollWidth <= closeTag.clientWidth + 1,
+  `${closeTag && getComputedStyle(closeTag).fontSize}`);
+check('AC-ARC-42: la irrelevante sigue boca abajo, atenuada y sin motivo',
+  cslot('hard').dataset.state === 'irrelevant' && cslot('hard').querySelector('.card').dataset.face === 'down' &&
+  opacityOf(cslot('hard')) < 1 && !cslot('hard').hasAttribute('tabindex') && !cslot('hard').hasAttribute('data-reason'));
+const closeWhy = closeMount.querySelector('.wall__why');
+cslot('gamma').dispatchEvent(new Event('focusin', { bubbles: true }));
+const missedWhy = closeWhy.textContent;
+cslot('beta').dispatchEvent(new Event('pointerenter'));
+check('AC-ARC-43: cada celda con motivo es focusable y lo muestra: "Se podía pagar" o el motivo exacto del motor',
+  cslot('gamma').tabIndex === 0 && cslot('beta').tabIndex === 0 && /^Se podía pagar: /.test(missedWhy) &&
+  closeWhy.textContent === checkCard('beta', createRecallScenario(closeDeck, normalizeDeck(closeDeck, [...sampleCards, hard], { policy: 'positive-energy' }).index, 5, 3).scenario,
+    normalizeDeck(closeDeck, [...sampleCards, hard], { policy: 'positive-energy' }).index).reason,
+  `${missedWhy} | ${closeWhy.textContent}`);
+check('AC-ARC-44: el cierre no muestra porcentajes, "N de M", "N/M" ni contadores',
+  !/%|\b\d+\s*(de|\/)\s*\d+\b|aciertos?:|faltan(tes)?:|errores?:/i.test(closeMount.querySelector('.recall').textContent.replace(/Nivel \d+/, '')));
+const focusRule = (selector) => [...document.styleSheets].some((sheet) => {
+  try { return [...sheet.cssRules].some((rule) => rule.selectorText?.includes(selector) && /outline/.test(rule.cssText) && !/outline:\s*none/.test(rule.cssText)); }
+  catch { return false; }
+});
+check('AC-ARC-60: foco visible definido para las celdas del cierre y los botones (Terminé, Repetir, Siguiente)',
+  focusRule('.wall__slot[tabindex]:focus-visible') && focusRule('.btn:focus-visible'));
+closeFlow.destroy(); closeMount.remove();
+
 // Cobertura visual de las doce fronteras: el nivel es abiertas, no mesa total.
 for (let level = 1; level <= 12; level++) {
   const boardMount = document.createElement('div');

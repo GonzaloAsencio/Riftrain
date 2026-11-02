@@ -162,6 +162,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     if (!state || disposed) return;
     showBoard(state.scenario);
     const playable = ['active', 'empty'].includes(state.status);
+    panel.dataset.phase = CLOSED.includes(state.status) ? 'closed' : 'round';
     if (!composer && normalized.ok) composer = mountComposer(inputHost, {
       cards: searchCards, onName: name, onUserEdit: clearRejection,
     });
