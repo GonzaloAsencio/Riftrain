@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeDeck, countGroups } from '../src/engine/deck-combos.js';
-import { startRecall, reduceRecall, advanceRecall, levelCardOutcomes } from '../src/engine/recall-progress.js';
+import { startRecall, reduceRecall, advanceRecall, startRecallV2, reduceRecallV2, advanceRecallV2, levelCardOutcomes } from '../src/engine/recall-progress.js';
 
 const cards = [{ id: 'a', energy: 1, power: {} }, { id: 'b', energy: 2, power: {} }];
 const { index } = normalizeDeck({ cards: cards.map(({ id }) => ({ cardId: id, qty: 1 })) }, cards);
@@ -210,4 +210,141 @@ test('AC-ARC-20: no muta las entradas y rechaza índice o runas inválidos', () 
   const bad = levelCardOutcomes(wallIdx, { runes: [{ domain: 'lunar', ready: true }] }, [], []);
   assert.equal(bad.ok, false);
   assert.ok(bad.reason);
+});
+
+// ---- Muro del mazo: reducer por carta (AC-ARC-12..18, 21) ----
+const lvl = (level = 3, runes = furyBoard.runes) => ({ level, runes, identity: `wall-${level}` });
+const begin = (scenarioArg = lvl()) => startRecallV2(scenarioArg, wallIdx).state;
+const named = (state, cardId) => reduceRecallV2(state, { type: 'name', cardId }, wallIdx);
+
+test('AC-ARC-12: nombrar una carta pagable la acredita una sola vez', () => {
+  const start = startRecallV2(lvl(), wallIdx);
+  assert.equal(start.ok, true);
+  assert.deepEqual(start.state.payable, ['cheap', 'fury2']);
+  assert.equal(start.state.status, 'active');
+  const hit = named(start.state, 'cheap');
+  assert.equal(hit.kind, 'accepted');
+  assert.deepEqual(hit.state.found, ['cheap']);
+  assert.deepEqual(hit.state.misses, []);
+});
+
+test('AC-ARC-13: una carta del muro impagable es falso positivo con motivo y detalle, sin acreditar', () => {
+  const miss = named(begin(), 'order1');
+  assert.equal(miss.kind, 'false-positive');
+  assert.match(miss.reason, /Order/);
+  assert.equal(miss.detail.kind, 'domain');
+  assert.deepEqual(miss.state.found, []);
+  assert.deepEqual(miss.state.misses, ['order1']);
+});
+
+test('AC-ARC-14: nombrar de nuevo un acierto o un falso positivo es duplicado y no cambia nada', () => {
+  const afterHit = named(begin(), 'cheap').state;
+  const dupHit = named(afterHit, 'cheap');
+  assert.equal(dupHit.kind, 'duplicate');
+  assert.match(dupHit.reason, /ya nombrada/);
+  assert.deepEqual(dupHit.state, afterHit);
+  const afterMiss = named(begin(), 'huge').state;
+  const dupMiss = named(afterMiss, 'huge');
+  assert.equal(dupMiss.kind, 'duplicate');
+  assert.deepEqual(dupMiss.state.misses, ['huge']);
+  assert.deepEqual(dupMiss.state, afterMiss);
+});
+
+test('AC-ARC-15: fuera del mazo, id vacío o Energía 0 son inválidos: ni acierto ni falso positivo', () => {
+  const state = begin();
+  for (const id of ['nope', '', 'zero', undefined]) {
+    const result = named(state, id);
+    assert.equal(result.kind, 'invalid', String(id));
+    assert.ok(result.reason);
+    assert.deepEqual(result.state, state);
+  }
+  assert.match(named(state, 'zero').reason, /Energía 0/);
+});
+
+test('AC-ARC-16: el reducer no muta el estado de entrada y es determinista', () => {
+  const state = begin();
+  const snapshot = JSON.stringify(state);
+  const frozen = Object.freeze({ ...state, found: Object.freeze([...state.found]), misses: Object.freeze([...state.misses]) });
+  for (const id of ['cheap', 'order1', 'nope']) {
+    assert.deepEqual(named(frozen, id), named(frozen, id));
+  }
+  assert.equal(JSON.stringify(state), snapshot);
+  assert.equal(reduceRecallV2(frozen, { type: 'finish' }, wallIdx).kind, 'review');
+});
+
+test('AC-ARC-17: el nivel se completa sólo con todas las pagables y cero falsos positivos', () => {
+  let state = named(begin(), 'cheap').state;
+  const partial = reduceRecallV2(state, { type: 'finish' }, wallIdx);
+  assert.equal(partial.kind, 'review');
+  assert.equal(partial.state.status, 'review');
+  state = named(state, 'fury2').state;
+  const done = reduceRecallV2(state, { type: 'finish' }, wallIdx);
+  assert.equal(done.kind, 'finished');
+  assert.equal(done.state.status, 'next');
+  assert.equal(done.state.nextLevel, 4);
+  assert.equal(reduceRecallV2(begin(), { type: 'finish' }, wallIdx).kind, 'review');
+});
+
+test('AC-ARC-18: todas las pagables nombradas más un falso positivo no completa: revisión', () => {
+  let state = named(begin(), 'cheap').state;
+  state = named(state, 'fury2').state;
+  state = named(state, 'huge').state;
+  const closed = reduceRecallV2(state, { type: 'finish' }, wallIdx);
+  assert.equal(closed.kind, 'review');
+  assert.equal(closed.state.status, 'review');
+  assert.deepEqual(closed.state.found, ['cheap', 'fury2']);
+});
+
+test('AC-ARC-21: repetir conserva found, borra los falsos positivos y mantiene la misma mesa', () => {
+  let state = named(begin(), 'cheap').state;
+  state = named(state, 'huge').state;
+  const review = reduceRecallV2(state, { type: 'finish' }, wallIdx).state;
+  const again = reduceRecallV2(review, { type: 'repeat' }, wallIdx);
+  assert.equal(again.kind, 'repeated');
+  assert.equal(again.state.status, 'active');
+  assert.deepEqual(again.state.found, ['cheap']);
+  assert.deepEqual(again.state.misses, []);
+  assert.equal(again.state.scenario, review.scenario);
+  assert.equal(reduceRecallV2(begin(), { type: 'repeat' }, wallIdx).kind, 'invalid');
+});
+
+test('AC-ARC-21: sólo avanza un nivel completo o saltado; la revisión nunca avanza', () => {
+  const state = named(named(begin(), 'cheap').state, 'fury2').state;
+  const done = reduceRecallV2(state, { type: 'finish' }, wallIdx).state;
+  const next = advanceRecallV2(done, lvl(4, [...furyBoard.runes, { domain: 'fury', ready: true }]), wallIdx);
+  assert.equal(next.ok, true);
+  assert.equal(next.state.scenario.level, 4);
+  assert.deepEqual(next.state.history, [{ identity: 'wall-3', level: 3, found: ['cheap', 'fury2'], omitted: false }]);
+  assert.deepEqual(next.state.found, []);
+  const review = reduceRecallV2(begin(), { type: 'finish' }, wallIdx).state;
+  assert.equal(advanceRecallV2(review, lvl(4), wallIdx).ok, false);
+  assert.equal(advanceRecallV2(done, lvl(9), wallIdx).ok, false);
+});
+
+test('AC-ARC-21: un nivel sin pagables se salta; cualquier carta nombrada es falso positivo', () => {
+  const poor = lvl(1, [{ domain: 'fury', ready: false }]);
+  const start = startRecallV2(poor, wallIdx);
+  assert.equal(start.state.status, 'empty');
+  assert.deepEqual(start.state.payable, []);
+  const miss = named(start.state, 'cheap');
+  assert.equal(miss.kind, 'false-positive');
+  assert.equal(reduceRecallV2(miss.state, { type: 'finish' }, wallIdx).kind, 'invalid');
+  const skipped = reduceRecallV2(miss.state, { type: 'skip' }, wallIdx);
+  assert.equal(skipped.kind, 'skipped');
+  assert.equal(skipped.state.status, 'next');
+  const history = advanceRecallV2(skipped.state, lvl(2, [{ domain: 'fury', ready: true }, { domain: 'fury', ready: true }]), wallIdx);
+  assert.equal(history.state.history[0].omitted, true);
+  assert.equal(reduceRecallV2(begin(), { type: 'skip' }, wallIdx).kind, 'invalid');
+});
+
+test('AC-ARC-21: el nivel 12 cierra sin nivel 13 y rechaza escenarios inválidos', () => {
+  const board = Array.from({ length: 12 }, () => ({ domain: 'fury', ready: true }));
+  let state = startRecallV2({ level: 12, runes: board, identity: 'wall-12' }, wallIdx).state;
+  for (const id of state.payable) state = named(state, id).state;
+  const last = reduceRecallV2(state, { type: 'finish' }, wallIdx);
+  assert.equal(last.state.status, 'complete');
+  assert.equal(last.state.nextLevel, undefined);
+  assert.equal(startRecallV2({ ...lvl(), level: 13 }, wallIdx).ok, false);
+  assert.equal(startRecallV2({ ...lvl(), identity: '' }, wallIdx).ok, false);
+  assert.equal(startRecallV2(lvl(), undefined).ok, false);
 });
