@@ -411,8 +411,14 @@ test('AC-ARC-04: id fuera del mazo, Energía 0, id vacío o runas inválidas se 
 });
 
 // ---- Muro del mazo: payableCards (AC-ARC-09..11) ----
+// Object.freeze NO congela un Map (.set/.delete siguen andando): se los anula a mano.
 const deepFreeze = (value) => {
   if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    if (value instanceof Map || value instanceof Set) {
+      for (const method of ['set', 'add', 'delete', 'clear']) {
+        if (method in value) value[method] = () => { throw new TypeError(`mutación de ${value.constructor.name}.${method}`); };
+      }
+    }
     Object.freeze(value);
     for (const child of (value instanceof Map ? [...value.values()] : Object.values(value))) deepFreeze(child);
   }
@@ -451,22 +457,27 @@ test('AC-ARC-10: entradas inválidas devuelven ok=false con motivo', () => {
   }
 });
 
-test('AC-ARC-11: checkCard.ok equivale a estar en payableCards para todo el mazo real, en varios seeds y niveles', async () => {
+test('AC-ARC-11: payableCards y checkCard coinciden con un oráculo independiente (canPlayCard sobre la carta cruda) en el mazo real', async () => {
   const data = JSON.parse(await readFile(new URL('../data/cards.json', import.meta.url), 'utf8'));
   const deck = data.decks[0];
   const { index } = normalizeDeck(deck, data.cards, { policy: 'positive-energy' });
+  const raw = new Map(data.cards.map((card) => [card.id, card]));
   let some = 0;
+  let unpayable = 0;
   for (const seed of [1, 7, 42, 108]) {
     for (const level of [1, 3, 6, 9, 12]) {
       const made = createRecallScenario(deck, index, seed, level);
       assert.equal(made.ok, true);
+      // El oráculo no pasa por el índice ni por checkCard: la carta tal cual viene de cards.json.
+      const expected = index.cards.map(({ id }) => id).filter((id) => canPlayCard(raw.get(id), made.scenario.runes).ok);
       const payable = payableCards(index, made.scenario);
-      assert.equal(payable.ok, true);
+      assert.deepEqual(payable, { ok: true, cardIds: expected }, `seed ${seed} nivel ${level}`);
       for (const { id } of index.cards) {
-        assert.equal(checkCard(id, made.scenario, index).ok, payable.cardIds.includes(id), `${id} seed ${seed} nivel ${level}`);
+        assert.equal(checkCard(id, made.scenario, index).ok, expected.includes(id), `${id} seed ${seed} nivel ${level}`);
       }
-      some += payable.cardIds.length;
+      some += expected.length;
+      unpayable += index.cards.length - expected.length;
     }
   }
-  assert.ok(some > 0, 'algún nivel tiene pagables');
+  assert.ok(some > 0 && unpayable > 0, 'hay niveles con pagables y con impagables: el oráculo discrimina');
 });
