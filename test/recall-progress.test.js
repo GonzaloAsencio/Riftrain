@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeDeck, countGroups } from '../src/engine/deck-combos.js';
-import { startRecall, reduceRecall, advanceRecall } from '../src/engine/recall-progress.js';
+import { startRecall, reduceRecall, advanceRecall, levelCardOutcomes } from '../src/engine/recall-progress.js';
 
 const cards = [{ id: 'a', energy: 1, power: {} }, { id: 'b', energy: 2, power: {} }];
 const { index } = normalizeDeck({ cards: cards.map(({ id }) => ({ cardId: id, qty: 1 })) }, cards);
@@ -153,4 +153,61 @@ test('AC-CMB-01/02/13/18/26: un ID agregado sólo al mapa no acredita ni promuev
   assert.deepEqual(attempt.state.found, []);
   assert.notEqual(attempt.state.status, 'next');
   assert.equal(countGroups(sole, board.runes).status, 'error');
+});
+
+// ---- Muro del mazo: levelCardOutcomes (AC-ARC-19..20) ----
+const wallCatalog = [
+  { id: 'cheap', energy: 1, power: {} },
+  { id: 'fury2', energy: 1, power: { fury: 2 } },
+  { id: 'order1', energy: 2, power: { order: 1 } },
+  { id: 'huge', energy: 9, power: {} },
+  { id: 'zero', energy: 0, power: {} },
+];
+const wallIdx = normalizeDeck({ cards: wallCatalog.map(({ id }) => ({ cardId: id, qty: 3 })) }, wallCatalog,
+  { policy: 'positive-energy' }).index;
+// 3 runas Fury abiertas: pagan cheap y fury2; order1 (dominio ausente) y huge (energía) no.
+const furyBoard = { runes: [0, 1, 2].map(() => ({ domain: 'fury', ready: true })) };
+const outcomeOf = (result) => Object.fromEntries(result.cards.map((c) => [c.cardId, c]));
+
+test('AC-ARC-19: cuatro estados por carta con su motivo', () => {
+  const result = levelCardOutcomes(wallIdx, furyBoard, ['cheap'], ['order1']);
+  assert.equal(result.ok, true);
+  const by = outcomeOf(result);
+  assert.deepEqual(by.cheap, { cardId: 'cheap', outcome: 'hit', reason: null });
+  assert.equal(by.fury2.outcome, 'missed');
+  assert.equal(by.fury2.reason, 'Se podía pagar: 1 + 2 Fury');
+  assert.equal(by.order1.outcome, 'false-positive');
+  assert.match(by.order1.reason, /Order/);
+  assert.deepEqual(by.huge, { cardId: 'huge', outcome: 'irrelevant', reason: null });
+});
+
+test('AC-ARC-20: una entrada por carta distinta del índice, en orden estable y sin la Energía 0', () => {
+  const result = levelCardOutcomes(wallIdx, furyBoard, [], []);
+  assert.deepEqual(result.cards.map((c) => c.cardId), wallIdx.cards.map((c) => c.id));
+  assert.equal(result.cards.some((c) => c.cardId === 'zero'), false);
+  assert.deepEqual(levelCardOutcomes(wallIdx, furyBoard, [], []), result);
+});
+
+test('AC-ARC-20: sin nombrar nada las pagables son missed y el resto irrelevant', () => {
+  const by = outcomeOf(levelCardOutcomes(wallIdx, furyBoard, [], []));
+  assert.deepEqual(Object.values(by).map((c) => c.outcome), ['missed', 'missed', 'irrelevant', 'irrelevant']);
+  assert.equal(Object.values(by).every((c) => c.outcome !== 'hit'), true);
+});
+
+test('AC-ARC-20: un nivel sin pagables no produce hit ni missed', () => {
+  const poor = { runes: [{ domain: 'fury', ready: false }] };
+  const result = levelCardOutcomes(wallIdx, poor, [], ['huge']);
+  assert.equal(result.cards.some((c) => c.outcome === 'hit' || c.outcome === 'missed'), false);
+  assert.equal(outcomeOf(result).huge.outcome, 'false-positive');
+});
+
+test('AC-ARC-20: no muta las entradas y rechaza índice o runas inválidos', () => {
+  const found = Object.freeze(['cheap']);
+  const misses = Object.freeze(['order1']);
+  const frozenBoard = Object.freeze({ runes: Object.freeze(furyBoard.runes.map((r) => Object.freeze({ ...r }))) });
+  assert.equal(levelCardOutcomes(wallIdx, frozenBoard, found, misses).ok, true);
+  assert.equal(levelCardOutcomes(undefined, furyBoard, [], []).ok, false);
+  const bad = levelCardOutcomes(wallIdx, { runes: [{ domain: 'lunar', ready: true }] }, [], []);
+  assert.equal(bad.ok, false);
+  assert.ok(bad.reason);
 });
