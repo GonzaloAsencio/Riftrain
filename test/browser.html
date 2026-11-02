@@ -334,97 +334,13 @@ for (const ancho of [320, 360, 390]) {
   box.remove();
 }
 
-// ---- MURO DEL MAZO (AC-ARC-31, AC-ARC-59): una celda por carta distinta, todas boca abajo.
-const { mountDeckWall } = await import('../src/ui/deck-wall.js');
-const wallHost = document.createElement('div');
-document.querySelector('#stage main').appendChild(wallHost);
+// Cartas de prueba del abanico (el muro de casilleros se reemplazó por la mano en abanico).
 const wallCards = [
   { ...card('w1', 'Chispa', 1, {}, 'order'), img: PNG },
   { ...card('w2', 'Descarga', 2, { chaos: 1 }, 'chaos'), img: PNG },
   { ...card('w3', 'Granada', 3, { order: 2 }, 'order'), img: null },
   { ...card('w4', 'Motin', 9, {}, 'chaos'), img: PNG },
 ];
-const wall = mountDeckWall(wallHost, { cards: wallCards });
-const wslot = (id) => wallHost.querySelector(`.wall__slot[data-card-id="${id}"]`);
-const wstates = () => wallCards.map((c) => wslot(c.id)?.dataset.state).join(',');
-check('AC-ARC-31: el muro tiene una celda por carta distinta, con ids unicos y todas boca abajo',
-  wallHost.querySelectorAll('.wall__slot').length === 4 &&
-  new Set([...wallHost.querySelectorAll('.wall__slot')].map((s) => s.dataset.cardId)).size === 4 &&
-  wstates() === 'down,down,down,down' &&
-  [...wallHost.querySelectorAll('.wall__slot > .card')].every((c) => c.dataset.face === 'down'));
-check('AC-ARC-31: el dorso es el real, sin texto "desconocido", sin contadores ni tabindex',
-  /card-back\.png/.test(getComputedStyle(wslot('w1').querySelector('.card__face--back')).backgroundImage) &&
-  !/desconocid/i.test(wallHost.textContent) && !wallHost.querySelector('[tabindex]') &&
-  wslot('w1').querySelector('.card').getAttribute('aria-label') === 'Carta boca abajo');
-wall.reveal('w2', { fresh: true });
-check('AC-ARC-31: reveal da vuelta SOLO esa celda, en su lugar, con el brillo de su dominio',
-  wstates() === 'down,found,down,down' && wslot('w2').querySelector('.card').dataset.face === 'up' &&
-  wslot('w2').dataset.glow === 'chaos' && wslot('w2').hasAttribute('data-fresh') &&
-  wslot('w2').style.getPropertyValue('--glow') === '#7a4fa3' &&
-  getComputedStyle(wslot('w2').querySelector('.card')).boxShadow !== 'none' &&
-  !wslot('w1').hasAttribute('data-fresh') && !wslot('w1').hasAttribute('data-glow'));
-check('AC-ARC-59: la carta revelada es la imagen oficial (renderCard), no un placeholder de texto',
-  wslot('w2').querySelector('.card__face--image img')?.getAttribute('src') === PNG);
-wall.reveal('w1', { fresh: true });
-check('AC-ARC-31: el brillo vive sólo en la ultima revelada; la anterior sigue levantada sin brillo',
-  wstates() === 'found,found,down,down' && wslot('w1').dataset.glow === 'order' &&
-  wallHost.querySelectorAll('[data-fresh]').length === 1 && !wslot('w2').hasAttribute('data-glow'));
-wall.setFound(['w3']);
-check('AC-ARC-31: setFound deja levantadas sólo esas, sin brillo, y tapa el resto',
-  wstates() === 'down,down,found,down' && wallHost.querySelectorAll('[data-fresh],[data-glow]').length === 0 &&
-  wslot('w1').querySelector('.card').dataset.face === 'down');
-wall.showOutcomes([
-  { cardId: 'w1', outcome: 'hit', reason: null },
-  { cardId: 'w2', outcome: 'missed', reason: 'Se podía pagar: 2 + 1 Chaos' },
-  { cardId: 'w3', outcome: 'false-positive', reason: 'Pide 2 Order y no hay runas Order disponibles' },
-  { cardId: 'w4', outcome: 'irrelevant', reason: null },
-]);
-check('AC-ARC-31: showOutcomes marca los cuatro estados; irrelevante queda boca abajo',
-  wstates() === 'found,missed,false-positive,irrelevant' &&
-  ['w1', 'w2', 'w3'].every((id) => wslot(id).querySelector('.card').dataset.face === 'up') &&
-  wslot('w4').querySelector('.card').dataset.face === 'down' &&
-  wslot('w1').dataset.glow === 'order' && !wslot('w1').hasAttribute('data-fresh'));
-check('AC-ARC-31: sólo missed y falso positivo explican; son focusables y llevan el motivo en el aria-label',
-  wslot('w2').tabIndex === 0 && wslot('w3').tabIndex === 0 &&
-  wslot('w2').getAttribute('aria-label').includes('Se podía pagar: 2 + 1 Chaos') &&
-  wslot('w3').getAttribute('aria-label').includes('no hay runas Order') &&
-  !wslot('w1').hasAttribute('tabindex') && !wslot('w4').hasAttribute('tabindex') &&
-  !wslot('w4').hasAttribute('data-reason') && wslot('w3').querySelector('.wall__tag')?.textContent === 'NO ENTRABA');
-const why = wallHost.querySelector('.wall__why');
-check('AC-ARC-31: el motivo vive en una region role=status siempre presente y vacía (así el lector la anuncia al llenarse)',
-  why?.getAttribute('role') === 'status' && why.hidden === false && why.textContent === '');
-wslot('w2').dispatchEvent(new Event('focusin', { bubbles: true }));
-const whyFocus = why.textContent === 'Se podía pagar: 2 + 1 Chaos';
-wslot('w3').dispatchEvent(new Event('pointerenter'));
-const whyHover = why.textContent.includes('no hay runas Order');
-wslot('w2').click();
-check('AC-ARC-31: focusin, pointerenter y click muestran el motivo de esa celda',
-  whyFocus && whyHover && why.textContent === 'Se podía pagar: 2 + 1 Chaos');
-wslot('w4').dispatchEvent(new Event('pointerenter'));
-check('AC-ARC-31: una celda sin motivo vacía la explicación: nunca queda el motivo de otra carta',
-  why.textContent === '' && (() => {
-    wslot('w3').dispatchEvent(new Event('focusin', { bubbles: true }));
-    wslot('w1').dispatchEvent(new Event('pointerenter'));
-    return why.textContent === '';
-  })());
-wall.showOutcomes([
-  { cardId: 'w1', outcome: 'hit', reason: 'motivo suelto' },
-  { cardId: 'w3', outcome: 'false-positive', reason: 'Pide 2 Order y no hay runas Order disponibles' },
-]);
-check('AC-ARC-31: un acierto nunca explica ni se vuelve focusable, aunque le llegue un motivo',
-  !wslot('w1').hasAttribute('tabindex') && !wslot('w1').hasAttribute('data-reason'));
-wall.reveal('w3');
-check('AC-ARC-31: reveal sobre una celda con resultado le quita motivo, foco y etiqueta',
-  wslot('w3').dataset.state === 'found' && !wslot('w3').hasAttribute('tabindex') &&
-  !wslot('w3').hasAttribute('data-reason') && !wslot('w3').hasAttribute('aria-label') && !wslot('w3').querySelector('.wall__tag'));
-wall.reset();
-check('AC-ARC-31: reset vuelve todo boca abajo, sin motivos, etiquetas ni foco',
-  wstates() === 'down,down,down,down' && why.textContent === '' && why.hidden === false &&
-  !wallHost.querySelector('[tabindex], [data-reason], .wall__tag, [data-glow]') &&
-  wallHost.querySelectorAll('.wall__slot > .card[data-face="up"]').length === 0);
-wall.destroy();
-check('AC-ARC-31: destroy deja el contenedor vacio', wallHost.children.length === 0);
-wallHost.remove();
 
 // ---- LA MANO DEL RIVAL EN ABANICO (AC-FAN): tantos dorsos como cartas pagables, sin identidad.
 const { mountRivalFan, fanAngles } = await import('../src/ui/rival-fan.js');
@@ -495,7 +411,9 @@ const extras = [...fanHost.querySelectorAll('.fan__extra')];
 check('AC-FAN-10: los dorsos restantes muestran las que faltaron, en orden, boca arriba y en gris',
   fanStates() === 'found,missed,missed' && fanSlots()[1].dataset.cardId === 'w2' && fanSlots()[2].dataset.cardId === 'w3' &&
   fanSlots().slice(1).every((slot) => slot.querySelector('.card').dataset.face === 'up' &&
-    /grayscale\(1\)/.test(getComputedStyle(slot.querySelector('.card')).filter)));
+    /grayscale\(1\)/.test(getComputedStyle(slot.querySelector('.card__face--front')).filter) &&
+    // un filter sobre la carta que gira la aplana: se vería el dorso espejado en vez de la cara
+    getComputedStyle(slot.querySelector('.card')).filter === 'none'));
 check('AC-FAN-10: las que faltaron son focusables y llevan su motivo; el acierto no explica nada',
   fanSlots()[1].tabIndex === 0 && fanSlots()[1].getAttribute('aria-label').includes(missedReason) &&
   !fanSlots()[0].hasAttribute('tabindex') && !fanSlots()[0].hasAttribute('data-reason'));
@@ -569,7 +487,7 @@ check('AC-FAN-21: destroy deja el contenedor vacío', fanHost.children.length ==
 fanHost.remove();
 
 // ---- EL DOCK (AC-ARC-32): un solo input; sugiere desde TODO el main y nombrar es un acto.
-const { normalizeDeck, checkCard } = await import('../src/engine/deck-combos.js');
+const { normalizeDeck, checkCard, payableCards } = await import('../src/engine/deck-combos.js');
 const { createRecallScenario } = await import('../src/engine/recall-scenario.js');
 const { mountComposer } = await import('../src/ui/composer.js');
 const type = (root, text) => {
@@ -722,8 +640,11 @@ const memoryStore = {
 const flowMount = document.createElement('div');
 document.querySelector('#stage main').appendChild(flowMount);
 const mountFlow = () => mountRecall(flowMount, { deck: flowDeck, cards: flowCards, seed: 7, storage: memoryStore, feedbackOptions });
-const fslot = (id) => flowMount.querySelector(`.wall__slot[data-card-id="${id}"]`);
-const fstates = () => ['alpha', 'beta', 'gamma'].map((id) => fslot(id)?.dataset.state).join(',');
+// La mano: slots en orden, "estado" o "estado:carta" (los dorsos no tienen carta). Las extras, aparte.
+const fslot = (id) => flowMount.querySelector(`.fan__card[data-card-id="${id}"], .fan__extra[data-card-id="${id}"]`);
+const fstates = () => [...flowMount.querySelectorAll('.fan__card')]
+  .map((slot) => slot.dataset.cardId ? `${slot.dataset.state}:${slot.dataset.cardId}` : slot.dataset.state).join(',');
+const fextras = () => [...flowMount.querySelectorAll('.fan__extra')].map((item) => item.dataset.cardId).join(',');
 const stampShown = () => { const s = flowMount.querySelector('.recall-stamp'); return !!s && !s.hidden; };
 const lit = (root) => [...root.querySelectorAll('.rune')].flatMap((rune, i) => (rune.dataset.highlight === 'true' ? [i] : []));
 // Una region live se anuncia si YA estaba renderizada cuando cambia: el aviso vive DENTRO de una region
@@ -748,15 +669,15 @@ const toastText = () => flowMount.querySelector('.recall-feedback__toast:not([hi
 const action = (name) => flowMount.querySelector(`[data-action="${name}"]`);
 const removedUi = (root) => !root.querySelector('.recall-tray, .recall-results, .recall-missed, .recall-composer__preview, .recall-composer__choice, [data-action="inc"], [data-action="dec"], [data-page], .recall-feedback__fan, .recall-feedback__slot, .recall-feedback__badge') &&
   !/Confirmar|Tu jugada|Jugadas descubiertas|Jugada nueva|¡Correcto!|Anteriores|Siguientes/.test(root.textContent);
-const feedbackText = () => ['.recall__message', '.recall-feedback', '.wall__why']
+const feedbackText = () => ['.recall__message', '.recall-feedback', '.fan__why']
   .map((s) => flowMount.querySelector(s)?.textContent ?? '').join(' ');
 let flow = mountFlow();
 await flow.ready;
 const flowInput = () => flowMount.querySelector('input[role="combobox"]');
-check('AC-ARC-31: nivel 3 restaurado con una celda por carta distinta con Energía > 0, todas boca abajo',
-  flowMount.textContent.includes('Nivel 3') && flowMount.querySelectorAll('.wall__slot').length === 3 &&
-  fstates() === 'down,down,down' && !fslot('cero') &&
-  flowMount.querySelectorAll('.wall__slot > .card[data-face="down"]').length === 3);
+check('AC-FAN-01: nivel 3 restaurado: la mano tiene un dorso por carta pagable (alpha y gamma), todos boca abajo',
+  flowMount.textContent.includes('Nivel 3') && fstates() === 'down,down' && fextras() === '' && !fslot('cero') &&
+  flowMount.querySelectorAll('.fan__card > .card[data-face="down"]').length === 2,
+  fstates());
 check('AC-ARC-52: la ronda no tiene bandeja, cantidades, Confirmar, lista de jugadas ni paginador', removedUi(flowMount));
 check('AC-ARC-32: el dock está listo con su placeholder y sin Terminé de más',
   flowInput()?.placeholder === 'Nombrá una carta que pueda jugar' && !flowInput().disabled &&
@@ -774,23 +695,15 @@ check('AC-ARC-54: el aviso vacío no ocupa lugar (sin alto ni márgenes) aunque 
   flowMount.querySelector('.recall__notice').getBoundingClientRect().width <= 1 && flowMount.querySelector('.recall__notice').getBoundingClientRect().height <= 1,
   (() => { const n = flowMount.querySelector('.recall__notice'); const c = getComputedStyle(n); return `h=${n.getBoundingClientRect().height} m=${c.marginTop}/${c.marginBottom} p=${c.paddingTop} minh=${c.minHeight} empty=${n.matches(':empty')} kids=${n.childNodes.length}`; })());
 
-// La banda superior: la mesa del rival (runas) y su mano de siete dorsos, sólo contexto.
+// La banda superior: la mesa del rival (leyenda y runas). La mano ya no es decoración: es el abanico.
 const flowBand = flowMount.querySelector('.recall-band');
-const flowHand = flowBand?.querySelector('.recall-hand');
-const flowBacks = [...(flowHand?.children ?? [])];
 check('AC-ARC-30: la banda es lo primero tras el encabezado y trae la mesa con sus runas',
   !!flowBand && flowBand.previousElementSibling?.classList.contains('recall__head') &&
   flowBand.querySelectorAll('.runes .rune').length === scenarioAt(3).runes.length && flowBand.querySelectorAll('.rune:not(.rune--spent)').length === 3,
   `${flowBand?.querySelectorAll('.runes .rune').length} / ${flowBand?.previousElementSibling?.className}`);
-check('AC-ARC-30: la mano del rival son exactamente siete dorsos reales',
-  flowBacks.length === 7 && flowBacks.every((back) => getComputedStyle(back).backgroundImage.includes('card-back.png')) &&
-  !flowHand.querySelector('img, button, input, a, [tabindex], [data-card-id], [data-face]'));
-check('AC-ARC-30: la mano está estática (aria-hidden, sin handlers) y abierta en abanico por CSS',
-  flowHand.getAttribute('aria-hidden') === 'true' && getComputedStyle(flowHand).pointerEvents === 'none' &&
-  flowBacks.map((back) => back.style.getPropertyValue('--i')).join() === '0,1,2,3,4,5,6' &&
-  new Set(flowBacks.map((back) => getComputedStyle(back).transform)).size === 7);
-check('AC-ARC-30: la mano queda dentro de la banda y no ensancha la página',
-  flowBacks.every((back) => back.getBoundingClientRect().right <= flowBand.getBoundingClientRect().right + 1) &&
+check('AC-FAN-17: no quedan los siete dorsos decorativos ni la grilla del muro; la mano va debajo de la banda',
+  !flowMount.querySelector('.recall-hand, .recall-hand__back, .wall, .wall__grid, .wall__slot') && !!flowMount.querySelector('.fan') &&
+  flowBand.compareDocumentPosition(flowMount.querySelector('.fan')) === Node.DOCUMENT_POSITION_FOLLOWING &&
   document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1);
 check('AC-ARC-53: el nivel real es lo primero del encabezado, a la izquierda',
   flowMount.querySelector('.recall__head').firstElementChild.textContent === 'Nivel 3');
@@ -802,8 +715,8 @@ check('AC-ARC-35: carta impagable muestra el sello NO ENTRA con el motivo exacto
   stampShown() && flowMount.querySelector('.recall-stamp strong').textContent === 'NO ENTRA' &&
   flowMount.querySelector('.recall-stamp span').textContent === betaReason && /Chaos/.test(betaReason) &&
   announced(flowMount.querySelector('.recall-stamp')));
-check('AC-ARC-35: la celda sigue boca abajo, no se guarda nada y no hay toast duplicado',
-  fstates() === 'down,down,down' && saves === 0 && toastText() === null);
+check('AC-FAN-08: con NO ENTRA la mano no cambia ni suma cartas, no se guarda nada y no hay toast duplicado',
+  fstates() === 'down,down' && fextras() === '' && saves === 0 && toastText() === null);
 check('AC-ARC-35: el input queda marcado como rechazado mientras el sello está visible',
   flowInput().getAttribute('aria-invalid') === 'true');
 const betaRunes = rejectionRunes(checkCard('beta', scenarioAt(3), flowIndex).detail, scenarioAt(3).runes);
@@ -830,7 +743,7 @@ check('AC-ARC-37: nombrar otra cosa (otro aviso) limpia el sello y la marca del 
 type(flowMount, 'g');
 press(type(flowMount, ''), 'Enter');
 check('AC-ARC-40: Enter con el input vacío avisa en un toast y no cambia nada',
-  toastText() === 'Nombrá una carta antes de seguir' && fstates() === 'down,down,down' && saves === 0);
+  toastText() === 'Nombrá una carta antes de seguir' && fstates() === 'down,down' && saves === 0);
 
 // Rechazo por Energía: se resaltan EXACTAMENTE las runas abiertas, ninguna agotada.
 const energyMount = document.createElement('div');
@@ -852,18 +765,18 @@ check('AC-ARC-37: editar el input apaga el resaltado de las runas', lit(energyMo
 energyFlow.destroy();
 energyMount.remove();
 
-// Acierto: se da vuelta SOLO esa celda, con el brillo de su dominio.
+// Acierto: se da vuelta el PRIMER dorso con esa carta, con el brillo de su dominio.
 press(type(flowMount, 'alp'), 'Enter');
-check('AC-ARC-33: nombrar una pagable da vuelta sólo esa celda, con el brillo de su dominio',
-  fstates() === 'found,down,down' && fslot('alpha').dataset.glow === 'order' &&
-  fslot('alpha').querySelector('.card').dataset.face === 'up' && !fslot('gamma').hasAttribute('data-glow'));
+check('AC-FAN-04: nombrar una pagable da vuelta el primer dorso con esa carta y el brillo de su dominio',
+  fstates() === 'found:alpha,down' && fslot('alpha').dataset.glow === 'order' &&
+  fslot('alpha').querySelector('.card').dataset.face === 'up', fstates());
 check('AC-ARC-33: el input queda vacío y con el foco, y el acierto se guardó',
   flowInput().value === '' && document.activeElement === flowInput() && saves === 1 && toastText() === null);
 check('AC-ARC-34: nada celebra con carteles ni contadores',
   !flowMount.textContent.includes('¡Correcto!') && !/%|\d+\s*(de|\/)\s*\d+|descubiert/i.test(feedbackText()));
 press(type(flowMount, 'gam'), 'Enter');
-check('AC-ARC-34: la última pagable nombrada lleva el brillo y el anterior lo cede',
-  fstates() === 'found,down,found' && fslot('gamma').dataset.glow === 'order' &&
+check('AC-FAN-05: la segunda pagable ocupa el slot siguiente, lleva el brillo y la anterior lo cede',
+  fstates() === 'found:alpha,found:gamma' && fslot('gamma').dataset.glow === 'order' &&
   fslot('gamma').hasAttribute('data-fresh') && !fslot('alpha').hasAttribute('data-glow') && saves === 2);
 
 // Duplicado, fuera del mazo y Energía 0: avisan, no tocan el muro, no son falsos positivos.
@@ -871,19 +784,19 @@ press(type(flowMount, 'alp'), 'Enter');
 const firstToast = toastText();
 const staleCallback = timers.get([...timers.keys()].at(-1));
 check('AC-ARC-38: nombrar de nuevo un acierto avisa "ya nombrada" y no cambia el muro ni guarda',
-  /ya nombrada/.test(firstToast) && fstates() === 'found,down,found' && saves === 2);
+  /ya nombrada/.test(firstToast) && fstates() === 'found:alpha,found:gamma' && saves === 2);
 press(type(flowMount, 'bet'), 'Enter');
 check('AC-ARC-38: un falso positivo nombrado de nuevo también es duplicado',
-  /ya nombrada/.test(toastText()) && fstates() === 'found,down,found' && !stampShown());
+  /ya nombrada/.test(toastText()) && fstates() === 'found:alpha,found:gamma' && !stampShown());
 staleCallback();
 check('AC-ARC-38: el temporizador viejo no apaga el aviso nuevo; el vigente sí lo apaga',
   toastText() !== null && (() => { timers.get([...timers.keys()].at(-1))(); return toastText() === null; })());
 press(type(flowMount, 'zzzz'), 'Enter');
 check('AC-ARC-39: un texto fuera del mazo avisa con el motivo del motor, sin tocar el muro',
-  /no está en el mazo principal/.test(toastText()) && fstates() === 'found,down,found' && !stampShown());
+  /no está en el mazo principal/.test(toastText()) && fstates() === 'found:alpha,found:gamma' && !stampShown());
 press(type(flowMount, 'cer'), 'Enter');
 check('AC-ARC-39: una carta de Energía 0 avisa su motivo y no es un falso positivo',
-  /Energía 0/.test(toastText()) && fstates() === 'found,down,found' && !stampShown());
+  /Energía 0/.test(toastText()) && fstates() === 'found:alpha,found:gamma' && !stampShown());
 const liveToast = flowMount.querySelector('.recall-feedback__toast:not([hidden])');
 check('AC-ARC-60: el aviso vive en una región aria-live y se lee como advertencia, distinto del texto neutro',
   announced(liveToast) &&
@@ -892,49 +805,51 @@ check('AC-ARC-60: el aviso vive en una región aria-live y se lee como advertenc
   contrastOf(liveToast) >= 4.5,
   `${liveToast?.dataset.tone} ${liveToast && getComputedStyle(liveToast).color} contraste ${liveToast && contrastOf(liveToast).toFixed(2)}`);
 
-// Terminé con un falso positivo: revisión, no avanza.
+// Terminé con un falso positivo: revisión, no avanza. La mano queda completa; beta va al costado.
 action('finish').click();
-check('AC-ARC-47: todo lo pagable más un falso positivo cierra en revisión, sin avanzar',
-  fstates() === 'found,false-positive,found' && !!fslot('beta').querySelector('.wall__tag') &&
-  action('repeat').hidden === false && action('next').hidden === true && flowInput().disabled && saves === 3);
+check('AC-FAN-11: todo lo pagable más un falso positivo cierra en revisión, con beta al costado y NO ENTRABA',
+  fstates() === 'found:alpha,found:gamma' && fextras() === 'beta' && fslot('beta').querySelector('.fan__tag')?.textContent === 'NO ENTRABA' &&
+  !fslot('beta').closest('.fan') && action('repeat').hidden === false && action('next').hidden === true && flowInput().disabled && saves === 3);
 check('AC-ARC-52: el cierre tampoco muestra jugadas descubiertas ni "Jugada nueva"', removedUi(flowMount));
-check('AC-ARC-47: cerrar no inventa celdas "missed" cuando todo lo pagable está nombrado',
-  flowMount.querySelectorAll('.wall__slot[data-state="missed"]').length === 0);
+check('AC-FAN-12: cerrar no inventa cartas en gris cuando todo lo pagable está nombrado',
+  flowMount.querySelectorAll('.fan__card[data-state="missed"]').length === 0);
 flow.destroy();
 check('AC-CMB-27: desmontar deja el contenedor vacío', flowMount.children.length === 0);
 flow = mountFlow();
 await flow.ready;
-check('AC-ARC-50: reabrir una revisión conserva lo hallado, sin falsos positivos persistidos ni sello',
-  fstates() === 'found,irrelevant,found' && action('repeat').hidden === false && !stampShown() &&
-  !flowMount.querySelector('.wall__tag') && saves === 3);
+check('AC-FAN-15: reabrir una revisión conserva lo hallado en orden, sin falsos positivos persistidos ni sello',
+  fstates() === 'found:alpha,found:gamma' && fextras() === '' && action('repeat').hidden === false && !stampShown() &&
+  !flowMount.querySelector('.fan__tag') && saves === 3);
 action('repeat').click();
-check('AC-ARC-48: Repetir nivel conserva lo hallado, tapa el resto y devuelve el foco al input',
-  fstates() === 'found,down,found' && !stampShown() && !flowInput().disabled &&
+check('AC-FAN-14: Repetir nivel conserva lo hallado en los primeros slots y devuelve el foco al input',
+  fstates() === 'found:alpha,found:gamma' && !stampShown() && !flowInput().disabled &&
   document.activeElement === flowInput() && flowMount.textContent.includes('Nivel 3') && saves === 4);
-check('AC-ARC-48: tras repetir no quedan celdas con motivo ni etiquetas',
-  !flowMount.querySelector('.wall__tag, [data-reason]'));
+check('AC-FAN-14: tras repetir no quedan extras, motivos ni etiquetas',
+  !flowMount.querySelector('.fan__extra, .fan__tag, [data-reason]'));
 
 // Con la mesa repetida y limpia, el nivel se completa y se avanza.
 action('finish').click();
-check('AC-ARC-45: lo pagable completo y cero falsos positivos ofrece avanzar, sin Repetir ni grises',
-  action('next').hidden === false && action('repeat').hidden === true &&
-  fstates() === 'found,irrelevant,found' && flowMount.querySelectorAll('[data-state="missed"]').length === 0 && saves === 5);
+check('AC-FAN-12: lo pagable completo y cero falsos positivos ofrece avanzar, sin Repetir ni grises',
+  action('next').hidden === false && action('repeat').hidden === true && fextras() === '' &&
+  fstates() === 'found:alpha,found:gamma' && flowMount.querySelectorAll('[data-state="missed"]').length === 0 && saves === 5);
 check('AC-ARC-60: completo, el foco pasa a Siguiente nivel y no hay toast de faltantes',
   document.activeElement === action('next') && toastText() === null);
 action('next').click();
 check('AC-ARC-60: en el nivel nuevo el foco vuelve al input', document.activeElement === flowInput());
-check('AC-ARC-21: avanzar genera el nivel 4 con otra mesa y un muro nuevo boca abajo',
+const level4Size = payableCards(flowIndex, scenarioAt(4)).cardIds.length;
+check('AC-FAN-16: avanzar genera el nivel 4 con otra mesa y una mano nueva de tantos dorsos como pagables',
   flowMount.textContent.includes('Nivel 4') && flowMount.querySelectorAll('.rune:not(.rune--spent)').length === 4 &&
-  fstates() === 'down,down,down' && saves === 6 && actualStore.load({}).recall.schema === 2);
+  level4Size > 0 && fstates() === Array(level4Size).fill('down').join() && saves === 6 && actualStore.load({}).recall.schema === 2,
+  `${fstates()} / ${level4Size}`);
 check('AC-ARC-52: el nivel siguiente arranca limpio, sin restos de la UI combinatoria', removedUi(flowMount));
 press(type(flowMount, 'alp'), 'Enter');
 press(type(flowMount, 'bet'), 'Enter');
 flow.destroy();
 flow = mountFlow();
 await flow.ready;
-check('AC-ARC-50: recargar a mitad de ronda restaura los aciertos y el falso positivo vuelve boca abajo',
-  flowMount.textContent.includes('Nivel 4') && fstates() === 'found,down,down' && !stampShown() &&
-  !flowMount.querySelector('.wall__tag') && flowInput().value === '');
+check('AC-FAN-15: recargar a mitad de ronda devuelve el acierto al primer slot y el falso positivo no vuelve',
+  flowMount.textContent.includes('Nivel 4') && fstates() === ['found:alpha', ...Array(level4Size - 1).fill('down')].join() &&
+  fextras() === '' && !stampShown() && flowInput().value === '', fstates());
 check('AC-CMB-27: el historial de los niveles 1 a 3 sobrevive en el snapshot',
   actualStore.load({}).recall.history.map((h) => h.found.join('+')).join() === 'alpha,alpha+gamma,alpha+gamma');
 flow.destroy();
@@ -946,7 +861,7 @@ const otherDeck = { ...flowDeck, cards: [{ cardId: 'alpha', qty: 2 }, { cardId: 
 const other = mountRecall(otherMount, { deck: otherDeck, cards: flowCards, seed: 9, storage: actualStore });
 await other.ready;
 check('AC-CMB-28/29: un mazo incompatible no aplica el progreso de otra identidad: arranca en nivel 1 con aviso',
-  otherMount.textContent.includes('Nivel 1') && otherMount.querySelectorAll('.wall__slot[data-state="found"]').length === 0 &&
+  otherMount.textContent.includes('Nivel 1') && otherMount.querySelectorAll('.fan__card[data-state="found"]').length === 0 &&
   otherMount.textContent.includes('No pudimos recuperar el progreso anterior'));
 other.destroy();
 const staleRoot = (schema) => JSON.stringify({ legacy: { streak: 3 },
@@ -963,14 +878,14 @@ for (const schema of [1, 999]) {
     !staleNotice.hidden && staleNotice.textContent.includes('No pudimos recuperar el progreso anterior') &&
     // Promete sólo lo que pasa: cualquier avance (acertar o saltar) guarda y reemplaza el registro.
     staleNotice.textContent.includes('se reemplaza con tu primer avance') && !/hasta que aciertes/.test(staleNotice.textContent) &&
-    staleMount.textContent.includes('Nivel 1') && staleMount.querySelectorAll('.wall__slot').length === 3 &&
+    staleMount.textContent.includes('Nivel 1') && staleMount.querySelectorAll('.fan__card').length === payableCards(flowIndex, scenarioAt(1)).cardIds.length &&
     !staleMount.querySelector('input[role="combobox"]').disabled);
   check(`AC-ARC-24: con schema ${schema} la raíz legacy queda intacta hasta el primer acierto`,
     window.localStorage.getItem('riftrain.v1') === legacyRaw);
   press(type(staleMount, 'alp'), 'Enter');
   check(`AC-ARC-51: tras nombrar una carta el nivel 1 se guarda en schema 2 y conserva lo legacy`,
     actualStore.load({}).recall.schema === 2 && actualStore.load({}).legacy.streak === 3 &&
-    staleMount.querySelector('.wall__slot[data-card-id="alpha"]').dataset.state === 'found' && staleNotice.textContent === '' && !staleNotice.hidden);
+    staleMount.querySelector('.fan__card[data-card-id="alpha"]')?.dataset.state === 'found' && staleNotice.textContent === '' && !staleNotice.hidden);
   stale.destroy(); staleMount.remove();
 }
 actualStore.clear();
@@ -989,7 +904,7 @@ terminalMount.querySelector('[data-action="finish"]').click();
 check('AC-CMB-35: cerrar el nivel 12 completo termina el entrenamiento, sin nivel 13',
   terminalMount.textContent.includes('Entrenamiento completado') && !terminalMount.textContent.includes('Nivel 13') &&
   terminalMount.querySelector('[data-action="next"]').hidden === true &&
-  terminalMount.querySelector('.wall__slot[data-card-id="free"]').dataset.state === 'found');
+  terminalMount.querySelector('.fan__card[data-card-id="free"]')?.dataset.state === 'found');
 check('AC-ARC-60: al terminar el entrenamiento no queda botón que enfocar: el foco va al mensaje final, no al body',
   document.activeElement === terminalMount.querySelector('.recall__message'));
 terminalFlow.destroy(); terminalMount.remove();
@@ -1004,12 +919,12 @@ check('AC-ARC-49: un nivel sin pagables ofrece Saltar y no ofrece Terminé ni av
   emptyMount.querySelector('[data-action="finish"]').hidden === true && emptyMount.querySelector('[data-action="next"]').hidden === true);
 press(type(emptyMount, 'costosa'), 'Enter');
 check('AC-ARC-49: en un nivel sin pagables cualquier carta nombrada es falso positivo',
-  !!emptyMount.querySelector('.recall-stamp:not([hidden])') && emptyMount.querySelector('.wall__slot').dataset.state === 'down');
+  !!emptyMount.querySelector('.recall-stamp:not([hidden])') && emptyMount.querySelectorAll('.fan__card, .fan__extra').length === 0);
 emptyMount.querySelector('[data-action="skip"]').click();
 check('AC-ARC-49: saltar cierra el nivel sin celdas missed; en el 12 termina con nivel omitido',
   emptyMount.textContent.includes('Recorrido terminado con nivel omitido') && !emptyMount.textContent.includes('Nivel 13') &&
   emptyMount.querySelectorAll('[data-state="missed"]').length === 0 &&
-  emptyMount.querySelector('.wall__slot').dataset.state === 'false-positive');
+  emptyMount.querySelectorAll('.fan__card').length === 0 && emptyMount.querySelector('.fan__extra[data-card-id="hard"]')?.dataset.state === 'false-positive');
 emptyFlow.destroy(); emptyMount.remove();
 
 const zeroMount = document.createElement('div');
@@ -1018,7 +933,7 @@ const zeroFlow = mountRecall(zeroMount, { deck: { cards: [{ cardId: 'cero', qty:
   cards: [sampleCards[3]], seed: 42, storage: stub });
 press(type(zeroMount, 'cer'), 'Enter');
 check('AC-ARC-39: un mazo sólo de Energía 0 tiene muro vacío, se puede nombrar y explica la Energía 0, y se salta',
-  zeroMount.querySelectorAll('.wall__slot').length === 0 && /Energía 0/.test(zeroMount.querySelector('.recall-feedback__toast').textContent) &&
+  zeroMount.querySelectorAll('.fan__card').length === 0 && /Energía 0/.test(zeroMount.querySelector('.recall-feedback__toast').textContent) &&
   zeroMount.querySelector('[data-action="skip"]').hidden === false && zeroMount.querySelector('[data-action="finish"]').hidden === true &&
   !zeroMount.textContent.includes('Entrenamiento completado'));
 zeroFlow.destroy(); zeroMount.remove();
@@ -1030,7 +945,7 @@ document.querySelector('#stage main').appendChild(closeMount);
 const closeDeck = { id: 'close', name: 'Mazo de cierre', runes: { order: 12 },
   cards: [{ cardId: 'alpha', qty: 2 }, { cardId: 'beta', qty: 1 }, { cardId: 'gamma', qty: 1 }, { cardId: 'hard', qty: 1 }] };
 const closeFlow = mountRecall(closeMount, { deck: closeDeck, cards: [...sampleCards, hard], seed: 5, initialLevel: 3, storage: stub, feedbackOptions });
-const cslot = (id) => closeMount.querySelector(`.wall__slot[data-card-id="${id}"]`);
+const cslot = (id) => closeMount.querySelector(`.fan__card[data-card-id="${id}"], .fan__extra[data-card-id="${id}"]`);
 const closeFinish = closeMount.querySelector('[data-action="finish"]');
 check('AC-ARC-41: en la ronda la pantalla está en fase round y Terminé mide al menos 44px de alto',
   closeMount.querySelector('.recall').dataset.phase === 'round' && closeFinish.getBoundingClientRect().height >= 44,
@@ -1040,35 +955,34 @@ press(type(closeMount, 'bet'), 'Enter');
 closeFinish.click();
 // Se mide el estado FINAL, no un instante de la transición: se terminan las animaciones en curso.
 closeMount.getAnimations({ subtree: true }).forEach((animation) => animation.finish());
-const opacityOf = (slot) => Number(getComputedStyle(slot).opacity);
 check('AC-ARC-41: Terminé pasa la pantalla a fase closed', closeMount.querySelector('.recall').dataset.phase === 'closed');
 check('AC-ARC-46: si faltó alguna pagable, avisa en un toast y ofrece Repetir nivel, sin avanzar',
   closeMount.querySelector('.recall-feedback__toast:not([hidden])')?.textContent === 'Te faltaron cartas. Revisá las que están en gris' &&
   closeMount.querySelector('[data-action="repeat"]').hidden === false && closeMount.querySelector('[data-action="next"]').hidden === true);
 check('AC-ARC-60: al cerrar, el foco pasa a Repetir nivel (Terminé se oculta y no lo pierde)',
   document.activeElement === closeMount.querySelector('[data-action="repeat"]'));
-check('AC-ARC-42: acierto levantado y con el brillo de su dominio',
-  cslot('alpha').dataset.state === 'found' && cslot('alpha').dataset.glow === 'order' &&
-  cslot('alpha').querySelector('.card').dataset.face === 'up' && opacityOf(cslot('alpha')) === 1);
-check('AC-ARC-42: lo que se te pasó queda levantado, gris, hundido y apagado (~.32)',
-  cslot('gamma').dataset.state === 'missed' && cslot('gamma').querySelector('.card').dataset.face === 'up' &&
-  Math.abs(opacityOf(cslot('gamma')) - 0.32) < 0.02 && getComputedStyle(cslot('gamma')).transform !== 'none' &&
-  /grayscale\(1\)/.test(getComputedStyle(cslot('gamma').querySelector('.card__face--front')).filter),
-  `${opacityOf(cslot('gamma'))} ${getComputedStyle(cslot('gamma')).transform}`);
-const closeTag = cslot('beta').querySelector('.wall__tag');
-check('AC-ARC-42: el falso positivo queda inclinado con el rótulo NO ENTRABA legible (>= 11px)',
-  cslot('beta').dataset.state === 'false-positive' && getComputedStyle(cslot('beta')).transform !== 'none' &&
+check('AC-FAN-04: el acierto queda levantado, al frente y con el brillo de su dominio, en el primer slot',
+  cslot('alpha')?.dataset.state === 'found' && cslot('alpha').dataset.slot === '0' && cslot('alpha').dataset.glow === 'order' &&
+  cslot('alpha').querySelector('.card').dataset.face === 'up');
+check('AC-FAN-10: lo que se te pasó ocupa el dorso que quedaba, boca arriba y en gris',
+  cslot('gamma')?.dataset.state === 'missed' && cslot('gamma').dataset.slot === '1' &&
+  cslot('gamma').querySelector('.card').dataset.face === 'up' &&
+  /grayscale\(1\)/.test(getComputedStyle(cslot('gamma').querySelector('.card__face--front')).filter) &&
+  getComputedStyle(cslot('gamma').querySelector('.card')).filter === 'none');
+const closeTag = cslot('beta')?.querySelector('.fan__tag');
+check('AC-FAN-11: el falso positivo va al costado de la mano, inclinado, con NO ENTRABA legible (>= 11px)',
+  cslot('beta')?.classList.contains('fan__extra') && !cslot('beta').closest('.fan') &&
+  getComputedStyle(cslot('beta')).transform !== 'none' &&
   closeTag?.textContent === 'NO ENTRABA' && parseFloat(getComputedStyle(closeTag).fontSize) >= 11 &&
-  closeTag.scrollWidth <= closeTag.clientWidth + 1,
-  `${closeTag && getComputedStyle(closeTag).fontSize}`);
-check('AC-ARC-42: la irrelevante sigue boca abajo, atenuada y sin motivo',
-  cslot('hard').dataset.state === 'irrelevant' && cslot('hard').querySelector('.card').dataset.face === 'down' &&
-  opacityOf(cslot('hard')) < 1 && !cslot('hard').hasAttribute('tabindex') && !cslot('hard').hasAttribute('data-reason'));
-const closeWhy = closeMount.querySelector('.wall__why');
+  closeTag.scrollWidth <= closeTag.clientWidth + 1);
+check('AC-FAN-17: la irrelevante no está en la mano: hay exactamente tantas cartas como pagables',
+  !cslot('hard') && closeMount.querySelectorAll('.fan__card').length === 2);
+const closeWhy = closeMount.querySelector('.fan__why');
+
 cslot('gamma').dispatchEvent(new Event('focusin', { bubbles: true }));
 const missedWhy = closeWhy.textContent;
 cslot('beta').dispatchEvent(new Event('pointerenter'));
-check('AC-ARC-43: cada celda con motivo es focusable y lo muestra: "Se podía pagar" o el motivo exacto del motor',
+check('AC-FAN-10: cada carta con motivo es focusable y lo muestra: "Se podía pagar" o el motivo exacto del motor',
   cslot('gamma').tabIndex === 0 && cslot('beta').tabIndex === 0 && /^Se podía pagar: /.test(missedWhy) &&
   closeWhy.textContent === checkCard('beta', createRecallScenario(closeDeck, normalizeDeck(closeDeck, [...sampleCards, hard], { policy: 'positive-energy' }).index, 5, 3).scenario,
     normalizeDeck(closeDeck, [...sampleCards, hard], { policy: 'positive-energy' }).index).reason,
@@ -1080,7 +994,7 @@ const focusRule = (selector) => [...document.styleSheets].some((sheet) => {
   catch { return false; }
 });
 check('AC-ARC-60: foco visible definido para las celdas del cierre y los botones (Terminé, Repetir, Siguiente)',
-  focusRule('.wall__slot[tabindex]:focus-visible') && focusRule('.btn:focus-visible'));
+  focusRule('.fan__card:focus-visible') && focusRule('.fan__extra:focus-visible') && focusRule('.btn:focus-visible'));
 closeFlow.destroy(); closeMount.remove();
 
 // ---- MOVIMIENTO REDUCIDO (AC-ARC-58): misma ronda, sin transiciones; el estado visible es idéntico.
@@ -1089,16 +1003,16 @@ const motionRun = (reducedMotion) => {
   document.querySelector('#stage main').appendChild(mount);
   const run = mountRecall(mount, { deck: closeDeck, cards: [...sampleCards, hard], seed: 5, initialLevel: 3, storage: stub, feedbackOptions, reducedMotion });
   press(type(mount, 'alp'), 'Enter');
-  const duringRound = ['.wall__slot', '.wall__slot .card'].map((selector) => getComputedStyle(mount.querySelector(selector)).transitionDuration);
+  const duringRound = ['.fan__card', '.fan__card .card'].map((selector) => getComputedStyle(mount.querySelector(selector)).transitionDuration);
   press(type(mount, 'bet'), 'Enter');
   const stamp = mount.querySelector('.recall-stamp:not([hidden])')?.textContent;
   mount.querySelector('[data-action="finish"]').click();
-  const closedSlots = [...mount.querySelectorAll('.wall__slot')];
+  const closedSlots = [...mount.querySelectorAll('.fan__card, .fan__extra')];
   const result = {
     reducedClass: mount.querySelector('.recall').classList.contains('recall--reduced'),
     durations: [...duringRound, ...closedSlots.map((slot) => getComputedStyle(slot).transitionDuration)],
     animations: mount.getAnimations({ subtree: true }).length,
-    visible: JSON.stringify({ stamp, states: closedSlots.map((slot) => [slot.dataset.cardId, slot.dataset.state, slot.dataset.reason ?? null, !!slot.querySelector('.wall__tag')]) }),
+    visible: JSON.stringify({ stamp, states: closedSlots.map((slot) => [slot.dataset.cardId, slot.dataset.state, slot.dataset.reason ?? null, !!slot.querySelector('.fan__tag')]) }),
   };
   run.destroy(); mount.remove();
   return result;
@@ -1107,7 +1021,7 @@ const withMotion = motionRun(false);
 const reduced = motionRun(true);
 check('AC-ARC-58: con movimiento, voltear y cerrar sí animan (el test puede fallar)',
   !withMotion.reducedClass && withMotion.durations.some((d) => d !== '0s') && withMotion.animations > 0, withMotion.durations.join());
-check('AC-ARC-58: con movimiento reducido no hay transiciones ni animaciones en el muro',
+check('AC-ARC-58: con movimiento reducido no hay transiciones ni animaciones en la mano',
   reduced.reducedClass && reduced.durations.every((d) => d === '0s') && reduced.animations === 0, `${reduced.durations.join()} ${reduced.animations}`);
 check('AC-ARC-58: el estado visible es idéntico con y sin movimiento (estados, motivos, rótulos y sello)',
   reduced.visible === withMotion.visible && JSON.parse(reduced.visible).stamp?.includes('NO ENTRA'));
@@ -1134,7 +1048,7 @@ const warningFlow = mountRecall(warningMount, { deck: terminalDeck, cards: [term
 press(type(warningMount, 'costo uno'), 'Enter');
 check('AC-CMB-22: almacenamiento bloqueado muestra aviso honesto y conserva el acierto en memoria',
   warningMount.textContent.includes('Sólo en memoria') &&
-  warningMount.querySelector('.wall__slot').dataset.state === 'found');
+  warningMount.querySelector('.fan__card')?.dataset.state === 'found');
 warningFlow.destroy(); warningMount.remove();
 
 const invalidMount = document.createElement('div');
@@ -1143,7 +1057,7 @@ const invalidFlow = mountRecall(invalidMount, { deck: { ...flowDeck, cards: [{ c
   cards: flowCards, seed: 42, storage: memoryStore });
 check('AC-CMB-13: un dato desconocido bloquea la ronda y no se anuncia como nivel vacío',
   invalidMount.textContent.includes('desconocido') && !invalidMount.querySelector('input') &&
-  !invalidMount.querySelector('.wall__slot') && invalidMount.querySelector('[data-action="skip"]').hidden === true);
+  !invalidMount.querySelector('.fan__card') && invalidMount.querySelector('[data-action="skip"]').hidden === true);
 invalidFlow.destroy(); invalidMount.remove(); flowMount.remove();
 if (rootBefore === null) actualStore.clear(); else window.localStorage.setItem('riftrain.v1', rootBefore);
 
@@ -1158,14 +1072,14 @@ await liveFrame.contentWindow.__riftrainReady;
 const liveDoc = liveFrame.contentDocument;
 const liveDeck = realData.decks[0];
 const mainCards = new Set(liveDeck.cards.filter(({ cardId }) => realData.cards.find((c) => c.id === cardId).energy > 0).map(({ cardId }) => cardId));
-const liveSlot = (id) => liveDoc.querySelector(`#recall-root .wall__slot[data-card-id="${id}"]`);
+const liveSlot = (id) => liveDoc.querySelector(`#recall-root .fan__card[data-card-id="${id}"]`);
 check('AC-CMB-01/19: index arranca en recall nivel 1, no en el cuestionario legacy',
   !!liveDoc.querySelector('#recall-root input[role="combobox"]') &&
   liveDoc.querySelector('#recall-root').textContent.includes('Nivel 1') &&
   getComputedStyle(liveDoc.querySelector('#legacy-mode')).display === 'none');
 check('AC-ARC-30: en la app real la banda muestra leyenda y campeón con sus imágenes oficiales',
   liveDoc.querySelectorAll('#recall-root .recall-band .legend .card img').length === 2 &&
-  liveDoc.querySelectorAll('#recall-root .recall-band .recall-hand > *').length === 7);
+  !liveDoc.querySelector('#recall-root .recall-hand'));
 check('AC-ARC-53: un solo indicador de nivel visible, "Nivel 1" arriba a la izquierda; el #level viejo no se ve', (() => {
   const visible = [...liveDoc.querySelectorAll('.level, .recall__level, #level')]
     .filter((item) => item.getClientRects().length && getComputedStyle(item).visibility !== 'hidden');
@@ -1173,20 +1087,21 @@ check('AC-ARC-53: un solo indicador de nivel visible, "Nivel 1" arriba a la izqu
   return visible.length === 1 && visible[0].textContent === 'Nivel 1' && box.left < 40 && box.top < 140 &&
     getComputedStyle(liveDoc.getElementById('level')).display === 'none';
 })());
-check('AC-ARC-31: la app real muestra un muro con una celda por carta distinta con Energía > 0, boca abajo',
-  liveDoc.querySelectorAll('#recall-root .wall__slot').length === mainCards.size && mainCards.size > 10 &&
-  [...mainCards].every((id) => liveSlot(id)?.dataset.state === 'down') &&
+check('AC-FAN-01: la app real muestra la mano con sus dorsos, todos boca abajo y sin identidad',
+  liveDoc.querySelectorAll('#recall-root .fan__card').length > 0 &&
+  [...liveDoc.querySelectorAll('#recall-root .fan__card')].every((slot) => slot.dataset.state === 'down' && !slot.dataset.cardId) &&
   liveDoc.documentElement.scrollWidth <= liveDoc.documentElement.clientWidth + 1);
 const liveRect = (selector) => liveDoc.querySelector(selector).getBoundingClientRect();
 check('AC-ARC-55: a 320 todo va en una columna: banda, muro y dock uno debajo del otro, sin grilla de escritorio',
   getComputedStyle(liveDoc.querySelector('.recall')).display !== 'grid' &&
-  liveRect('.recall-band').bottom <= liveRect('.recall__wall').top + 1 && liveRect('.recall__wall').bottom <= liveRect('.recall-dock').top + 1);
-const phoneCols = new Set([...liveDoc.querySelectorAll('#recall-root .wall__slot')].map((slot) => Math.round(slot.getBoundingClientRect().left))).size;
-check('AC-ARC-55: el muro del teléfono usa menos columnas que el de escritorio (7)', phoneCols >= 3 && phoneCols < 7, `${phoneCols} columnas`);
+  liveRect('.recall-band').bottom <= liveRect('.fan-wrap').top + 1 && liveRect('.fan-wrap').bottom <= liveRect('.recall-dock').top + 1);
+check('AC-FAN-19: a 320 todas las cartas de la mano quedan dentro del ancho y dentro de su área',
+  [...liveDoc.querySelectorAll('#recall-root .fan__card')].every((slot) => { const box = slot.getBoundingClientRect(); const zone = liveRect('.fan-zone');
+    return box.left >= -1 && box.right <= liveDoc.documentElement.clientWidth + 1 && box.top >= zone.top - 1 && box.bottom <= zone.bottom + 1; }));
 check('AC-ARC-59: las celdas boca abajo muestran el dorso real, sin texto de relleno', (() => {
-  const back = liveDoc.querySelector('#recall-root .wall__slot .card[data-face="down"] .card__face--back');
+  const back = liveDoc.querySelector('#recall-root .fan__card .card[data-face="down"] .card__face--back');
   return !!back && getComputedStyle(back).backgroundImage.includes('card-back') &&
-    !/desconocid/i.test(liveDoc.querySelector('#recall-root .wall').textContent);
+    !/desconocid/i.test(liveDoc.querySelector('#recall-root .fan').textContent);
 })());
 check('AC-ARC-59: la app real sugiere desde todo el main (Gust) con su imagen oficial', (() => {
   const input = liveDoc.querySelector('#recall-root input[role="combobox"]');
@@ -1232,9 +1147,9 @@ const phoneShape = [...liveDoc.querySelectorAll('.recall > *')].map((item) => it
 // Cierre a 320: ~21 celdas con sus cuatro estados, todas alcanzables sin scroll horizontal.
 liveDoc.querySelector('#recall-root [data-action="finish"]').click();
 liveFrame.contentDocument.getAnimations().forEach((animation) => animation.finish());
-const closedPhone = [...liveDoc.querySelectorAll('#recall-root .wall__slot')];
-check('AC-ARC-56: el cierre a 320 no desborda y todas las celdas quedan dentro del ancho',
-  liveDoc.querySelector('.recall').dataset.phase === 'closed' && closedPhone.length > 10 &&
+const closedPhone = [...liveDoc.querySelectorAll('#recall-root .fan__card, #recall-root .fan__extra')];
+check('AC-FAN-19: el cierre a 320 no desborda y todas las cartas quedan dentro del ancho',
+  liveDoc.querySelector('.recall').dataset.phase === 'closed' && closedPhone.length > 0 &&
   liveDoc.documentElement.scrollWidth <= liveDoc.documentElement.clientWidth + 1 &&
   closedPhone.every((slot) => slot.getBoundingClientRect().left >= -1 && slot.getBoundingClientRect().right <= liveDoc.documentElement.clientWidth + 1),
   `${liveDoc.documentElement.scrollWidth} / ${liveDoc.documentElement.clientWidth}`);
@@ -1268,27 +1183,26 @@ const dq = (selector) => deskDoc.querySelector(selector);
 const rect = (selector) => dq(selector).getBoundingClientRect();
 const inside = (inner, outer) => inner.left >= outer.left - 1 && inner.right <= outer.right + 1 &&
   inner.top >= outer.top - 1 && inner.bottom <= outer.bottom + 1;
-const wallSlots = [...deskDoc.querySelectorAll('.recall .wall__slot')];
-check('AC-ARC-54: a 1280x800 el orden es banda, muro, dock (de arriba hacia abajo)',
-  rect('.recall-band').bottom <= rect('.wall').top + 1 && rect('.wall').bottom <= rect('.recall-dock').top + 1 &&
+const fanCardsDesk = () => [...deskDoc.querySelectorAll('.recall .fan__card')];
+deskDoc.getAnimations().forEach((animation) => animation.finish());
+check('AC-FAN-18: a 1280x800 el orden es banda, mano, dock (de arriba hacia abajo)',
+  rect('.recall-band').bottom <= rect('.fan-wrap').top + 1 && rect('.fan-wrap').bottom <= rect('.recall-dock').top + 1 &&
   rect('.recall__head').bottom <= rect('.recall-band').top + 1);
 check('AC-ARC-54: la página entera cabe en 1280x800 sin scroll, ni vertical ni horizontal',
   deskDoc.documentElement.scrollHeight <= deskWin.innerHeight && deskDoc.documentElement.scrollWidth <= deskDoc.documentElement.clientWidth + 1,
   `${deskDoc.documentElement.scrollHeight} / ${deskWin.innerHeight}`);
-check('AC-ARC-54: la mesa más ancha entra en una sola fila de runas y la mano no se estira',
-  new Set([...deskDoc.querySelectorAll('.recall-band .rune')].map((rune) => Math.round(rune.getBoundingClientRect().bottom))).size === 1 &&
-  [...deskDoc.querySelectorAll('.recall-hand__back')].every((back) => Math.abs(back.offsetHeight - 44 * 88 / 63) < 2),
-  `${new Set([...deskDoc.querySelectorAll('.recall-band .rune')].map((rune) => Math.round(rune.getBoundingClientRect().bottom))).size} filas; runes=${Math.round(rect('.recall-band .runes').width)} w=${[...deskDoc.querySelectorAll('.recall-band .rune')].map((r) => Math.round(r.getBoundingClientRect().width) + '/' + r.querySelector('.rune__label').offsetWidth).join(' ')}`);
-check('AC-ARC-54: runas, leyenda y los siete dorsos quedan dentro de la banda',
+check('AC-ARC-54: la mesa más ancha entra en una sola fila de runas',
+  new Set([...deskDoc.querySelectorAll('.recall-band .rune')].map((rune) => Math.round(rune.getBoundingClientRect().bottom))).size === 1);
+check('AC-ARC-54: runas y leyenda quedan dentro de la banda',
   deskDoc.querySelectorAll('.recall-band .rune').length > 0 &&
-  [...deskDoc.querySelectorAll('.recall-band .rune, .recall-band .legend .card, .recall-hand__back')]
+  [...deskDoc.querySelectorAll('.recall-band .rune, .recall-band .legend .card')]
     .every((item) => inside(item.getBoundingClientRect(), rect('.recall-band'))));
-check('AC-ARC-54: todo el muro es visible dentro de su zona, en 7 columnas y con la proporción de la carta', (() => {
-  const lefts = new Set(wallSlots.map((slot) => Math.round(slot.getBoundingClientRect().left)));
-  const cards = wallSlots.map((slot) => slot.querySelector('.card').getBoundingClientRect());
-  return wallSlots.length > 10 && lefts.size === 7 && wallSlots.every((slot) => inside(slot.getBoundingClientRect(), rect('.wall'))) &&
-    cards.every((box) => Math.abs(box.width / box.height - 63 / 88) < 0.02) && cards[0].width > 60;
-})(), (() => { const c = wallSlots.map((slot) => slot.querySelector('.card').getBoundingClientRect()); const w = rect('.wall'); return `n=${wallSlots.length} cols=${new Set(wallSlots.map((slot) => Math.round(slot.getBoundingClientRect().left))).size} out=${wallSlots.filter((slot) => !inside(slot.getBoundingClientRect(), w)).length} w=${Math.round(c[0].width)} h=${Math.round(c[0].height)} wall=${Math.round(w.width)}x${Math.round(w.height)}`; })());
+check('AC-FAN-18: la mano tiene tantos dorsos como pagables, todos dentro de su área, sin pisar el dock y legibles', (() => {
+  const zone = rect('.fan-zone');
+  const cards = fanCardsDesk();
+  return cards.length > 0 && cards.length === deskState.payable.length && cards.every((slot) => inside(slot.getBoundingClientRect(), zone)) &&
+    zone.bottom <= rect('.recall-dock').top + 1 && cards[0].offsetWidth >= 80;
+})(), `${fanCardsDesk().length} cartas, ancho ${fanCardsDesk()[0]?.offsetWidth}, zona ${Math.round(rect('.fan-zone').width)}x${Math.round(rect('.fan-zone').height)}`);
 check('AC-ARC-54: la mesa es oscura de punta a punta y no hay un panel claro suelto',
   (getComputedStyle(deskDoc.body).backgroundColor.match(/\d+/g) ?? []).slice(0, 3).every((value) => Number(value) < 60));
 check('AC-ARC-57: en escritorio la pantalla es una grilla de cuatro filas; en una ventana baja vuelve a fluir',
@@ -1306,21 +1220,21 @@ check('AC-ARC-54: las sugerencias se abren hacia arriba y no agregan scroll a la
   dq('.recall-composer__list').getBoundingClientRect().bottom <= deskInput.getBoundingClientRect().top + 1 &&
   deskDoc.documentElement.scrollHeight <= deskWin.innerHeight,
   `${deskDoc.querySelectorAll('.recall [role="option"]').length} ${dq('.recall-composer__list').getBoundingClientRect().bottom} ${deskInput.getBoundingClientRect().top} ${deskDoc.documentElement.scrollHeight}`);
-// Escritorio angosto: la misma mesa ancha ya no entra en una fila. Partida en dos, la mano no se estira.
+// Escritorio angosto: la mano sigue entera dentro de su área y nada desborda (la banda ya no tiene la columna de los dorsos).
 deskFrame.style.width = '1024px';
 const narrowRows = new Set([...deskDoc.querySelectorAll('.recall-band .rune')].map((rune) => Math.round(rune.getBoundingClientRect().bottom))).size;
-check('AC-ARC-54: a 1024 con las runas en dos filas, los dorsos conservan su tamaño y nada desborda',
-  narrowRows > 1 && getComputedStyle(dq('.recall')).display === 'grid' &&
-  [...deskDoc.querySelectorAll('.recall-hand__back')].every((back) => Math.abs(back.offsetHeight - 44 * 88 / 63) < 2) &&
+check('AC-FAN-18: a 1024 la mano entra en su área y nada desborda',
+  getComputedStyle(dq('.recall')).display === 'grid' &&
+  fanCardsDesk().every((slot) => inside(slot.getBoundingClientRect(), rect('.fan-zone'))) &&
   deskDoc.documentElement.scrollWidth <= deskDoc.documentElement.clientWidth + 1,
   `${narrowRows} filas, sw=${deskDoc.documentElement.scrollWidth}`);
 deskFrame.style.width = '1200px';
 dq('.recall [data-action="finish"]').click();
 deskDoc.getAnimations().forEach((animation) => animation.finish());
-check('AC-ARC-56: el cierre a 1200 no desborda y todas las celdas quedan dentro del ancho',
-  dq('.recall').dataset.phase === 'closed' &&
+check('AC-FAN-18: el cierre a 1200 no desborda: las que faltaron, en gris, quedan dentro del área de la mano',
+  dq('.recall').dataset.phase === 'closed' && deskDoc.querySelectorAll('.recall .fan__card[data-state="missed"]').length > 0 &&
   deskDoc.documentElement.scrollWidth <= deskDoc.documentElement.clientWidth + 1 &&
-  [...deskDoc.querySelectorAll('.recall .wall__slot')].every((slot) => slot.getBoundingClientRect().right <= deskDoc.documentElement.clientWidth + 1),
+  fanCardsDesk().every((slot) => inside(slot.getBoundingClientRect(), rect('.fan-zone'))),
   `${deskDoc.documentElement.scrollWidth} / ${deskDoc.documentElement.clientWidth}`);
 deskFrame.style.width = '1280px';
 deskFrame.style.height = '600px';

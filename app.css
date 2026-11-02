@@ -202,7 +202,7 @@ button { font: inherit; color: inherit; }
 
 /* Dorso: el dorso real de la carta. El color de fondo es el mismo verde, por si
    la imagen tarda: nunca un hueco. */
-.card__face--back, .recall-hand__back {
+.card__face--back {
   background: #1d4f57 url("assets/card-back.png") center / cover no-repeat;
 }
 
@@ -393,15 +393,6 @@ button { font: inherit; color: inherit; }
 /* La leyenda se queda dentro de la banda aunque la pantalla sea ancha. */
 .recall-band .legend { position: static; width: auto; }
 /* La mano del rival: siete dorsos en abanico, sólo para dar contexto. */
-/* flex-start: si la fila de la banda crece (runas en dos filas), los dorsos NO se estiran:
-   con aspect-ratio, estirarlos los agranda y el abanico se sale de la pantalla. */
-.recall-hand { display: flex; align-items: flex-start; justify-content: center; padding: 12px 0 0; pointer-events: none; }
-.recall-hand__back {
-  flex: 0 0 auto; width: 44px; aspect-ratio: 63 / 88; border-radius: 5px; margin-inline: -7px;
-  box-shadow: 0 2px 6px rgba(0,0,0,.55);
-  transform-origin: 50% 120%;
-  transform: rotate(calc((var(--i) - 3) * 4deg));
-}
 .recall__table .board { margin-bottom: 0; }
 .recall__feedback { min-height: 1.5em; margin-top: 8px; }
 .recall-feedback { min-width: 0; }
@@ -446,35 +437,9 @@ button { font: inherit; color: inherit; }
   .recall__table .runes { gap: 6px; }
 }
 
-/* ---------- MURO DEL MAZO ---------- */
-/* Una celda por carta distinta. El estado se lee en la imagen (levantada, gris, inclinada), no en un numero. */
-.wall { min-width: 0; margin-top: 14px; container: wall / inline-size; }
-.wall__grid { --gap: 8px; display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); gap: var(--gap); }
-/* Las columnas las decide el ancho REAL del muro, no el de la ventana. */
-@container wall (min-width: 420px) { .wall__grid { --cols: 5; } }
-@container wall (min-width: 560px) { .wall__grid { --cols: 6; } }
-@container wall (min-width: 760px) { .wall__grid { --cols: 7; } }
-.wall__slot { position: relative; min-width: 0; transition: transform var(--flip) var(--ease), opacity var(--flip) var(--ease); }
-/* El brillo del dominio vive sólo en la ultima carta nombrada (y en los aciertos al cerrar). */
-.wall__slot[data-glow] .card { box-shadow: 0 0 0 2px var(--glow), 0 0 18px 2px var(--glow); }
-.wall__slot[data-state="missed"] { opacity: .32; transform: translateY(4px) scale(.97); }
-.wall__slot[data-state="missed"] .card__face--front { filter: grayscale(1); }
-.wall__slot[data-state="false-positive"] { transform: rotate(-4deg); }
-.wall__slot[data-state="false-positive"] .card__face--front { box-shadow: inset 0 0 0 3px var(--bad); }
-.wall__slot[data-state="irrelevant"] { opacity: .4; }
-.wall__slot[tabindex]:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-.wall__tag {
-  position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); z-index: 3;
-  /* 11px legible en un telefono; si la carta es angosta, parte en dos renglones en vez de cortarse. */
-  width: max-content; max-width: calc(100% - 6px); text-align: center; line-height: 1.15;
-  padding: 2px 5px; border-radius: 3px; background: var(--bad); color: #fff;
-  font-size: 11px; font-weight: 700; overflow-wrap: anywhere;
-}
-.wall__why { margin: 10px 0 0; font-size: 13px; color: var(--ink-soft); min-height: 1.5em; }
-
 /* ---------- ESCRITORIO: la pantalla completa, sin scroll de página ----------
    Mismos elementos que en el teléfono; sólo cambia la disposición. Encabezado, banda,
-   muro y dock en cuatro filas; el muro se queda con todo el alto que sobra. */
+   mano y dock en cuatro filas; la mano se queda con todo el alto que sobra. */
 .recall-dock { min-width: 0; }
 .recall__info { display: flex; flex-wrap: wrap; column-gap: 16px; }
 @media (min-width: 1024px) and (min-height: 700px) {
@@ -492,30 +457,23 @@ button { font: inherit; color: inherit; }
   }
   .recall__head { margin: 0; }
   .recall-band {
-    display: grid; grid-template: "head head" auto "board hand" auto / minmax(0, 1fr) auto; column-gap: 24px;
+    display: grid; grid-template: "head" auto "board" auto / minmax(0, 1fr);
   }
   .recall-band .table__head { grid-area: head; margin-bottom: 6px; }
   .recall-band .board { grid-area: board; margin: 0; }
   .recall-band .legend { flex-direction: row; flex-basis: auto; }
   .recall-band .legend .card { width: 56px; }
   /* La mesa mas ancha (12 runas, 9 tumbadas) tiene que entrar en UNA fila: si se parte en dos,
-     la banda crece y el muro pierde el alto que necesita. 44px = el ancho de los dorsos. */
+     la banda crece y la mano pierde el alto que necesita. */
   .recall-band .runes { gap: 8px 6px; }
   .recall-band .rune__seat { width: 44px; height: 62px; }
   .recall-band .rune__card { width: 44px; }
   .recall-band .rune--spent .rune__seat { width: 62px; }
   .recall-band .rune__state { display: none; }   /* el rotulo no ensancha la runa; aria-label lo conserva */
-  .recall-hand { grid-area: hand; padding: 8px 20px 0; }
-  .recall__wall { position: relative; min-height: 0; }
-  .wall { position: absolute; inset: 0; margin: 0; container-type: size; }
-  /* Alto y ancho a la vez: la carta es la menor de las dos medidas, siempre en 63:88. */
-  .wall__grid {
-    --rows: round(up, calc(var(--n) / var(--cols)), 1);
-    --card-w: min(calc((100cqw - (var(--cols) - 1) * var(--gap)) / var(--cols)),
-      calc((100cqh - 2.4rem - (var(--rows) - 1) * var(--gap)) / var(--rows) * 63 / 88));
-    grid-template-columns: repeat(var(--cols), var(--card-w)); justify-content: center;
-  }
-  .wall__why { margin-top: 8px; text-align: center; }
+  /* La mano llena la fila que sobra: el area del abanico deja de tener alto fijo. */
+  .recall__fan { min-height: 0; }
+  .recall__fan .fan-wrap { height: 100%; grid-template-rows: minmax(0, 1fr) auto; }
+  .recall__fan .fan-zone { height: auto; min-height: 0; }
   .recall-dock {
     display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; align-items: start;
   }
@@ -553,7 +511,8 @@ button { font: inherit; color: inherit; }
 /* Lo que se da vuelta sube y pasa al frente: tapado por sus vecinas no se leeria. */
 .fan__card[data-state="found"], .fan__card[data-state="missed"] { --lift: calc(var(--w) * -.3); z-index: calc(var(--z) + 100); }
 .fan__card[data-glow] .card { box-shadow: 0 0 0 2px var(--glow), 0 0 22px 3px var(--glow); }
-.fan__card[data-state="missed"] .card { filter: grayscale(1) brightness(.8); }
+/* El gris va en la CARA: un filter sobre la carta que gira aplana el 3D y deja ver el dorso espejado. */
+.fan__card[data-state="missed"] .card__face--front { filter: grayscale(1) brightness(.8); }
 /* Hover/foco: sube la carta de ADENTRO; la zona que se apunta queda quieta y no tiembla. */
 .fan__card:hover { z-index: 300; }
 .fan__card:hover .card { translate: 0 calc(var(--w) * -.25); }
@@ -583,7 +542,7 @@ button { font: inherit; color: inherit; }
 
 /* ---------- MOTION ---------- */
 /* La clase la pone recall.js con la misma preferencia: cambia el movimiento, nunca el estado visible. */
-.recall--reduced .card, .recall--reduced .wall__slot, .recall--reduced .fan__card { transition: none !important; animation: none !important; }
+.recall--reduced .card, .recall--reduced .fan__card { transition: none !important; animation: none !important; }
 @media (prefers-reduced-motion: reduce) {
-  .card, .hand__slot, .pick, .zoom, .wall__slot, .fan__card { transition: none !important; animation: none !important; }
+  .card, .hand__slot, .pick, .zoom, .fan__card { transition: none !important; animation: none !important; }
 }
