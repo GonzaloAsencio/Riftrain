@@ -212,7 +212,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     } else {
       try {
         if (typeof storage.load === 'function' && Object.hasOwn(storage.load({}), 'recall')) {
-          notice.textContent = `No pudimos recuperar el progreso anterior: ${restored?.reason ?? 'datos incompatibles'}. Conservamos el registro hasta que aciertes una carta.`;
+          notice.textContent = `No pudimos recuperar el progreso anterior: ${restored?.reason ?? 'datos incompatibles'}. Empezamos de nuevo; el registro anterior se reemplaza con tu primer avance.`;
           notice.hidden = false;
         }
       } catch { /* storage bloqueado: el aviso de fallback lo maneja el store */ }

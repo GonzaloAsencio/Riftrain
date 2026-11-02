@@ -475,10 +475,14 @@ dockMount.querySelector('[role="option"] img')?.dispatchEvent(new Event('error')
 check('AC-ARC-59: si falla la imagen, queda el marco y el nombre identificable',
   !!dockMount.querySelector('[role="option"] .card__art--empty') &&
   dockMount.querySelector('[role="option"] .card__name')?.textContent === 'Álpha');
-press(dockInput, 'Escape');
+const typedBeforeEscape = dockInput.value;
+const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+dockInput.dispatchEvent(escape);
 check('AC-ARC-32: Escape cierra la lista sin nombrar nada',
   dockMount.querySelectorAll('[role="option"]').length === 0 && named.length === 0 &&
   !dockInput.hasAttribute('aria-activedescendant'));
+check('AC-ARC-32: Escape no borra lo escrito (cancela el borrado nativo del input de búsqueda)',
+  escape.defaultPrevented && dockInput.value === typedBeforeEscape && typedBeforeEscape !== '');
 type(dockMount, 'sin coincidencias xyz');
 check('AC-ARC-32: sin coincidencias informa el vacío, sin carta inventada',
   dockMount.textContent.includes('No hay coincidencias') && dockMount.querySelectorAll('[role="option"]').length === 0);
@@ -713,6 +717,8 @@ for (const schema of [1, 999]) {
   const staleNotice = staleMount.querySelector('.recall__notice');
   check(`AC-ARC-51: un snapshot schema ${schema} se descarta con el aviso y el nivel 1 funciona`,
     !staleNotice.hidden && staleNotice.textContent.includes('No pudimos recuperar el progreso anterior') &&
+    // Promete sólo lo que pasa: cualquier avance (acertar o saltar) guarda y reemplaza el registro.
+    staleNotice.textContent.includes('se reemplaza con tu primer avance') && !/hasta que aciertes/.test(staleNotice.textContent) &&
     staleMount.textContent.includes('Nivel 1') && staleMount.querySelectorAll('.wall__slot').length === 3 &&
     !staleMount.querySelector('input[role="combobox"]').disabled);
   check(`AC-ARC-24: con schema ${schema} la raíz legacy queda intacta hasta el primer acierto`,

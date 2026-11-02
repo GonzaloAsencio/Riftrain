@@ -79,7 +79,8 @@ export function mountComposer(root, { cards, onName, onUserEdit = () => {} }) {
   }
   input.addEventListener('input', () => { onUserEdit(); update(); });
   input.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') { close(); return; }
+    // preventDefault: en un input type=search, Escape nativo ademas BORRA lo escrito.
+    if (event.key === 'Escape') { event.preventDefault(); close(); return; }
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       if (!hits.length) return;
       event.preventDefault();
