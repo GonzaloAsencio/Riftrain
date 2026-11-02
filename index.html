@@ -22,11 +22,13 @@
     </div>
     <span class="level" id="level">Nivel 1</span>
     <button class="iconbtn" id="btn-stats" title="Estadisticas" aria-label="Estadisticas">%</button>
-    <button class="iconbtn" id="btn-mode" title="Cambiar de modo" aria-label="Cambiar de modo">R</button>
+    <button class="iconbtn" id="btn-mode" title="Ir al modo cartas" aria-label="Ir al modo cartas">Cartas</button>
     <span class="timer num" id="timer">0.0s</span>
   </header>
 
   <main>
+    <div id="recall-root"></div>
+    <div id="legacy-mode" class="hidden">
     <!-- LA MESA: panel oscuro, para que las cartas destaquen -->
     <section class="table" aria-label="Mesa del rival">
       <div class="table__head">
@@ -68,6 +70,7 @@
     </div>
 
     <section class="verdict hidden" id="verdict" aria-live="polite"></section>
+    </div>
 
     <p class="ph-banner hidden" id="ph-banner"></p>
   </main>
