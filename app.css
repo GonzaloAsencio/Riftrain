@@ -473,9 +473,31 @@ button { font: inherit; color: inherit; }
   .recall-composer__cost { font-size: 11px; }
 }
 
+/* ---------- MURO DEL MAZO ---------- */
+/* Una celda por carta distinta. El estado se lee en la imagen (levantada, gris, inclinada), no en un numero. */
+.wall { min-width: 0; margin-top: 14px; }
+.wall__grid { display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); gap: 8px; }
+@media (min-width: 700px) { .wall__grid { --cols: 7; } }
+.wall__slot { position: relative; min-width: 0; transition: transform var(--flip) var(--ease), opacity var(--flip) var(--ease); }
+/* El brillo del dominio vive sólo en la ultima carta nombrada (y en los aciertos al cerrar). */
+.wall__slot[data-glow] .card { box-shadow: 0 0 0 2px var(--glow), 0 0 18px 2px var(--glow); }
+.wall__slot[data-state="missed"] { opacity: .32; transform: translateY(4px) scale(.97); }
+.wall__slot[data-state="missed"] .card__face--front { filter: grayscale(1); }
+.wall__slot[data-state="false-positive"] { transform: rotate(-4deg); }
+.wall__slot[data-state="false-positive"] .card__face--front { box-shadow: inset 0 0 0 3px var(--bad); }
+.wall__slot[data-state="irrelevant"] { opacity: .4; }
+.wall__slot[tabindex]:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.wall__tag {
+  position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); z-index: 3;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 1px 5px; border-radius: 3px; background: var(--bad); color: #fff;
+  font-size: 8px; font-weight: 700;
+}
+.wall__why { margin: 10px 0 0; font-size: 13px; color: var(--ink-soft); min-height: 1.5em; }
+
 /* ---------- MOTION ---------- */
 @media (prefers-reduced-motion: reduce) {
-  .card, .hand__slot, .pick, .zoom { transition: none !important; animation: none !important; }
+  .card, .hand__slot, .pick, .zoom, .wall__slot { transition: none !important; animation: none !important; }
   .recall-feedback .card[data-face="up"] { transform: none; }
   .recall-feedback .card[data-face="up"] .card__face--front {
     transform: none; backface-visibility: visible; -webkit-backface-visibility: visible;
