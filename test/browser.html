@@ -521,12 +521,47 @@ const sheetRule = (selector, pattern) => [...document.styleSheets].some((sheet) 
   catch { return false; }
 });
 check('AC-FAN-07: pasar el mouse o enfocar una carta la levanta y la trae al frente',
-  sheetRule('.fan__card:hover', /--lift/) && sheetRule('.fan__card:hover', /z-index/) &&
-  sheetRule('.fan__card:focus-visible', /--lift/) && sheetRule('.fan__card:focus-visible', /outline/));
+  sheetRule('.fan__card:hover .card', /translate/) && sheetRule('.fan__card:hover', /z-index/) &&
+  sheetRule('.fan__card:focus-visible .card', /translate/) && sheetRule('.fan__card:focus-visible', /outline/));
+check('AC-FAN-21: con motivo, el nombre se lee una sola vez (carta y rótulo internos ocultos al lector)',
+  fanSlots()[1].querySelector('.card').getAttribute('aria-hidden') === 'true' &&
+  extras[0].querySelector('.card').getAttribute('aria-hidden') === 'true' && extraTag.getAttribute('aria-hidden') === 'true');
 fan.reset();
 check('AC-FAN-14: reset tapa todo, quita las extras y vacía el motivo',
   fanStates() === 'down,down,down' && !fanHost.querySelector('.fan__extra, [tabindex], [data-reason]') && fanWhy.textContent === '');
 fan.destroy();
+
+// Contención: con la mano más grande, todo (puntas, levantadas, extras, motivo) queda adentro y nada lo tapa.
+const fanCards = Array.from({ length: 21 }, (_, i) => ({ ...card(`f${i}`, `Carta ${i}`, 1, {}, 'order'), img: PNG }));
+const inBox = (inner, outer) => inner.left >= outer.left - 1 && inner.right <= outer.right + 1 &&
+  inner.top >= outer.top - 1 && inner.bottom <= outer.bottom + 1;
+for (const [width, height] of [[1256, 470], [520, 250], [288, 250]]) {
+  const box = document.createElement('div');
+  box.style.cssText = `width:${width}px;height:${height + 400}px;position:relative`;
+  document.querySelector('#stage main').appendChild(box);
+  const big = mountRivalFan(box, { size: 21 });
+  for (const item of fanCards.slice(0, 10)) big.reveal(item);
+  big.showOutcomes({ missed: fanCards.slice(10).map((item) => ({ card: item, reason: 'Se podía pagar: 1' })),
+    falsePositives: fanCards.slice(0, 3).map((item) => ({ card: item, reason: 'Pide más de lo que hay' })) });
+  box.getAnimations({ subtree: true }).forEach((animation) => animation.finish());
+  box.querySelector('.fan__card[data-reason]').dispatchEvent(new Event('focusin', { bubbles: true }));
+  const zone = box.querySelector('.fan-zone').getBoundingClientRect();
+  const wrap = box.querySelector('.fan-wrap').getBoundingClientRect();
+  const cardsInZone = [...box.querySelectorAll('.fan__card')].every((item) => inBox(item.getBoundingClientRect(), zone));
+  const extraBoxes = [...box.querySelectorAll('.fan__extra')].map((item) => item.getBoundingClientRect());
+  // Nada lo tapa: no se cruza con ninguna carta del arco (elementFromPoint no sirve fuera de la ventana).
+  const arcRects = [...box.querySelectorAll('.fan__card')].map((item) => item.getBoundingClientRect());
+  const visible = (rect) => arcRects.every((arc) => rect.right <= arc.left + 1 || rect.left >= arc.right - 1 || rect.bottom <= arc.top + 1 || rect.top >= arc.bottom - 1);
+  const whyRect = box.querySelector('.fan__why').getBoundingClientRect();
+  check(`AC-FAN-19: a ${width}x${height} con 21 cartas, todas (también las levantadas) quedan dentro del área del abanico`,
+    cardsInZone && wrap.right <= width + box.getBoundingClientRect().left + 1,
+    [...box.querySelectorAll('.fan__card')].map((item) => item.getBoundingClientRect()).filter((r) => !inBox(r, zone)).slice(0, 2)
+      .map((r) => `${Math.round(r.left)},${Math.round(r.top)}-${Math.round(r.right)},${Math.round(r.bottom)} zona ${Math.round(zone.left)},${Math.round(zone.top)}-${Math.round(zone.right)},${Math.round(zone.bottom)}`).join(' | '));
+  check(`AC-FAN-11: a ${width}x${height} las extras y el motivo quedan dentro del ancho, fuera del arco y a la vista`,
+    extraBoxes.length === 3 && extraBoxes.every((rect) => rect.left >= box.getBoundingClientRect().left - 1 && rect.right <= box.getBoundingClientRect().right + 1 &&
+      !inBox(rect, zone) && visible(rect)) && whyRect.top >= zone.bottom - 1 && visible(whyRect));
+  big.destroy(); box.remove();
+}
 fan = mountRivalFan(fanHost, { size: 0 });
 check('AC-FAN-02: un nivel sin pagables tiene la mano vacía', fanSlots().length === 0 && !!fanHost.querySelector('.fan'));
 fan.destroy();

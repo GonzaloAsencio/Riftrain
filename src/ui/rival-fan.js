@@ -51,13 +51,15 @@ export function mountRivalFan(root, { size }) {
     fan.appendChild(slot);
     return slot;
   });
-  // Los falsos positivos no son parte de la mano: al cerrar aparecen al costado del arco.
+  // Tres zonas que no se pisan: el arco, las extras (falsos positivos, al costado) y el motivo.
+  const wrap = el('div', 'fan-wrap');
   const extras = el('div', 'fan__extras');
   // Siempre presente y vacia: una region live que aparece ya llena no siempre se anuncia.
   const why = el('p', 'fan__why');
   why.setAttribute('role', 'status');
-  zone.append(fan, extras, why);
-  root.replaceChildren(zone);
+  zone.append(fan);
+  wrap.append(zone, extras, why);
+  root.replaceChildren(wrap);
 
   /** Explica ESTA carta; sin motivo, vacia: nunca queda el motivo de otra a la vista. */
   function inspect(item) {
@@ -72,6 +74,8 @@ export function mountRivalFan(root, { size }) {
     item.setAttribute('role', 'group');
     item.setAttribute('aria-label', `${card.name}: ${reason}`);
     item.dataset.reason = reason;
+    // El grupo ya dice nombre y motivo: la carta y el rotulo de adentro no se leen dos veces.
+    for (const inner of item.querySelectorAll('.card, .fan__tag')) inner.setAttribute('aria-hidden', 'true');
   }
   function unexplain(item) {
     for (const name of ['tabindex', 'role', 'aria-label', 'data-reason']) item.removeAttribute(name);

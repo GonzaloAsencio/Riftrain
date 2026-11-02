@@ -532,31 +532,41 @@ button { font: inherit; color: inherit; }
 }
 
 /* ---------- LA MANO DEL RIVAL EN ABANICO ---------- */
-/* Todas las cartas apoyadas en el mismo punto y giradas alrededor de un centro lejano, abajo.
-   Geometria (centro de giro al 260% del alto): las de las puntas bajan ~0.55 de su alto, el
-   abanico ocupa ~2.7 cartas de alto y ~6.4 de ancho. De ahi sale el tamaño de carta. */
+/* Todas las cartas apoyadas en el mismo punto y giradas alrededor de un centro lejano, abajo
+   (al 260% del alto). Con la apertura maxima (48 grados por lado) la esquina inferior de las
+   puntas baja ~1.04 anchos de carta y el arco ocupa ~6 anchos: de ahi el piso (1.08 anchos)
+   y el tamaño maximo de carta. Arco, extras y motivo son tres zonas que no se pisan. */
 @property --lift { syntax: '<length>'; inherits: false; initial-value: 0px; }
+.fan-wrap { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); }
 .fan-zone { position: relative; min-width: 0; height: clamp(250px, 46vw, 470px); container-type: size; }
-.fan { position: absolute; inset: 0; }
+.fan { position: absolute; inset: 0; isolation: isolate; }   /* los z-index del arco no salen de aca */
 .fan__card {
-  --w: clamp(48px, min(36cqh, 15cqw), 150px);
-  position: absolute; left: 50%; bottom: calc(var(--w) * .8);
+  --w: clamp(40px, min(34cqh, 15.5cqw), 150px);
+  position: absolute; left: 50%; bottom: calc(var(--w) * 1.08);
   width: var(--w); margin-left: calc(var(--w) / -2);
   transform-origin: 50% 260%;
   transform: rotate(calc(var(--a) * var(--k, 1))) translateY(var(--lift));
   z-index: var(--z);
   transition: transform var(--flip) var(--ease), --lift var(--flip) var(--ease);
 }
-.fan__card .card { box-shadow: -3px 4px 10px rgba(0,0,0,.55); }
+.fan__card .card { box-shadow: -3px 4px 10px rgba(0,0,0,.55); transition: transform var(--flip) var(--ease), translate var(--flip) var(--ease); }
 /* Lo que se da vuelta sube y pasa al frente: tapado por sus vecinas no se leeria. */
 .fan__card[data-state="found"], .fan__card[data-state="missed"] { --lift: calc(var(--w) * -.3); z-index: calc(var(--z) + 100); }
 .fan__card[data-glow] .card { box-shadow: 0 0 0 2px var(--glow), 0 0 22px 3px var(--glow); }
 .fan__card[data-state="missed"] .card { filter: grayscale(1) brightness(.8); }
-.fan__card:hover { --lift: calc(var(--w) * -.36); z-index: 300; }
-.fan__card:focus-visible { --lift: calc(var(--w) * -.36); z-index: 300; outline: 3px solid var(--accent); outline-offset: 3px; }
-/* Falsos positivos: fuera del arco, a su derecha, inclinados. En una pantalla angosta van debajo. */
-.fan__extras { position: absolute; right: 4%; bottom: 12%; display: flex; gap: 10px; }
-.fan__extra { position: relative; width: clamp(56px, 18cqh, 110px); transform: rotate(8deg); }
+/* Hover/foco: sube la carta de ADENTRO; la zona que se apunta queda quieta y no tiembla. */
+.fan__card:hover { z-index: 300; }
+.fan__card:hover .card { translate: 0 calc(var(--w) * -.25); }
+.fan__card:focus-visible { z-index: 300; outline: 3px solid var(--accent); outline-offset: 3px; }
+.fan__card:focus-visible .card { translate: 0 calc(var(--w) * -.25); }
+/* En una pantalla angosta el arco se cierra para entrar en el ancho. */
+@container (max-width: 480px) {
+  .fan__card { --k: .6; --w: clamp(40px, min(34cqh, 21cqw), 150px); }
+}
+/* Falsos positivos: debajo del arco en el telefono, a su derecha cuando hay ancho. */
+.fan__extras { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; padding: 6px 4px; }
+.fan__extras:empty { display: none; }
+.fan__extra { position: relative; width: clamp(56px, 16vw, 104px); transform: rotate(6deg); }
 .fan__extra:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .fan__extra .card { box-shadow: 0 0 0 3px var(--bad), -3px 4px 10px rgba(0,0,0,.55); }
 .fan__tag {
@@ -564,15 +574,16 @@ button { font: inherit; color: inherit; }
   width: max-content; max-width: calc(100% - 6px); text-align: center; line-height: 1.15;
   padding: 2px 5px; border-radius: 3px; background: var(--bad); color: #fff; font-size: 11px; font-weight: 700;
 }
-.fan__why { position: absolute; left: 0; right: 0; bottom: 0; margin: 0; min-height: 1.5em; text-align: center; font-size: 13px; color: var(--ink-soft); }
-/* En una pantalla angosta el arco se cierra para entrar en el ancho. */
-@container (max-width: 480px) {
-  .fan__card { --k: .6; --w: clamp(48px, min(36cqh, 21cqw), 150px); }
+.fan__why { margin: 6px 0 0; min-height: 1.5em; text-align: center; font-size: 13px; color: var(--ink-soft); }
+@media (min-width: 640px) {
+  .fan-wrap { grid-template-columns: minmax(0, 1fr) auto; }
+  .fan__extras { flex-direction: column; flex-wrap: nowrap; justify-content: center; }
+  .fan__why { grid-column: 1 / -1; }
 }
 
 /* ---------- MOTION ---------- */
 /* La clase la pone recall.js con la misma preferencia: cambia el movimiento, nunca el estado visible. */
-.recall--reduced .card, .recall--reduced .wall__slot { transition: none !important; animation: none !important; }
+.recall--reduced .card, .recall--reduced .wall__slot, .recall--reduced .fan__card { transition: none !important; animation: none !important; }
 @media (prefers-reduced-motion: reduce) {
-  .card, .hand__slot, .pick, .zoom, .wall__slot { transition: none !important; animation: none !important; }
+  .card, .hand__slot, .pick, .zoom, .wall__slot, .fan__card { transition: none !important; animation: none !important; }
 }
