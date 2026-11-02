@@ -391,21 +391,35 @@ check('AC-ARC-31: sólo missed y falso positivo explican; son focusables y lleva
   !wslot('w1').hasAttribute('tabindex') && !wslot('w4').hasAttribute('tabindex') &&
   !wslot('w4').hasAttribute('data-reason') && wslot('w3').querySelector('.wall__tag')?.textContent === 'NO ENTRABA');
 const why = wallHost.querySelector('.wall__why');
-check('AC-ARC-31: el motivo aparece en una region role=status al enfocar, pasar el puntero o tocar',
-  why?.getAttribute('role') === 'status' && why.hidden === true);
+check('AC-ARC-31: el motivo vive en una region role=status siempre presente y vacía (así el lector la anuncia al llenarse)',
+  why?.getAttribute('role') === 'status' && why.hidden === false && why.textContent === '');
 wslot('w2').dispatchEvent(new Event('focusin', { bubbles: true }));
-const whyFocus = !why.hidden && why.textContent === 'Se podía pagar: 2 + 1 Chaos';
+const whyFocus = why.textContent === 'Se podía pagar: 2 + 1 Chaos';
 wslot('w3').dispatchEvent(new Event('pointerenter'));
 const whyHover = why.textContent.includes('no hay runas Order');
 wslot('w2').click();
 check('AC-ARC-31: focusin, pointerenter y click muestran el motivo de esa celda',
   whyFocus && whyHover && why.textContent === 'Se podía pagar: 2 + 1 Chaos');
 wslot('w4').dispatchEvent(new Event('pointerenter'));
-check('AC-ARC-31: una celda irrelevante no explica nada: el motivo anterior no cambia',
-  why.textContent === 'Se podía pagar: 2 + 1 Chaos');
+check('AC-ARC-31: una celda sin motivo vacía la explicación: nunca queda el motivo de otra carta',
+  why.textContent === '' && (() => {
+    wslot('w3').dispatchEvent(new Event('focusin', { bubbles: true }));
+    wslot('w1').dispatchEvent(new Event('pointerenter'));
+    return why.textContent === '';
+  })());
+wall.showOutcomes([
+  { cardId: 'w1', outcome: 'hit', reason: 'motivo suelto' },
+  { cardId: 'w3', outcome: 'false-positive', reason: 'Pide 2 Order y no hay runas Order disponibles' },
+]);
+check('AC-ARC-31: un acierto nunca explica ni se vuelve focusable, aunque le llegue un motivo',
+  !wslot('w1').hasAttribute('tabindex') && !wslot('w1').hasAttribute('data-reason'));
+wall.reveal('w3');
+check('AC-ARC-31: reveal sobre una celda con resultado le quita motivo, foco y etiqueta',
+  wslot('w3').dataset.state === 'found' && !wslot('w3').hasAttribute('tabindex') &&
+  !wslot('w3').hasAttribute('data-reason') && !wslot('w3').hasAttribute('aria-label') && !wslot('w3').querySelector('.wall__tag'));
 wall.reset();
 check('AC-ARC-31: reset vuelve todo boca abajo, sin motivos, etiquetas ni foco',
-  wstates() === 'down,down,down,down' && why.hidden === true &&
+  wstates() === 'down,down,down,down' && why.textContent === '' && why.hidden === false &&
   !wallHost.querySelector('[tabindex], [data-reason], .wall__tag, [data-glow]') &&
   wallHost.querySelectorAll('.wall__slot > .card[data-face="up"]').length === 0);
 wall.destroy();

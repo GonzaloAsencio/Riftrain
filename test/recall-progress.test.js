@@ -262,13 +262,25 @@ test('AC-ARC-15: fuera del mazo, id vacío o Energía 0 son inválidos: ni acier
 });
 
 test('AC-ARC-16: el reducer no muta el estado de entrada y es determinista', () => {
-  const state = begin();
-  const snapshot = JSON.stringify(state);
-  const frozen = Object.freeze({ ...state, found: Object.freeze([...state.found]), misses: Object.freeze([...state.misses]) });
+  const freeze = (value) => {
+    if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+      Object.freeze(value);
+      Object.values(value).forEach(freeze);
+    }
+    return value;
+  };
+  // Congelado de punta a punta (scenario, runas, payable, found, misses): cualquier escritura tira.
+  const frozen = freeze(structuredClone(begin()));
+  const snapshot = JSON.stringify(frozen);
   for (const id of ['cheap', 'order1', 'nope']) {
     assert.deepEqual(named(frozen, id), named(frozen, id));
   }
-  assert.equal(JSON.stringify(state), snapshot);
+  for (const type of ['finish', 'skip', 'repeat']) reduceRecallV2(frozen, { type }, wallIdx);
+  assert.equal(JSON.stringify(frozen), snapshot);
+  // Repetir sólo corre desde una revisión: también congelada, con un falso positivo que borrar.
+  const frozenReview = freeze(structuredClone(reduceRecallV2(named(begin(), 'huge').state, { type: 'finish' }, wallIdx).state));
+  assert.deepEqual(reduceRecallV2(frozenReview, { type: 'repeat' }, wallIdx).state.misses, []);
+  assert.deepEqual(frozenReview.misses, ['huge']);
   assert.equal(reduceRecallV2(frozen, { type: 'finish' }, wallIdx).kind, 'review');
 });
 
@@ -293,6 +305,24 @@ test('AC-ARC-18: todas las pagables nombradas más un falso positivo no completa
   assert.equal(closed.kind, 'review');
   assert.equal(closed.state.status, 'review');
   assert.deepEqual(closed.state.found, ['cheap', 'fury2']);
+});
+
+test('AC-ARC-18: un nivel cerrado no acepta nombres, cierres ni saltos, y una revisión nunca avanza', () => {
+  const review = reduceRecallV2(begin(), { type: 'finish' }, wallIdx).state;
+  let done = named(named(begin(), 'cheap').state, 'fury2').state;
+  done = reduceRecallV2(done, { type: 'finish' }, wallIdx).state;
+  const last = reduceRecallV2(named(named(begin(lvl(12)), 'cheap').state, 'fury2').state, { type: 'finish' }, wallIdx).state;
+  assert.deepEqual([review.status, done.status, last.status], ['review', 'next', 'complete']);
+  for (const closed of [review, done, last]) {
+    for (const event of [{ type: 'name', cardId: 'cheap' }, { type: 'name', cardId: 'order1' }, { type: 'finish' }, { type: 'skip' }]) {
+      const result = reduceRecallV2(closed, event, wallIdx);
+      assert.equal(result.kind, 'invalid', `${closed.status} ${event.type} ${event.cardId ?? ''}`);
+      assert.ok(result.reason);
+      assert.equal(result.state, closed);
+    }
+  }
+  assert.equal(advanceRecallV2(review, lvl(4), wallIdx).ok, false);
+  assert.equal(advanceRecallV2(done, lvl(4), wallIdx).ok, true);
 });
 
 test('AC-ARC-21: repetir conserva found, borra los falsos positivos y mantiene la misma mesa', () => {

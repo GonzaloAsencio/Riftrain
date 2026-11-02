@@ -24,8 +24,8 @@ export function mountDeckWall(root, { cards }) {
   const grid = el('div', 'wall__grid');
   grid.style.setProperty('--n', String(cards.length));
   const why = el('p', 'wall__why');
+  // Siempre presente y vacia: una region live que aparece ya llena no siempre se anuncia.
   why.setAttribute('role', 'status');
-  why.hidden = true;
   const slots = new Map();
 
   function glow(slot, on, fresh = false) {
@@ -61,10 +61,10 @@ export function mountDeckWall(root, { cards }) {
     slot.setAttribute('aria-label', `${slot.card.name}: ${reason}`);
     slot.dataset.reason = reason;
   }
+  /** Explica ESTA celda; sin motivo, vacia: nunca queda el motivo de otra carta a la vista. */
   function inspect(slot) {
-    if (!slot.dataset.reason) return;
-    why.textContent = slot.dataset.reason;
-    why.hidden = false;
+    const text = slot.dataset.reason ?? '';
+    if (why.textContent !== text) why.textContent = text;   // focusin + click seguidos: un solo anuncio
   }
 
   for (const card of cards) {
@@ -84,13 +84,13 @@ export function mountDeckWall(root, { cards }) {
     const slot = slots.get(cardId);
     if (!slot) return;
     if (fresh) for (const other of slots.values()) glow(other, false);
+    clearReason(slot);
     lift(slot, 'found');
     glow(slot, fresh, true);
   }
 
   function reset() {
     for (const slot of slots.values()) lower(slot);
-    why.hidden = true;
     why.textContent = '';
   }
 
@@ -113,7 +113,8 @@ export function mountDeckWall(root, { cards }) {
         lift(slot, state);
         if (state === 'found') glow(slot, true);
         if (state === 'false-positive') slot.appendChild(el('span', 'wall__tag', 'NO ENTRABA'));
-        if (reason) explain(slot, reason);
+        // Sólo lo que se te pasó y lo que no entraba se explica; un acierto no necesita motivo.
+        if (reason && (state === 'missed' || state === 'false-positive')) explain(slot, reason);
       }
     },
     reset,
