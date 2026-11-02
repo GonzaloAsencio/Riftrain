@@ -426,6 +426,148 @@ wall.destroy();
 check('AC-ARC-31: destroy deja el contenedor vacio', wallHost.children.length === 0);
 wallHost.remove();
 
+// ---- LA MANO DEL RIVAL EN ABANICO (AC-FAN): tantos dorsos como cartas pagables, sin identidad.
+const { mountRivalFan, fanAngles } = await import('../src/ui/rival-fan.js');
+const near = (a, b) => Math.abs(a - b) < 0.51;
+check('AC-FAN-03: fanAngles abre un arco simétrico y creciente de min(96, 4.4*N) grados',
+  [3, 6, 21, 30].every((n) => {
+    const angles = fanAngles(n);
+    const spread = Math.min(96, 4.4 * n);
+    return angles.length === n && near(angles[0], -spread / 2) && near(angles.at(-1), spread / 2) &&
+      angles.every((a, i) => i === 0 || a > angles[i - 1]) && near(angles[0], -angles.at(-1));
+  }) && fanAngles(1).join() === '0' && fanAngles(0).length === 0, fanAngles(3).join());
+const fanHost = document.createElement('div');
+document.querySelector('#stage main').appendChild(fanHost);
+let fan = mountRivalFan(fanHost, { size: 3 });
+const fanSlots = () => [...fanHost.querySelectorAll('.fan__card')];
+const fanStates = () => fanSlots().map((slot) => slot.dataset.state).join(',');
+check('AC-FAN-01: la mano tiene exactamente N cartas boca abajo con el dorso real, sin "desconocido" ni números',
+  fanSlots().length === 3 && fanStates() === 'down,down,down' &&
+  fanSlots().every((slot) => slot.querySelector('.card[data-face="down"] .card__face--back') &&
+    getComputedStyle(slot.querySelector('.card__face--back')).backgroundImage.includes('card-back')) &&
+  !/desconocid|\d/i.test(fanHost.textContent));
+check('AC-FAN-03: cada carta lleva su ángulo de fanAngles en --a',
+  fanSlots().map((slot) => parseFloat(slot.style.getPropertyValue('--a'))).every((a, i) => near(a, fanAngles(3)[i])));
+check('AC-FAN-21: la mano es un grupo "Mano del rival"; los dorsos no tienen identidad ni foco',
+  fanHost.querySelector('.fan')?.getAttribute('role') === 'group' &&
+  fanHost.querySelector('.fan').getAttribute('aria-label') === 'Mano del rival' &&
+  !fanHost.querySelector('.fan [data-card-id], .fan [tabindex]'));
+fan.reveal(wallCards[1], { fresh: true });
+const slot0 = fanSlots()[0];
+check('AC-FAN-04: un acierto da vuelta el PRIMER dorso con esa carta, su imagen, nombre y brillo de dominio',
+  fanStates() === 'found,down,down' && slot0.dataset.cardId === 'w2' && slot0.dataset.glow === 'chaos' &&
+  slot0.querySelector('.card').dataset.face === 'up' && !!slot0.querySelector('.card__face--image img') &&
+  /Descarga/.test(slot0.querySelector('.card').getAttribute('aria-label')));
+fan.reveal(wallCards[0], { fresh: true });
+check('AC-FAN-05: el segundo acierto va al slot siguiente, en orden de nombrado, y sólo el último brilla como nuevo',
+  fanStates() === 'found,found,down' && fanSlots()[1].dataset.cardId === 'w1' &&
+  fanSlots()[1].hasAttribute('data-fresh') && !fanSlots()[0].hasAttribute('data-fresh'));
+fanHost.getAnimations({ subtree: true }).forEach((animation) => animation.finish());
+const zOf = (slot) => Number(getComputedStyle(slot).zIndex);
+check('AC-FAN-06: la carta acertada queda al frente y levantada respecto de un dorso',
+  fanSlots().slice(0, 2).every((slot) => zOf(slot) > zOf(fanSlots()[2])) &&
+  parseFloat(getComputedStyle(fanSlots()[0]).getPropertyValue('--lift')) < 0 &&
+  !parseFloat(getComputedStyle(fanSlots()[2]).getPropertyValue('--lift')),
+  `${fanSlots().map(zOf)} | lift ${fanSlots().map((slot) => getComputedStyle(slot).getPropertyValue('--lift'))}`);
+fan.setFound([wallCards[3], wallCards[2]]);
+check('AC-FAN-14: setFound llena los primeros slots en orden, sin brillo, y tapa el resto',
+  fanStates() === 'found,found,down' && fanSlots()[0].dataset.cardId === 'w4' && fanSlots()[1].dataset.cardId === 'w3' &&
+  !fanHost.querySelector('[data-glow], [data-fresh]') && !fanSlots()[2].hasAttribute('data-card-id') &&
+  fanSlots()[2].querySelector('.card').dataset.face === 'down');
+fan.reveal(wallCards[0]);
+fan.reveal(wallCards[1]);
+check('AC-FAN-04: con la mano llena, un acierto de más no rompe nada ni agrega cartas',
+  fanSlots().length === 3 && fanStates() === 'found,found,found');
+fan.destroy();
+
+// Cierre: los dorsos que quedaron muestran en gris lo que se pasó; los falsos positivos, al costado.
+fan = mountRivalFan(fanHost, { size: 3 });
+fan.reveal(wallCards[0], { fresh: true });
+const missedReason = 'Se podía pagar: 2 + 1 Chaos';
+const fpReason = 'Pide 9 de Energía y hay 3 runas abiertas';
+fan.showOutcomes({
+  missed: [{ card: wallCards[1], reason: missedReason }, { card: wallCards[2], reason: 'Se podía pagar: 3 + 2 Order' }],
+  falsePositives: [{ card: wallCards[3], reason: fpReason }],
+});
+fanHost.getAnimations({ subtree: true }).forEach((animation) => animation.finish());
+const fanWhy = fanHost.querySelector('.fan__why');
+const extras = [...fanHost.querySelectorAll('.fan__extra')];
+check('AC-FAN-10: los dorsos restantes muestran las que faltaron, en orden, boca arriba y en gris',
+  fanStates() === 'found,missed,missed' && fanSlots()[1].dataset.cardId === 'w2' && fanSlots()[2].dataset.cardId === 'w3' &&
+  fanSlots().slice(1).every((slot) => slot.querySelector('.card').dataset.face === 'up' &&
+    /grayscale\(1\)/.test(getComputedStyle(slot.querySelector('.card')).filter)));
+check('AC-FAN-10: las que faltaron son focusables y llevan su motivo; el acierto no explica nada',
+  fanSlots()[1].tabIndex === 0 && fanSlots()[1].getAttribute('aria-label').includes(missedReason) &&
+  !fanSlots()[0].hasAttribute('tabindex') && !fanSlots()[0].hasAttribute('data-reason'));
+check('AC-FAN-21: el motivo vive en una región role=status siempre presente y vacía',
+  fanWhy?.getAttribute('role') === 'status' && !fanWhy.hidden && fanWhy.textContent === '');
+fanSlots()[1].dispatchEvent(new Event('focusin', { bubbles: true }));
+const whyMissed = fanWhy.textContent;
+extras[0]?.dispatchEvent(new Event('pointerenter'));
+const whyFp = fanWhy.textContent;
+fanSlots()[0].dispatchEvent(new Event('pointerenter'));
+check('AC-FAN-10: focus, puntero o toque muestran el motivo de ESA carta; una carta sin motivo vacía la explicación',
+  whyMissed === missedReason && whyFp === fpReason && fanWhy.textContent === '');
+const extraTag = extras[0]?.querySelector('.fan__tag');
+check('AC-FAN-11: cada falso positivo es una carta extra fuera del arco, boca arriba, inclinada, con NO ENTRABA legible',
+  extras.length === 1 && !extras[0].closest('.fan') && extras[0].dataset.cardId === 'w4' &&
+  extras[0].querySelector('.card').dataset.face === 'up' && getComputedStyle(extras[0]).transform !== 'none' &&
+  extraTag?.textContent === 'NO ENTRABA' && parseFloat(getComputedStyle(extraTag).fontSize) >= 11 &&
+  extras[0].tabIndex === 0 && extras[0].getAttribute('aria-label').includes(fpReason));
+check('AC-FAN-13: el cierre no muestra porcentajes, "N de M", "N/M" ni contadores',
+  !/%|\b\d+\s*(de|\/)\s*\d+\b|aciertos?:|faltan(tes)?:|errores?:/i.test(fanHost.textContent.replace(missedReason, '').replace(fpReason, '')));
+const sheetRule = (selector, pattern) => [...document.styleSheets].some((sheet) => {
+  try { return [...sheet.cssRules].some((rule) => rule.selectorText?.includes(selector) && pattern.test(rule.cssText)); }
+  catch { return false; }
+});
+check('AC-FAN-07: pasar el mouse o enfocar una carta la levanta y la trae al frente',
+  sheetRule('.fan__card:hover .card', /translate/) && sheetRule('.fan__card:hover', /z-index/) &&
+  sheetRule('.fan__card:focus-visible .card', /translate/) && sheetRule('.fan__card:focus-visible', /outline/));
+check('AC-FAN-21: con motivo, el nombre se lee una sola vez (carta y rótulo internos ocultos al lector)',
+  fanSlots()[1].querySelector('.card').getAttribute('aria-hidden') === 'true' &&
+  extras[0].querySelector('.card').getAttribute('aria-hidden') === 'true' && extraTag.getAttribute('aria-hidden') === 'true');
+fan.reset();
+check('AC-FAN-14: reset tapa todo, quita las extras y vacía el motivo',
+  fanStates() === 'down,down,down' && !fanHost.querySelector('.fan__extra, [tabindex], [data-reason]') && fanWhy.textContent === '');
+fan.destroy();
+
+// Contención: con la mano más grande, todo (puntas, levantadas, extras, motivo) queda adentro y nada lo tapa.
+const fanCards = Array.from({ length: 21 }, (_, i) => ({ ...card(`f${i}`, `Carta ${i}`, 1, {}, 'order'), img: PNG }));
+const inBox = (inner, outer) => inner.left >= outer.left - 1 && inner.right <= outer.right + 1 &&
+  inner.top >= outer.top - 1 && inner.bottom <= outer.bottom + 1;
+for (const [width, height] of [[1256, 470], [520, 250], [288, 250]]) {
+  const box = document.createElement('div');
+  box.style.cssText = `width:${width}px;height:${height + 400}px;position:relative`;
+  document.querySelector('#stage main').appendChild(box);
+  const big = mountRivalFan(box, { size: 21 });
+  for (const item of fanCards.slice(0, 10)) big.reveal(item);
+  big.showOutcomes({ missed: fanCards.slice(10).map((item) => ({ card: item, reason: 'Se podía pagar: 1' })),
+    falsePositives: fanCards.slice(0, 3).map((item) => ({ card: item, reason: 'Pide más de lo que hay' })) });
+  box.getAnimations({ subtree: true }).forEach((animation) => animation.finish());
+  box.querySelector('.fan__card[data-reason]').dispatchEvent(new Event('focusin', { bubbles: true }));
+  const zone = box.querySelector('.fan-zone').getBoundingClientRect();
+  const wrap = box.querySelector('.fan-wrap').getBoundingClientRect();
+  const cardsInZone = [...box.querySelectorAll('.fan__card')].every((item) => inBox(item.getBoundingClientRect(), zone));
+  const extraBoxes = [...box.querySelectorAll('.fan__extra')].map((item) => item.getBoundingClientRect());
+  // Nada lo tapa: no se cruza con ninguna carta del arco (elementFromPoint no sirve fuera de la ventana).
+  const arcRects = [...box.querySelectorAll('.fan__card')].map((item) => item.getBoundingClientRect());
+  const visible = (rect) => arcRects.every((arc) => rect.right <= arc.left + 1 || rect.left >= arc.right - 1 || rect.bottom <= arc.top + 1 || rect.top >= arc.bottom - 1);
+  const whyRect = box.querySelector('.fan__why').getBoundingClientRect();
+  check(`AC-FAN-19: a ${width}x${height} con 21 cartas, todas (también las levantadas) quedan dentro del área del abanico`,
+    cardsInZone && wrap.right <= width + box.getBoundingClientRect().left + 1,
+    [...box.querySelectorAll('.fan__card')].map((item) => item.getBoundingClientRect()).filter((r) => !inBox(r, zone)).slice(0, 2)
+      .map((r) => `${Math.round(r.left)},${Math.round(r.top)}-${Math.round(r.right)},${Math.round(r.bottom)} zona ${Math.round(zone.left)},${Math.round(zone.top)}-${Math.round(zone.right)},${Math.round(zone.bottom)}`).join(' | '));
+  check(`AC-FAN-11: a ${width}x${height} las extras y el motivo quedan dentro del ancho, fuera del arco y a la vista`,
+    extraBoxes.length === 3 && extraBoxes.every((rect) => rect.left >= box.getBoundingClientRect().left - 1 && rect.right <= box.getBoundingClientRect().right + 1 &&
+      !inBox(rect, zone) && visible(rect)) && whyRect.top >= zone.bottom - 1 && visible(whyRect));
+  big.destroy(); box.remove();
+}
+fan = mountRivalFan(fanHost, { size: 0 });
+check('AC-FAN-02: un nivel sin pagables tiene la mano vacía', fanSlots().length === 0 && !!fanHost.querySelector('.fan'));
+fan.destroy();
+check('AC-FAN-21: destroy deja el contenedor vacío', fanHost.children.length === 0);
+fanHost.remove();
+
 // ---- EL DOCK (AC-ARC-32): un solo input; sugiere desde TODO el main y nombrar es un acto.
 const { normalizeDeck, checkCard } = await import('../src/engine/deck-combos.js');
 const { createRecallScenario } = await import('../src/engine/recall-scenario.js');
