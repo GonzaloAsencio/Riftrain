@@ -146,6 +146,26 @@ export function canPay(cost, avail) {
   };
 }
 
+/**
+ * Que runas de la mesa explican un rechazo de canPay.
+ * Devuelve `{ indices, missingDomain }`:
+ *   - Dominio -> los indices de las runas de ese dominio en mesa, abiertas o agotadas
+ *     (para reciclar no hace falta que esten abiertas). Si no hay ninguna, `indices`
+ *     queda vacio y `missingDomain` nombra el dominio que falta.
+ *   - Energia -> los indices de las runas abiertas.
+ *   - Cualquier otro detail (null, ok, desconocido) -> nada que resaltar.
+ */
+export function rejectionRunes(detail, runes) {
+  const none = { indices: [], missingDomain: null };
+  if (!Array.isArray(runes)) return none;
+  if (detail?.kind === 'domain') {
+    const indices = runes.flatMap((r, i) => (r?.domain === detail.domain ? [i] : []));
+    return { indices, missingDomain: indices.length ? null : detail.domain };
+  }
+  if (detail?.kind === 'energy') return { indices: runes.flatMap((r, i) => (r?.ready ? [i] : [])), missingDomain: null };
+  return none;
+}
+
 /** Puede jugar ESTA carta con ESTAS runas? */
 export function canPlayCard(card, runes) {
   return canPay(cardCost(card), availableRunes(runes));
