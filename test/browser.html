@@ -496,6 +496,19 @@ press(dockInput, 'ArrowDown');
 press(dockInput, 'Enter');
 check('AC-ARC-33: Enter con una sugerencia marcada nombra ESA carta', named.at(-1) === 'ray1');
 type(dockMount, 'rayo');
+const namedBefore = named.length;
+for (const modifier of ['ctrlKey', 'metaKey']) {
+  dockInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', [modifier]: true, bubbles: true }));
+}
+check('AC-ARC-52: Ctrl/Meta+Enter no nombra ni confirma nada y deja la lista como estaba',
+  named.length === namedBefore && dockMount.querySelectorAll('[role="option"]').length === 2);
+press(dockInput, 'Escape');
+press(dockInput, 'ArrowDown');
+press(dockInput, 'ArrowUp');
+check('AC-ARC-52: con la lista cerrada las flechas no hacen nada (no hay cantidades que mover)',
+  !dockInput.hasAttribute('aria-activedescendant') && named.length === namedBefore &&
+  dockMount.querySelectorAll('[role="option"]').length === 0);
+type(dockMount, 'rayo');
 press(dockInput, 'ArrowDown');
 press(dockInput, 'ArrowDown');
 press(dockInput, 'ArrowUp');
@@ -525,36 +538,8 @@ dock.destroy();
 check('AC-ARC-32: destroy deja el contenedor vacío', dockMount.children.length === 0);
 dockMount.remove();
 
-// U8: los descubrimientos son cartas reveladas; la página limita DOM, no objetivo.
-const galleryMount = document.createElement('div');
-document.querySelector('#stage main').appendChild(galleryMount);
-const { mountComboResults } = await import('../src/ui/combo-results.js');
-const galleryCards = Array.from({ length: 10 }, (_, i) =>
-  ({ ...card(`g${i}`, `Grupo ${i}`, 0), img: PNG }));
-const gallery = mountComboResults(galleryMount, {
-  cardsById: new Map(galleryCards.map((c) => [c.id, c])),
-  found: galleryCards.map((c) => ({ key: JSON.stringify([[c.id, 1]]), group: [{ cardId: c.id, qty: 1 }] })),
-  pageSize: 8,
-});
-check('AC-CMB-16/18: revelados siguen visibles en color y con imagen',
-  galleryMount.querySelectorAll('.recall-results__group').length === 8 &&
-  galleryMount.querySelector('.recall-results__group .card')?.dataset.face === 'up' &&
-  !!galleryMount.querySelector('.recall-results__group .card img'));
-check('AC-CMB-21: página de ocho no recorta los diez grupos descubiertos',
-  galleryMount.textContent.includes('1–8 de 10') && !!galleryMount.querySelector('[data-page="next"]'));
-galleryMount.querySelector('[data-page="next"]')?.click();
-check('AC-CMB-18: última página muestra los dos restantes con identidad',
-  galleryMount.querySelectorAll('.recall-results__group').length === 2 &&
-  galleryMount.textContent.includes('9–10 de 10') && galleryMount.textContent.includes('Grupo 9'));
-galleryMount.querySelector('[data-page="previous"]')?.click();
-check('AC-CMB-18: se pueden volver a inspeccionar los primeros descubrimientos',
-  galleryMount.querySelectorAll('.recall-results__group').length === 8 &&
-  galleryMount.textContent.includes('Grupo 0'));
-gallery.destroy();
-galleryMount.remove();
-
 // ---- LA RONDA COMPLETA: dock + muro + motor, con el store real (AC-ARC-12..24, 31..40, 50, 51).
-const { startRecallV2, reduceRecallV2, advanceRecallV2 } = await import('../src/engine/recall-progress.js');
+const { startRecall, reduceRecall, advanceRecall } = await import('../src/engine/recall-progress.js');
 const actualStore = await import('../src/store.js');
 const { mountRecall } = await import('../src/ui/recall.js');
 const realData = await (await fetch('../data/cards.json')).json();
@@ -565,12 +550,12 @@ const flowDeck = { id: 'fixture', name: 'Mazo de prueba', runes: { order: 12 },
   cards: [{ cardId: 'alpha', qty: 3 }, { cardId: 'beta', qty: 1 }, { cardId: 'gamma', qty: 2 }, { cardId: 'cero', qty: 1 }] };
 const flowIndex = normalizeDeck(flowDeck, flowCards, { policy: 'positive-energy' }).index;
 const scenarioAt = (level) => createRecallScenario(flowDeck, flowIndex, 42, level).scenario;
-const play = (state, ...ids) => ids.reduce((s, cardId) => reduceRecallV2(s, { type: 'name', cardId }, flowIndex).state, state);
-const closeLevel = (state) => reduceRecallV2(state, { type: 'finish' }, flowIndex).state;
+const play = (state, ...ids) => ids.reduce((s, cardId) => reduceRecall(s, { type: 'name', cardId }, flowIndex).state, state);
+const closeLevel = (state) => reduceRecall(state, { type: 'finish' }, flowIndex).state;
 // Historia REAL de dos niveles terminados, para que el nivel 3 se restaure desde el store.
-let past = startRecallV2(scenarioAt(1), flowIndex).state;
-past = advanceRecallV2(closeLevel(play(past, 'alpha')), scenarioAt(2), flowIndex).state;
-past = advanceRecallV2(closeLevel(play(past, 'alpha', 'gamma')), scenarioAt(3), flowIndex).state;
+let past = startRecall(scenarioAt(1), flowIndex).state;
+past = advanceRecall(closeLevel(play(past, 'alpha')), scenarioAt(2), flowIndex).state;
+past = advanceRecall(closeLevel(play(past, 'alpha', 'gamma')), scenarioAt(3), flowIndex).state;
 check('AC-ARC-21: el fixture del nivel 3 viene de dos niveles realmente terminados y se guarda',
   past.history.length === 2 && past.scenario.level === 3 && past.payable.join() === 'alpha,gamma' &&
   actualStore.saveRecallSnapshot(past).ok === true);
@@ -595,6 +580,8 @@ const fstates = () => ['alpha', 'beta', 'gamma'].map((id) => fslot(id)?.dataset.
 const stampShown = () => { const s = flowMount.querySelector('.recall-stamp'); return !!s && !s.hidden; };
 const toastText = () => flowMount.querySelector('.recall-feedback__toast:not([hidden])')?.textContent ?? null;
 const action = (name) => flowMount.querySelector(`[data-action="${name}"]`);
+const removedUi = (root) => !root.querySelector('.recall-tray, .recall-results, .recall-missed, .recall-composer__preview, .recall-composer__choice, [data-action="inc"], [data-action="dec"], [data-page], .recall-feedback__fan, .recall-feedback__slot, .recall-feedback__badge') &&
+  !/Confirmar|Tu jugada|Jugadas descubiertas|Jugada nueva|¡Correcto!|Anteriores|Siguientes/.test(root.textContent);
 const feedbackText = () => ['.recall__message', '.recall-feedback', '.wall__why']
   .map((s) => flowMount.querySelector(s)?.textContent ?? '').join(' ');
 let flow = mountFlow();
@@ -604,6 +591,7 @@ check('AC-ARC-31: nivel 3 restaurado con una celda por carta distinta con Energ�
   flowMount.textContent.includes('Nivel 3') && flowMount.querySelectorAll('.wall__slot').length === 3 &&
   fstates() === 'down,down,down' && !fslot('cero') &&
   flowMount.querySelectorAll('.wall__slot > .card[data-face="down"]').length === 3);
+check('AC-ARC-52: la ronda no tiene bandeja, cantidades, Confirmar, lista de jugadas ni paginador', removedUi(flowMount));
 check('AC-ARC-32: el dock está listo con su placeholder y sin Terminé de más',
   flowInput()?.placeholder === 'Nombrá una carta que pueda jugar' && !flowInput().disabled &&
   action('finish')?.hidden === false && action('next')?.hidden === true && action('repeat')?.hidden === true);
@@ -664,6 +652,7 @@ action('finish').click();
 check('AC-ARC-47: todo lo pagable más un falso positivo cierra en revisión, sin avanzar',
   fstates() === 'found,false-positive,found' && !!fslot('beta').querySelector('.wall__tag') &&
   action('repeat').hidden === false && action('next').hidden === true && flowInput().disabled && saves === 3);
+check('AC-ARC-52: el cierre tampoco muestra jugadas descubiertas ni "Jugada nueva"', removedUi(flowMount));
 check('AC-ARC-47: cerrar no inventa celdas "missed" cuando todo lo pagable está nombrado',
   flowMount.querySelectorAll('.wall__slot[data-state="missed"]').length === 0);
 flow.destroy();
@@ -689,6 +678,7 @@ action('next').click();
 check('AC-ARC-21: avanzar genera el nivel 4 con otra mesa y un muro nuevo boca abajo',
   flowMount.textContent.includes('Nivel 4') && flowMount.querySelectorAll('.rune:not(.rune--spent)').length === 4 &&
   fstates() === 'down,down,down' && saves === 6 && actualStore.load({}).recall.schema === 2);
+check('AC-ARC-52: el nivel siguiente arranca limpio, sin restos de la UI combinatoria', removedUi(flowMount));
 press(type(flowMount, 'alp'), 'Enter');
 press(type(flowMount, 'bet'), 'Enter');
 flow.destroy();

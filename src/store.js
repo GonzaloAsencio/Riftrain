@@ -9,7 +9,7 @@
 
 const KEY = 'riftrain.v1';
 import { createRecallScenario } from './engine/recall-scenario.js';
-import { startRecallV2, reduceRecallV2 } from './engine/recall-progress.js';
+import { startRecall, reduceRecall } from './engine/recall-progress.js';
 
 let memory = null;          // fallback
 let usingMemory = false;
@@ -109,20 +109,20 @@ function replay(deck, index, seed, level, identity, runes, found, status) {
   if (!generated.ok || generated.scenario.identity !== identity ||
       JSON.stringify(generated.scenario.runes) !== JSON.stringify(runes)) return problem('Identidad o runas incompatibles');
   if (!Array.isArray(found) || found.some((cardId) => typeof cardId !== 'string')) return problem('Cartas guardadas inválidas');
-  const started = startRecallV2(generated.scenario, index);
+  const started = startRecall(generated.scenario, index);
   if (!started.ok) return problem(started.reason);
   let state = started.state;
   for (const cardId of found) {
-    const result = reduceRecallV2(state, { type: 'name', cardId }, index);
+    const result = reduceRecall(state, { type: 'name', cardId }, index);
     if (result.kind !== 'accepted') return problem('Carta guardada no pagable, duplicada o fuera del mazo');
     state = result.state;
   }
   if (status === 'omitted' || (status === 'next' && state.payable.length === 0)) {
-    const result = reduceRecallV2(state, { type: 'skip' }, index);
+    const result = reduceRecall(state, { type: 'skip' }, index);
     if (result.kind !== 'skipped') return problem('Salto incompatible');
     state = result.state;
   } else if (['review', 'next', 'complete'].includes(status)) {
-    const result = reduceRecallV2(state, { type: 'finish' }, index);
+    const result = reduceRecall(state, { type: 'finish' }, index);
     if (!['review', 'finished'].includes(result.kind)) return problem('Cierre incompatible');
     // Los falsos positivos eran de la sesión y no se guardaron: con todas las pagables a la vista
     // el cierre se recalcula como completo, pero el snapshot dice que quedó en revisión.

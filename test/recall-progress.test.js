@@ -1,159 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeDeck, countGroups } from '../src/engine/deck-combos.js';
-import { startRecall, reduceRecall, advanceRecall, startRecallV2, reduceRecallV2, advanceRecallV2, levelCardOutcomes } from '../src/engine/recall-progress.js';
-
-const cards = [{ id: 'a', energy: 1, power: {} }, { id: 'b', energy: 2, power: {} }];
-const { index } = normalizeDeck({ cards: cards.map(({ id }) => ({ cardId: id, qty: 1 })) }, cards);
-const scenario = (level = 1) => ({ level, runes: Array.from({ length: level }, () => ({ domain: 'order', ready: true })), identity: `s${level}` });
-const answer = [{ cardId: 'a', qty: 1 }];
-const oneIndex = normalizeDeck({ cards: [{ cardId: 'a', qty: 1 }] }, cards).index;
-const emptyIndex = normalizeDeck({ cards: [{ cardId: 'hard', qty: 1 }] }, [{ id: 'hard', energy: 13, power: {} }]).index;
-
-test('AC-CMB-06/17: duplicado o respuesta errada conserva descubrimientos, nivel y motivo', () => {
-  const start = startRecall(scenario(), index, countGroups(index, scenario().runes));
-  assert.equal(start.ok, true);
-  const first = reduceRecall(start.state, { type: 'confirm', entries: answer }, index);
-  assert.equal(first.kind, 'accepted');
-  const duplicate = reduceRecall(first.state, { type: 'confirm', entries: answer }, index);
-  assert.equal(duplicate.kind, 'duplicate');
-  assert.deepEqual(duplicate.state, first.state);
-  const invalid = reduceRecall(first.state, { type: 'confirm', entries: [{ cardId: 'b', qty: 1 }] }, index);
-  assert.equal(invalid.kind, 'invalid');
-  assert.match(invalid.reason, /Energia/);
-  assert.deepEqual(invalid.state, first.state);
-  assert.equal(first.state.found.length, 1);
-});
-
-test('AC-CMB-18/35: último grupo exacto promueve sólo N<12; nivel12 cierra sin reinicio', () => {
-  const initial = startRecall(scenario(3), oneIndex, countGroups(oneIndex, scenario(3).runes)).state;
-  const done = reduceRecall(initial, { type: 'confirm', entries: answer }, oneIndex);
-  assert.equal(done.state.status, 'active', 'confirmar la última NO cierra');
-  const closed = reduceRecall(done.state, { type: 'finish' }, oneIndex);
-  assert.equal(closed.state.status, 'next');
-  assert.equal(closed.state.nextLevel, 4);
-  const next = advanceRecall(closed.state, scenario(4), oneIndex, countGroups(oneIndex, scenario(4).runes));
-  assert.equal(next.ok, true);
-  assert.equal(next.state.scenario.level, 4);
-  assert.deepEqual(next.state.history[0].found, done.state.found);
-  const last = reduceRecall(startRecall(scenario(12), oneIndex, countGroups(oneIndex, scenario(12).runes)).state,
-    { type: 'confirm', entries: answer }, oneIndex);
-  assert.equal(last.state.status, 'active');
-  const final = reduceRecall(last.state, { type: 'finish' }, oneIndex);
-  assert.equal(final.state.status, 'complete');
-  assert.equal(final.state.message, 'Entrenamiento completado');
-  assert.equal(final.state.nextLevel, undefined);
-  assert.deepEqual(last.state.found, done.state.found);
-});
-
-test('AC-CMB-24/25: vacío exacto avisa pero sólo el salto explícito cambia de nivel', () => {
-  const empty = startRecall(scenario(2), emptyIndex, countGroups(emptyIndex, scenario(2).runes)).state;
-  assert.equal(empty.status, 'empty');
-  assert.equal(empty.message, 'No hay jugadas posibles');
-  assert.equal(empty.nextLevel, undefined);
-  const ignored = reduceRecall(empty, { type: 'confirm', entries: [] }, emptyIndex);
-  assert.equal(ignored.kind, 'invalid');
-  assert.deepEqual(ignored.state, empty);
-  const skipped = reduceRecall(empty, { type: 'skip' }, emptyIndex);
-  assert.equal(skipped.state.status, 'next');
-  assert.equal(skipped.state.nextLevel, 3);
-  assert.deepEqual(skipped.state.found, []);
-  const terminal = reduceRecall(startRecall(scenario(12), emptyIndex, countGroups(emptyIndex, scenario(12).runes)).state,
-    { type: 'skip' }, emptyIndex);
-  assert.equal(terminal.state.status, 'omitted');
-  assert.equal(terminal.state.message, 'Recorrido terminado con nivel omitido');
-  assert.equal(terminal.state.nextLevel, undefined);
-});
-
-test('AC-CMB-26: pending/error y objetivo no vacío jamás habilitan salto ni acierto vacuo', () => {
-  for (const target of [{ status: 'pending' }, { status: 'error', reason: 'datos' }, countGroups(index, scenario().runes)]) {
-    const start = startRecall(scenario(), index, target);
-    assert.equal(start.ok, true);
-    assert.notEqual(start.state.status, 'empty');
-    const attempt = reduceRecall(start.state, { type: 'skip' }, index);
-    assert.equal(attempt.kind, 'invalid');
-    assert.deepEqual(attempt.state, start.state);
-  }
-  assert.equal(startRecall(scenario(), index, { status: 'exact', count: -1n }).ok, false);
-});
-
-test('AC-CMB-36/37/39: Terminé parcial congela sin acreditar omitidas; repetir continúa misma mesa y found', () => {
-  const index = normalizeDeck({ cards: [{ cardId: 'z', qty: 2 }] }, [{ id: 'z', energy: 0, power: {} }]).index;
-  const board = scenario(3);
-  let state = startRecall(board, index, countGroups(index, board.runes)).state;
-  state = reduceRecall(state, { type: 'confirm', entries: [{ cardId: 'z', qty: 1 }] }, index).state;
-  const closed = reduceRecall(state, { type: 'finish' }, index);
-  assert.equal(closed.kind, 'review');
-  assert.equal(closed.state.status, 'review');
-  assert.equal(closed.state.nextLevel, undefined);
-  assert.equal(closed.state.found.length, 1);
-  assert.deepEqual(closed.state.scenario, board);
-  assert.equal(reduceRecall(closed.state, { type: 'confirm', entries: [{ cardId: 'z', qty: 2 }] }, index).kind, 'invalid');
-  const again = reduceRecall(closed.state, { type: 'repeat' }, index);
-  assert.equal(again.kind, 'repeated');
-  assert.equal(again.state.status, 'active');
-  assert.deepEqual(again.state.found, state.found);
-  assert.equal(again.state.scenario, board);
-  const last = reduceRecall(again.state, { type: 'confirm', entries: [{ cardId: 'z', qty: 2 }] }, index);
-  assert.equal(last.state.status, 'active');
-  assert.equal(reduceRecall(last.state, { type: 'finish' }, index).state.status, 'next');
-});
-
-test('AC-CMB-36/42: pendiente, error y vacío no convierten Terminé en acierto ni salto', () => {
-  for (const target of [{ status: 'pending' }, { status: 'error', reason: 'datos' }]) {
-    const state = startRecall(scenario(), oneIndex, target).state;
-    const result = reduceRecall(state, { type: 'finish' }, oneIndex);
-    assert.equal(result.kind, 'invalid');
-    assert.deepEqual(result.state, state);
-  }
-  const emptyIndex = normalizeDeck({ cards: [{ cardId: 'hard', qty: 1 }] },
-    [{ id: 'hard', energy: 13, power: {} }]).index;
-  const board = scenario(1);
-  const state = startRecall(board, emptyIndex, countGroups(emptyIndex, board.runes)).state;
-  assert.equal(state.status, 'empty');
-  assert.equal(reduceRecall(state, { type: 'finish' }, emptyIndex).kind, 'invalid');
-  assert.equal(reduceRecall(state, { type: 'skip' }, emptyIndex).state.nextLevel, 2);
-});
-
-test('AC-CMB-18: un acierto parcial conserva el nivel y el cierre incompleto', () => {
-  const partialIndex = normalizeDeck({ cards: [{ cardId: 'z', qty: 2 }] }, [{ id: 'z', energy: 0, power: {} }]).index;
-  const initial = startRecall(scenario(5), partialIndex, countGroups(partialIndex, scenario(5).runes)).state;
-  const result = reduceRecall(initial, { type: 'confirm', entries: [{ cardId: 'z', qty: 1 }] }, partialIndex);
-  assert.equal(result.kind, 'accepted');
-  assert.equal(result.state.status, 'active');
-  assert.equal(result.state.scenario.level, 5);
-  assert.equal(result.state.nextLevel, undefined);
-  assert.equal(result.state.found.length, 1);
-});
-
-test('AC-CMB-18/26: un total falso o de otra mesa no permite promover antes del total real', () => {
-  const zero = [{ id: 'z', energy: 0, power: {} }];
-  const other = normalizeDeck({ cards: [{ cardId: 'z', qty: 2 }] }, zero).index;
-  const board = scenario(3);
-  assert.deepEqual(countGroups(other, board.runes), { status: 'exact', count: 2n });
-  const forged = startRecall(board, other, { status: 'exact', count: 1n });
-  assert.equal(forged.ok, false);
-  const checked = startRecall(board, other, countGroups(other, board.runes));
-  assert.equal(checked.ok, true);
-  const partial = reduceRecall(checked.state, { type: 'confirm', entries: [{ cardId: 'z', qty: 1 }] }, other);
-  assert.equal(partial.state.status, 'active');
-  assert.equal(partial.state.found.length, 1);
-});
-
-test('AC-CMB-01/02/13/18/26: un ID agregado sólo al mapa no acredita ni promueve', () => {
-  const sole = normalizeDeck({ cards: [{ cardId: 'z', qty: 1 }] },
-    [{ id: 'z', energy: 0, power: {} }]).index;
-  const board = scenario(1);
-  const target = countGroups(sole, board.runes);
-  assert.equal(target.count, 1n);
-  const state = startRecall(board, sole, target).state;
-  sole.byId.set('foreign', { id: 'foreign', qty: 1, energy: 0, power: {} });
-  const attempt = reduceRecall(state, { type: 'confirm', entries: [{ cardId: 'foreign', qty: 1 }] }, sole);
-  assert.notEqual(attempt.kind, 'accepted');
-  assert.deepEqual(attempt.state.found, []);
-  assert.notEqual(attempt.state.status, 'next');
-  assert.equal(countGroups(sole, board.runes).status, 'error');
-});
+import { normalizeDeck } from '../src/engine/deck-combos.js';
+import { startRecall, reduceRecall, advanceRecall, levelCardOutcomes } from '../src/engine/recall-progress.js';
 
 // ---- Muro del mazo: levelCardOutcomes (AC-ARC-19..20) ----
 const wallCatalog = [
@@ -214,11 +62,11 @@ test('AC-ARC-20: no muta las entradas y rechaza índice o runas inválidos', () 
 
 // ---- Muro del mazo: reducer por carta (AC-ARC-12..18, 21) ----
 const lvl = (level = 3, runes = furyBoard.runes) => ({ level, runes, identity: `wall-${level}` });
-const begin = (scenarioArg = lvl()) => startRecallV2(scenarioArg, wallIdx).state;
-const named = (state, cardId) => reduceRecallV2(state, { type: 'name', cardId }, wallIdx);
+const begin = (scenarioArg = lvl()) => startRecall(scenarioArg, wallIdx).state;
+const named = (state, cardId) => reduceRecall(state, { type: 'name', cardId }, wallIdx);
 
 test('AC-ARC-12: nombrar una carta pagable la acredita una sola vez', () => {
-  const start = startRecallV2(lvl(), wallIdx);
+  const start = startRecall(lvl(), wallIdx);
   assert.equal(start.ok, true);
   assert.deepEqual(start.state.payable, ['cheap', 'fury2']);
   assert.equal(start.state.status, 'active');
@@ -275,106 +123,106 @@ test('AC-ARC-16: el reducer no muta el estado de entrada y es determinista', () 
   for (const id of ['cheap', 'order1', 'nope']) {
     assert.deepEqual(named(frozen, id), named(frozen, id));
   }
-  for (const type of ['finish', 'skip', 'repeat']) reduceRecallV2(frozen, { type }, wallIdx);
+  for (const type of ['finish', 'skip', 'repeat']) reduceRecall(frozen, { type }, wallIdx);
   assert.equal(JSON.stringify(frozen), snapshot);
   // Repetir sólo corre desde una revisión: también congelada, con un falso positivo que borrar.
-  const frozenReview = freeze(structuredClone(reduceRecallV2(named(begin(), 'huge').state, { type: 'finish' }, wallIdx).state));
-  assert.deepEqual(reduceRecallV2(frozenReview, { type: 'repeat' }, wallIdx).state.misses, []);
+  const frozenReview = freeze(structuredClone(reduceRecall(named(begin(), 'huge').state, { type: 'finish' }, wallIdx).state));
+  assert.deepEqual(reduceRecall(frozenReview, { type: 'repeat' }, wallIdx).state.misses, []);
   assert.deepEqual(frozenReview.misses, ['huge']);
-  assert.equal(reduceRecallV2(frozen, { type: 'finish' }, wallIdx).kind, 'review');
+  assert.equal(reduceRecall(frozen, { type: 'finish' }, wallIdx).kind, 'review');
 });
 
 test('AC-ARC-17: el nivel se completa sólo con todas las pagables y cero falsos positivos', () => {
   let state = named(begin(), 'cheap').state;
-  const partial = reduceRecallV2(state, { type: 'finish' }, wallIdx);
+  const partial = reduceRecall(state, { type: 'finish' }, wallIdx);
   assert.equal(partial.kind, 'review');
   assert.equal(partial.state.status, 'review');
   state = named(state, 'fury2').state;
-  const done = reduceRecallV2(state, { type: 'finish' }, wallIdx);
+  const done = reduceRecall(state, { type: 'finish' }, wallIdx);
   assert.equal(done.kind, 'finished');
   assert.equal(done.state.status, 'next');
   assert.equal(done.state.nextLevel, 4);
-  assert.equal(reduceRecallV2(begin(), { type: 'finish' }, wallIdx).kind, 'review');
+  assert.equal(reduceRecall(begin(), { type: 'finish' }, wallIdx).kind, 'review');
 });
 
 test('AC-ARC-18: todas las pagables nombradas más un falso positivo no completa: revisión', () => {
   let state = named(begin(), 'cheap').state;
   state = named(state, 'fury2').state;
   state = named(state, 'huge').state;
-  const closed = reduceRecallV2(state, { type: 'finish' }, wallIdx);
+  const closed = reduceRecall(state, { type: 'finish' }, wallIdx);
   assert.equal(closed.kind, 'review');
   assert.equal(closed.state.status, 'review');
   assert.deepEqual(closed.state.found, ['cheap', 'fury2']);
 });
 
 test('AC-ARC-18: un nivel cerrado no acepta nombres, cierres ni saltos, y una revisión nunca avanza', () => {
-  const review = reduceRecallV2(begin(), { type: 'finish' }, wallIdx).state;
+  const review = reduceRecall(begin(), { type: 'finish' }, wallIdx).state;
   let done = named(named(begin(), 'cheap').state, 'fury2').state;
-  done = reduceRecallV2(done, { type: 'finish' }, wallIdx).state;
-  const last = reduceRecallV2(named(named(begin(lvl(12)), 'cheap').state, 'fury2').state, { type: 'finish' }, wallIdx).state;
+  done = reduceRecall(done, { type: 'finish' }, wallIdx).state;
+  const last = reduceRecall(named(named(begin(lvl(12)), 'cheap').state, 'fury2').state, { type: 'finish' }, wallIdx).state;
   assert.deepEqual([review.status, done.status, last.status], ['review', 'next', 'complete']);
   for (const closed of [review, done, last]) {
     for (const event of [{ type: 'name', cardId: 'cheap' }, { type: 'name', cardId: 'order1' }, { type: 'finish' }, { type: 'skip' }]) {
-      const result = reduceRecallV2(closed, event, wallIdx);
+      const result = reduceRecall(closed, event, wallIdx);
       assert.equal(result.kind, 'invalid', `${closed.status} ${event.type} ${event.cardId ?? ''}`);
       assert.ok(result.reason);
       assert.equal(result.state, closed);
     }
   }
-  assert.equal(advanceRecallV2(review, lvl(4), wallIdx).ok, false);
-  assert.equal(advanceRecallV2(done, lvl(4), wallIdx).ok, true);
+  assert.equal(advanceRecall(review, lvl(4), wallIdx).ok, false);
+  assert.equal(advanceRecall(done, lvl(4), wallIdx).ok, true);
 });
 
 test('AC-ARC-21: repetir conserva found, borra los falsos positivos y mantiene la misma mesa', () => {
   let state = named(begin(), 'cheap').state;
   state = named(state, 'huge').state;
-  const review = reduceRecallV2(state, { type: 'finish' }, wallIdx).state;
-  const again = reduceRecallV2(review, { type: 'repeat' }, wallIdx);
+  const review = reduceRecall(state, { type: 'finish' }, wallIdx).state;
+  const again = reduceRecall(review, { type: 'repeat' }, wallIdx);
   assert.equal(again.kind, 'repeated');
   assert.equal(again.state.status, 'active');
   assert.deepEqual(again.state.found, ['cheap']);
   assert.deepEqual(again.state.misses, []);
   assert.equal(again.state.scenario, review.scenario);
-  assert.equal(reduceRecallV2(begin(), { type: 'repeat' }, wallIdx).kind, 'invalid');
+  assert.equal(reduceRecall(begin(), { type: 'repeat' }, wallIdx).kind, 'invalid');
 });
 
 test('AC-ARC-21: sólo avanza un nivel completo o saltado; la revisión nunca avanza', () => {
   const state = named(named(begin(), 'cheap').state, 'fury2').state;
-  const done = reduceRecallV2(state, { type: 'finish' }, wallIdx).state;
-  const next = advanceRecallV2(done, lvl(4, [...furyBoard.runes, { domain: 'fury', ready: true }]), wallIdx);
+  const done = reduceRecall(state, { type: 'finish' }, wallIdx).state;
+  const next = advanceRecall(done, lvl(4, [...furyBoard.runes, { domain: 'fury', ready: true }]), wallIdx);
   assert.equal(next.ok, true);
   assert.equal(next.state.scenario.level, 4);
   assert.deepEqual(next.state.history, [{ identity: 'wall-3', level: 3, found: ['cheap', 'fury2'], omitted: false }]);
   assert.deepEqual(next.state.found, []);
-  const review = reduceRecallV2(begin(), { type: 'finish' }, wallIdx).state;
-  assert.equal(advanceRecallV2(review, lvl(4), wallIdx).ok, false);
-  assert.equal(advanceRecallV2(done, lvl(9), wallIdx).ok, false);
+  const review = reduceRecall(begin(), { type: 'finish' }, wallIdx).state;
+  assert.equal(advanceRecall(review, lvl(4), wallIdx).ok, false);
+  assert.equal(advanceRecall(done, lvl(9), wallIdx).ok, false);
 });
 
 test('AC-ARC-21: un nivel sin pagables se salta; cualquier carta nombrada es falso positivo', () => {
   const poor = lvl(1, [{ domain: 'fury', ready: false }]);
-  const start = startRecallV2(poor, wallIdx);
+  const start = startRecall(poor, wallIdx);
   assert.equal(start.state.status, 'empty');
   assert.deepEqual(start.state.payable, []);
   const miss = named(start.state, 'cheap');
   assert.equal(miss.kind, 'false-positive');
-  assert.equal(reduceRecallV2(miss.state, { type: 'finish' }, wallIdx).kind, 'invalid');
-  const skipped = reduceRecallV2(miss.state, { type: 'skip' }, wallIdx);
+  assert.equal(reduceRecall(miss.state, { type: 'finish' }, wallIdx).kind, 'invalid');
+  const skipped = reduceRecall(miss.state, { type: 'skip' }, wallIdx);
   assert.equal(skipped.kind, 'skipped');
   assert.equal(skipped.state.status, 'next');
-  const history = advanceRecallV2(skipped.state, lvl(2, [{ domain: 'fury', ready: true }, { domain: 'fury', ready: true }]), wallIdx);
+  const history = advanceRecall(skipped.state, lvl(2, [{ domain: 'fury', ready: true }, { domain: 'fury', ready: true }]), wallIdx);
   assert.equal(history.state.history[0].omitted, true);
-  assert.equal(reduceRecallV2(begin(), { type: 'skip' }, wallIdx).kind, 'invalid');
+  assert.equal(reduceRecall(begin(), { type: 'skip' }, wallIdx).kind, 'invalid');
 });
 
 test('AC-ARC-21: el nivel 12 cierra sin nivel 13 y rechaza escenarios inválidos', () => {
   const board = Array.from({ length: 12 }, () => ({ domain: 'fury', ready: true }));
-  let state = startRecallV2({ level: 12, runes: board, identity: 'wall-12' }, wallIdx).state;
+  let state = startRecall({ level: 12, runes: board, identity: 'wall-12' }, wallIdx).state;
   for (const id of state.payable) state = named(state, id).state;
-  const last = reduceRecallV2(state, { type: 'finish' }, wallIdx);
+  const last = reduceRecall(state, { type: 'finish' }, wallIdx);
   assert.equal(last.state.status, 'complete');
   assert.equal(last.state.nextLevel, undefined);
-  assert.equal(startRecallV2({ ...lvl(), level: 13 }, wallIdx).ok, false);
-  assert.equal(startRecallV2({ ...lvl(), identity: '' }, wallIdx).ok, false);
-  assert.equal(startRecallV2(lvl(), undefined).ok, false);
+  assert.equal(startRecall({ ...lvl(), level: 13 }, wallIdx).ok, false);
+  assert.equal(startRecall({ ...lvl(), identity: '' }, wallIdx).ok, false);
+  assert.equal(startRecall(lvl(), undefined).ok, false);
 });

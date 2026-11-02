@@ -1,7 +1,7 @@
 /** Mountable controller for the deck wall; the engine alone decides validity. */
 import { normalizeDeck } from '../engine/deck-combos.js';
 import { createRecallScenario } from '../engine/recall-scenario.js';
-import { startRecallV2, reduceRecallV2, advanceRecallV2, levelCardOutcomes } from '../engine/recall-progress.js';
+import { startRecall, reduceRecall, advanceRecall, levelCardOutcomes } from '../engine/recall-progress.js';
 import * as defaultStore from '../store.js';
 import { renderCard } from './card.js';
 import { renderRune } from './rune.js';
@@ -135,7 +135,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
   function name(cardId) {
     if (disposed || !state || !['active', 'empty'].includes(state.status)) return;
     if (cardId == null) { feedback.notify('Nombrá una carta antes de seguir'); return; }
-    const answer = reduceRecallV2(state, { type: 'name', cardId }, normalized.index);
+    const answer = reduceRecall(state, { type: 'name', cardId }, normalized.index);
     if (answer.kind === 'accepted') {
       state = answer.state;
       feedback.reset();
@@ -150,7 +150,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
   }
   skip.addEventListener('click', () => {
     if (disposed || state?.status !== 'empty') return;
-    const answer = reduceRecallV2(state, { type: 'skip' }, normalized.index);
+    const answer = reduceRecall(state, { type: 'skip' }, normalized.index);
     if (answer.kind !== 'skipped') { message.textContent = answer.reason; return; }
     state = answer.state;
     feedback.reset();
@@ -160,7 +160,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
   });
   finish.addEventListener('click', () => {
     if (disposed || state?.status !== 'active') return;
-    const answer = reduceRecallV2(state, { type: 'finish' }, normalized.index);
+    const answer = reduceRecall(state, { type: 'finish' }, normalized.index);
     if (!['review', 'finished'].includes(answer.kind)) { message.textContent = answer.reason; return; }
     state = answer.state;
     feedback.reset();
@@ -170,7 +170,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
   });
   repeat.addEventListener('click', () => {
     if (disposed || state?.status !== 'review') return;
-    const answer = reduceRecallV2(state, { type: 'repeat' }, normalized.index);
+    const answer = reduceRecall(state, { type: 'repeat' }, normalized.index);
     if (answer.kind !== 'repeated') { message.textContent = answer.reason; return; }
     state = answer.state;
     feedback.reset();
@@ -190,8 +190,8 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     feedback.reset();
     const created = createRecallScenario(deck, normalized.index, runSeed, level);
     if (!created.ok) { message.textContent = created.reason; return; }
-    const started = previous ? advanceRecallV2(previous, created.scenario, normalized.index) :
-      startRecallV2(created.scenario, normalized.index);
+    const started = previous ? advanceRecall(previous, created.scenario, normalized.index) :
+      startRecall(created.scenario, normalized.index);
     if (!started.ok) { message.textContent = started.reason; return; }
     state = started.state;
     mountWall();

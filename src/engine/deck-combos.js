@@ -9,7 +9,6 @@ const plainPower = (power) => power && typeof power === 'object' &&
 const validCost = (card) => Number.isSafeInteger(card?.energy) && card.energy >= 0 &&
   plainPower(card.power) && Object.entries(card.power).every(([d, n]) =>
     DOMAINS.includes(d) && Number.isSafeInteger(n) && n >= 0);
-const provenance = new WeakMap();
 const validIndex = (index) => Array.isArray(index?.cards) && index.byId instanceof Map &&
   (index.cards.length > 0 || (index.policy === 'positive-energy' && index.fullCards?.length > 0)) &&
   index.byId.size === index.cards.length &&
@@ -21,22 +20,6 @@ const validIndex = (index) => Array.isArray(index?.cards) && index.byId instance
     index.fullCards.every((card) => quantity(card.qty) && validCost(card) &&
       (card.energy === 0 ? index.excludedEnergyZero.get(card.id) === card : index.byId.get(card.id) === card)) &&
     index.fullCards.length === index.cards.length + index.excludedEnergyZero.size));
-const indexSignature = (index) => JSON.stringify([index.cards, index.policy === 'positive-energy' ? index.fullCards : null]);
-function stamp(result, index, runes) {
-  if (result.status === 'exact') {
-    provenance.set(result, { index, cards: indexSignature(index), runes: JSON.stringify(runes) });
-    Object.freeze(result);
-  }
-  return result;
-}
-
-/** Only an unchanged engine-issued exact count can complete this index/resource snapshot. */
-export function isExactCountFor(target, index, runes) {
-  const issued = target && provenance.get(target);
-  return target?.status === 'exact' && typeof target.count === 'bigint' &&
-    issued?.index === index && validIndex(index) &&
-    issued.cards === indexSignature(index) && issued.runes === JSON.stringify(runes);
-}
 
 export function normalizeDeck(deck, cards, { policy = 'all' } = {}) {
   if (!['all', 'positive-energy'].includes(policy)) return fail('Política de mazo desconocida');
@@ -79,57 +62,12 @@ export function normalizeDeck(deck, cards, { policy = 'all' } = {}) {
   return { ok: true, index: { cards: normalized, byId: new Map(normalized.map((c) => [c.id, c])) } };
 }
 
-export function canonicalGroup(entries, index) {
-  if (!Array.isArray(entries) || !entries.length) return fail('La combinación está vacía');
-  if (!(index?.byId instanceof Map)) return fail('Índice de mazo inválido');
-  const totals = new Map();
-  for (const entry of entries) {
-    const id = entry?.cardId;
-    const card = index.byId.get(id);
-    if (!card) return index.excludedEnergyZero?.has(id)
-      ? fail('Las cartas de Energía 0 no cuentan en este entrenamiento')
-      : fail(`La carta ${String(id)} no está en el mazo principal`);
-    if (!quantity(entry.qty)) return fail(`Cantidad inválida para ${id}: ${String(entry.qty)}`);
-    const qty = (totals.get(id) ?? 0) + entry.qty;
-    if (!Number.isSafeInteger(qty) || qty > card.qty) return fail(`La carta ${id} tiene sólo ${card.qty} copias en el mazo principal`);
-    totals.set(id, qty);
-  }
-  const group = [...totals].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)
-    .map(([cardId, qty]) => ({ cardId, qty }));
-  return { ok: true, group, key: JSON.stringify(group.map(({ cardId, qty }) => [cardId, qty])) };
-}
-
 function budget(runes) {
   if (!Array.isArray(runes) || runes.length > 12 ||
       runes.some((r) => !DOMAINS.includes(r?.domain) || typeof r.ready !== 'boolean')) {
     return fail('Estado de runas inválido');
   }
   return { ok: true, available: availableRunes(runes) };
-}
-
-/** Check a weighted multiset against the ORIGINAL unmodified resource snapshot. */
-export function validateGroup(entries, scenario, index) {
-  const canonical = canonicalGroup(entries, index);
-  if (!canonical.ok) return canonical;
-  const resources = budget(scenario?.runes);
-  if (!resources.ok) return resources;
-  const power = {};
-  let energy = 0;
-  let powerTotal = 0;
-  for (const { cardId, qty } of canonical.group) {
-    const card = index.byId.get(cardId);
-    if (!validCost(card)) return fail(`Coste desconocido o inválido para ${cardId}`);
-    energy += card.energy * qty;
-    for (const [domain, amount] of Object.entries(card.power)) {
-      power[domain] = (power[domain] ?? 0) + amount * qty;
-      powerTotal += amount * qty;
-    }
-  }
-  if (!Number.isSafeInteger(energy) || !Number.isSafeInteger(powerTotal) ||
-      Object.values(power).some((n) => !Number.isSafeInteger(n))) return fail('Coste agregado fuera de rango');
-  const cost = { energy, power, powerTotal, runes: Math.max(energy, powerTotal) };
-  const check = canPay(cost, resources.available);
-  return { ok: check.ok, key: canonical.key, group: canonical.group, cost, reason: check.reason };
 }
 
 /**
@@ -165,119 +103,4 @@ export function payableCards(index, scenario) {
   const resources = budget(scenario?.runes);
   if (!resources.ok) return resources;
   return { ok: true, cardIds: index.cards.filter(({ id }) => checkCard(id, scenario, index).ok).map(({ id }) => id) };
-}
-
-/** Yields one cooperative checkpoint per quantity-vector transition. */
-function* countSteps(index, runes) {
-  const resources = budget(runes);
-  if (!resources.ok) return { status: 'error', reason: resources.reason };
-  if (!validIndex(index)) {
-    return { status: 'error', reason: 'Índice de mazo inválido' };
-  }
-  const limits = [resources.available.total, ...DOMAINS.map((d) => resources.available.onBoardByDomain[d] ?? 0)];
-  let states = new Map([['[0,0,0,0,0,0,0]', 1n]]);
-  for (const card of index.cards) {
-    if (!quantity(card.qty) || !validCost(card) || index.byId.get(card.id) !== card) {
-      return { status: 'error', reason: `Carta inválida: ${String(card.id)}` };
-    }
-    const unit = [card.energy, ...DOMAINS.map((d) => card.power[d] ?? 0)];
-    const next = new Map();
-    for (const [key, ways] of states) {
-      const base = JSON.parse(key);
-      for (let qty = 0; qty <= card.qty; qty++) {
-        const vector = base.map((n, i) => n + qty * unit[i]);
-        if (vector.some((n, i) => n > limits[i] || !Number.isSafeInteger(n))) break;
-        const target = JSON.stringify(vector);
-        next.set(target, (next.get(target) ?? 0n) + ways);
-        yield;
-      }
-    }
-    states = next;
-  }
-  return { status: 'exact', count: [...states.values()].reduce((n, ways) => n + ways, 0n) - 1n };
-}
-
-/** Exact count of nonempty quantity vectors; no full target or physical-copy expansion. */
-export function countGroups(index, runes) {
-  const steps = countSteps(index, runes);
-  let step = steps.next();
-  while (!step.done) step = steps.next();
-  return stamp(step.value, index, runes);
-}
-
-/** Async checkpoints allow UI scheduling; abort never presents a partial count as zero. */
-export async function countGroupsAsync(index, runes, { yieldTo = () => Promise.resolve(), signal, chunk = 1024 } = {}) {
-  if (!Number.isSafeInteger(chunk) || chunk < 1) return { status: 'error', reason: 'Chunk inválido' };
-  const steps = countSteps(index, runes);
-  let step = steps.next();
-  let transitions = 0;
-  while (!step.done) {
-    if (signal?.aborted) return { status: 'pending' };
-    if (++transitions % chunk === 0) await yieldTo();
-    step = steps.next();
-  }
-  return signal?.aborted ? { status: 'pending' } : stamp(step.value, index, runes);
-}
-
-/** Enumerates only as pages are requested; the DP remains the source of the exact total. */
-export function createMissingPager(index, scenario, target, found = [], {
-  pageSize = 8, chunk = 1024, yieldTo = () => Promise.resolve(), signal,
-} = {}) {
-  if (!isExactCountFor(target, index, scenario?.runes) || !Number.isSafeInteger(pageSize) || pageSize < 1 ||
-      !Number.isSafeInteger(chunk) || chunk < 1 || !Array.isArray(found)) {
-    return fail('Objetivo o paginación inválida');
-  }
-  const seen = new Set();
-  for (const item of found) {
-    const check = validateGroup(item.group, scenario, index);
-    if (!check.ok || check.key !== item.key || seen.has(item.key)) return fail('Descubrimientos incompatibles');
-    seen.add(item.key);
-  }
-  const total = target.count - BigInt(seen.size);
-  if (total < 0n) return fail('Descubrimientos exceden el objetivo');
-  const avail = availableRunes(scenario.runes);
-  const limits = [avail.total, ...DOMAINS.map((d) => avail.onBoardByDomain[d] ?? 0)];
-  const cards = index.cards;
-  let visits = 0;
-  async function* walk(i, vector, selected) {
-    if (signal?.aborted) return;
-    if (++visits % chunk === 0) await yieldTo();
-    if (signal?.aborted) return;
-    if (i === cards.length) {
-      if (selected.length) {
-        const result = canonicalGroup(selected, index);
-        if (result.ok && !seen.has(result.key)) yield { key: result.key, group: result.group };
-      }
-      return;
-    }
-    const card = cards[i];
-    const unit = [card.energy, ...DOMAINS.map((d) => card.power[d] ?? 0)];
-    for (let qty = 0; qty <= card.qty; qty++) {
-      const next = vector.map((n, d) => n + qty * unit[d]);
-      if (next.some((n, d) => n > limits[d] || !Number.isSafeInteger(n))) break;
-      if (qty) selected.push({ cardId: card.id, qty });
-      yield* walk(i + 1, next, selected);
-      if (qty) selected.pop();
-      if (signal?.aborted) return;
-    }
-  }
-  const cursor = walk(0, new Array(limits.length).fill(0), []);
-  const pages = [];
-  let ended = false;
-  return { ok: true, async page(number) {
-    if (!Number.isSafeInteger(number) || number < 0) return { status: 'error', reason: 'Página inválida' };
-    if (signal?.aborted) return { status: 'pending' };
-    if (BigInt(number) * BigInt(pageSize) >= total) return { status: 'exact', groups: [], total };
-    while (pages.length <= number && !ended) {
-      const groups = [];
-      while (groups.length < pageSize) {
-        const step = await cursor.next();
-        if (signal?.aborted) return { status: 'pending' };
-        if (step.done) { ended = true; break; }
-        groups.push(step.value);
-      }
-      pages.push(groups);
-    }
-    return { status: 'exact', groups: pages[number] ?? [], total };
-  } };
 }

@@ -87,7 +87,7 @@ export function mountComposer(root, { cards, onName, onUserEdit = () => {} }) {
       [...list.children].forEach((node, i) => node.setAttribute('aria-selected', String(i === active)));
       input.setAttribute('aria-activedescendant', `${id}-${active}`);
     }
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.ctrlKey && !event.metaKey) {
       event.preventDefault();
       submit();
     }

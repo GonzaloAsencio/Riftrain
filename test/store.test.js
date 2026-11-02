@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeDeck } from '../src/engine/deck-combos.js';
 import { createRecallScenario } from '../src/engine/recall-scenario.js';
-import { startRecallV2, reduceRecallV2, advanceRecallV2 } from '../src/engine/recall-progress.js';
+import { startRecall, reduceRecall, advanceRecall } from '../src/engine/recall-progress.js';
+import * as store from '../src/store.js';
 import { load, save, saveRecallSnapshot, loadRecallSnapshot, isMemoryOnly } from '../src/store.js';
 
 const database = new Map();
@@ -16,9 +17,14 @@ const cards = [{ id: 'a', energy: 1, power: {}, img: 'not-to-persist' },
 const deck = { cards: cards.map(({ id }) => ({ cardId: id, qty: 1 })), runes: { order: 12 } };
 const index = normalizeDeck(deck, cards).index;
 const scenario = createRecallScenario(deck, index, 13, 1).scenario;
-const begin = () => startRecallV2(scenario, index).state;
-const name = (state, cardId) => reduceRecallV2(state, { type: 'name', cardId }, index).state;
-const finish = (state) => reduceRecallV2(state, { type: 'finish' }, index).state;
+const begin = () => startRecall(scenario, index).state;
+const name = (state, cardId) => reduceRecall(state, { type: 'name', cardId }, index).state;
+const finish = (state) => reduceRecall(state, { type: 'finish' }, index).state;
+
+test('AC-ARC-26: el store sólo expone la persistencia vigente (sin migración del schema 1)', () => {
+  assert.deepEqual(Object.keys(store).sort(),
+    ['clear', 'isMemoryOnly', 'load', 'loadRecallSnapshot', 'save', 'saveRecallSnapshot']);
+});
 
 test('AC-ARC-22: el snapshot es schema 2, guarda found como cardId[] y jamás los falsos positivos ni imágenes', () => {
   assert.deepEqual(begin().payable, ['a', 'b']);
@@ -109,7 +115,7 @@ test('AC-CMB-27/30: el historial completado se revalida al restaurar el nivel si
   const done = finish(name(name(begin(), 'a'), 'b'));
   assert.equal(done.status, 'next');
   const nextScenario = createRecallScenario(deck, index, 13, 2).scenario;
-  const state = advanceRecallV2(done, nextScenario, index).state;
+  const state = advanceRecall(done, nextScenario, index).state;
   assert.equal(saveRecallSnapshot(state).ok, true);
   const restored = loadRecallSnapshot(deck, index);
   assert.equal(restored.ok, true);
@@ -137,7 +143,7 @@ test('AC-ARC-50: todas las pagables más un falso positivo se restauran en revis
   assert.equal(restored.state.status, 'review');
   assert.deepEqual(restored.state.found, ['a', 'b']);
   assert.deepEqual(restored.state.misses, []);
-  const again = reduceRecallV2(restored.state, { type: 'repeat' }, index).state;
+  const again = reduceRecall(restored.state, { type: 'repeat' }, index).state;
   assert.equal(saveRecallSnapshot(again).ok, true);
   assert.equal(loadRecallSnapshot(deck, index).state.status, 'active');
   assert.deepEqual(loadRecallSnapshot(deck, index).state.found, ['a', 'b']);
@@ -167,9 +173,9 @@ test('AC-ARC-21: un nivel sin pagables saltado se restaura como siguiente nivel'
   const hardDeck = { cards: [{ cardId: 'hard', qty: 1 }], runes: { order: 12 } };
   const hardIndex = normalizeDeck(hardDeck, hard).index;
   const hardScenario = createRecallScenario(hardDeck, hardIndex, 13, 1).scenario;
-  const start = startRecallV2(hardScenario, hardIndex).state;
+  const start = startRecall(hardScenario, hardIndex).state;
   assert.equal(start.status, 'empty');
-  const skipped = reduceRecallV2(start, { type: 'skip' }, hardIndex).state;
+  const skipped = reduceRecall(start, { type: 'skip' }, hardIndex).state;
   assert.equal(saveRecallSnapshot(skipped).ok, true);
   const restored = loadRecallSnapshot(hardDeck, hardIndex);
   assert.equal(restored.ok, true);
