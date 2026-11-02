@@ -5,8 +5,12 @@ Sos un Senior Architect con 15+ años. Trabajás con SDD (Spec-Driven Developmen
 ## Proyecto: Riftrain
 
 **Riftbound Forecast Trainer**: entrenador personal para el TCG Riftbound (League of Legends, Riot/UVS).
-Herramienta de uso propio: sin usuarios, sin cuentas, sin backend, sin ranking. Se abre desde el
-celular entre partidas, se responde en segundos y se cierra.
+Herramienta de uso propio: sin usuarios, sin cuentas, sin backend, sin ranking. Se usa **sobre todo
+en escritorio (PC)** y tambien desde el celular entre partidas: se responde en segundos y se cierra.
+
+**Plataformas: escritorio primero, celular tambien.** Todo diseno se piensa primero para pantalla
+ancha, mouse y teclado (hover, atajos, dos columnas) y despues se verifica que funcione en un
+celular vertical de 320 px, sin desborde horizontal y con areas tactiles de 44 px.
 
 La habilidad que entrena, en una frase: **ver el estado del rival y anticipar que recursos y que
 cartas va a tener disponibles en los proximos turnos.**
@@ -24,7 +28,8 @@ Prioridad absoluta: **velocidad de carga y ejecucion**.
   step, sin bundler.** No hay nada que compilar: los archivos que se editan son los que se sirven.
 - **Cero dependencias externas.** Cero webfonts: `system-ui` elimina el FOUT y ~80 KB de descarga.
 - **Sin backend.** Todo corre en el navegador. Se sirve desde GitHub Pages o abriendo el archivo, y
-  tiene que funcionar agregado a la pantalla de inicio del celular y sin conexion.
+  tiene que funcionar en el navegador de escritorio, agregado a la pantalla de inicio del celular y
+  sin conexion.
 - **Persistencia**: `localStorage` con try/catch y fallback en memoria (`src/store.js`). Nada de
   IndexedDB ni service workers complejos.
 - **Tests**: `node --test` nativo (Node 24) para el motor + Chrome/Edge headless para el DOM. Las dos
