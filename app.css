@@ -551,6 +551,20 @@ button { font: inherit; color: inherit; }
 /* Lo que se da vuelta sube y pasa al frente: tapado por sus vecinas no se leeria. */
 .fan__card[data-state="found"], .fan__card[data-state="missed"] { --lift: calc(var(--w) * -.3); z-index: calc(var(--z) + 100); }
 .fan__card[data-glow] .card { box-shadow: 0 0 0 2px var(--glow), 0 0 22px 3px var(--glow); }
+.fan__card[data-state="missed"] .card { filter: grayscale(1) brightness(.8); }
+.fan__card:hover { --lift: calc(var(--w) * -.36); z-index: 300; }
+.fan__card:focus-visible { --lift: calc(var(--w) * -.36); z-index: 300; outline: 3px solid var(--accent); outline-offset: 3px; }
+/* Falsos positivos: fuera del arco, a su derecha, inclinados. En una pantalla angosta van debajo. */
+.fan__extras { position: absolute; right: 4%; bottom: 12%; display: flex; gap: 10px; }
+.fan__extra { position: relative; width: clamp(56px, 18cqh, 110px); transform: rotate(8deg); }
+.fan__extra:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.fan__extra .card { box-shadow: 0 0 0 3px var(--bad), -3px 4px 10px rgba(0,0,0,.55); }
+.fan__tag {
+  position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 3;
+  width: max-content; max-width: calc(100% - 6px); text-align: center; line-height: 1.15;
+  padding: 2px 5px; border-radius: 3px; background: var(--bad); color: #fff; font-size: 11px; font-weight: 700;
+}
+.fan__why { position: absolute; left: 0; right: 0; bottom: 0; margin: 0; min-height: 1.5em; text-align: center; font-size: 13px; color: var(--ink-soft); }
 /* En una pantalla angosta el arco se cierra para entrar en el ancho. */
 @container (max-width: 480px) {
   .fan__card { --k: .6; --w: clamp(48px, min(36cqh, 21cqw), 150px); }

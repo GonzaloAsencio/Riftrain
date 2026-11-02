@@ -51,8 +51,32 @@ export function mountRivalFan(root, { size }) {
     fan.appendChild(slot);
     return slot;
   });
-  zone.append(fan);
+  // Los falsos positivos no son parte de la mano: al cerrar aparecen al costado del arco.
+  const extras = el('div', 'fan__extras');
+  // Siempre presente y vacia: una region live que aparece ya llena no siempre se anuncia.
+  const why = el('p', 'fan__why');
+  why.setAttribute('role', 'status');
+  zone.append(fan, extras, why);
   root.replaceChildren(zone);
+
+  /** Explica ESTA carta; sin motivo, vacia: nunca queda el motivo de otra a la vista. */
+  function inspect(item) {
+    const text = item.dataset.reason ?? '';
+    if (why.textContent !== text) why.textContent = text;
+  }
+  function listen(item) {
+    for (const type of ['pointerenter', 'focusin', 'click']) item.addEventListener(type, () => inspect(item));
+  }
+  function explain(item, card, reason) {
+    item.tabIndex = 0;
+    item.setAttribute('role', 'group');
+    item.setAttribute('aria-label', `${card.name}: ${reason}`);
+    item.dataset.reason = reason;
+  }
+  function unexplain(item) {
+    for (const name of ['tabindex', 'role', 'aria-label', 'data-reason']) item.removeAttribute(name);
+  }
+  slots.forEach(listen);
 
   /** Da vuelta un slot con esta carta: la carta real reemplaza al dorso anonimo y gira. */
   function lift(slot, card, state) {
@@ -68,6 +92,7 @@ export function mountRivalFan(root, { size }) {
     slot.dataset.state = 'down';
     delete slot.dataset.cardId;
     glow(slot, false);
+    unexplain(slot);
   }
   function glow(slot, on, fresh = false) {
     slot.toggleAttribute('data-fresh', on && fresh);
@@ -91,6 +116,35 @@ export function mountRivalFan(root, { size }) {
   }
   function reset() {
     for (const slot of slots) { slot.card = null; lower(slot); }
+    extras.replaceChildren();
+    why.textContent = '';
+  }
+
+  /**
+   * Cierre: lo que se paso ocupa los dorsos que quedaron, en gris y con su motivo; cada
+   * falso positivo es una carta mas al costado, inclinada, con NO ENTRABA. La lista y el
+   * orden los decide quien llama (levelCardOutcomes).
+   */
+  function showOutcomes({ missed = [], falsePositives = [] } = {}) {
+    for (const { card, reason } of missed) {
+      const slot = nextDown();
+      if (!slot || !card) break;
+      slot.card = card;
+      lift(slot, card, 'missed');
+      if (reason) explain(slot, card, reason);
+    }
+    extras.replaceChildren();
+    for (const { card, reason } of falsePositives) {
+      if (!card) continue;
+      const item = el('div', 'fan__extra');
+      const node = renderCard(card, { faceUp: true });
+      item.append(node, el('span', 'fan__tag', 'NO ENTRABA'));
+      item.dataset.cardId = card.id;
+      item.dataset.state = 'false-positive';
+      if (reason) explain(item, card, reason);
+      listen(item);
+      extras.appendChild(item);
+    }
   }
 
   return {
@@ -100,6 +154,7 @@ export function mountRivalFan(root, { size }) {
       reset();
       for (const card of cards) reveal(card);
     },
+    showOutcomes,
     reset,
     destroy() { root.replaceChildren(); },
   };
