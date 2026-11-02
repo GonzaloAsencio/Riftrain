@@ -584,6 +584,10 @@ const fslot = (id) => flowMount.querySelector(`.wall__slot[data-card-id="${id}"]
 const fstates = () => ['alpha', 'beta', 'gamma'].map((id) => fslot(id)?.dataset.state).join(',');
 const stampShown = () => { const s = flowMount.querySelector('.recall-stamp'); return !!s && !s.hidden; };
 const lit = (root) => [...root.querySelectorAll('.rune')].flatMap((rune, i) => (rune.dataset.highlight === 'true' ? [i] : []));
+// Una region live se anuncia si YA estaba renderizada cuando cambia: el aviso vive DENTRO de una region
+// persistente (no la region que aparece junto con su texto).
+const announced = (item) => { const region = item?.parentElement?.closest('[aria-live="polite"]');
+  return !!region && !region.hidden && getComputedStyle(region).display !== 'none' && !item.hasAttribute('aria-live'); };
 const missingMark = (root) => root.querySelector('.runes__missing:not([hidden])');
 // Contraste WCAG del texto contra el primer fondo opaco que tiene detrás (o blanco).
 const rgbOf = (value) => (value.match(/[\d.]+/g) ?? []).map(Number);
@@ -619,6 +623,11 @@ check('AC-CMB-19: la mesa del nivel 3 muestra 3 abiertas y el total de doce',
   flowMount.querySelectorAll('.rune:not(.rune--spent)').length === 3 &&
   flowMount.textContent.includes('3 abiertas') && flowMount.textContent.includes('en el Mazo de Runas'));
 
+const regionReady = (item) => !!item && !item.hidden && getComputedStyle(item).display !== 'none' && item.getAttribute('aria-live') === 'polite';
+check('AC-ARC-60: antes de cualquier aviso, las regiones live ya están renderizadas y vacías (sello/toast adentro, aviso de restore)',
+  regionReady(flowMount.querySelector('.recall-feedback')) && regionReady(flowMount.querySelector('.recall__notice')) &&
+  flowMount.querySelector('.recall__notice').textContent === '' && !flowMount.querySelector('.recall-stamp:not([hidden])'));
+
 // La banda superior: la mesa del rival (runas) y su mano de siete dorsos, sólo contexto.
 const flowBand = flowMount.querySelector('.recall-band');
 const flowHand = flowBand?.querySelector('.recall-hand');
@@ -646,7 +655,7 @@ const betaReason = checkCard('beta', scenarioAt(3), flowIndex).reason;
 check('AC-ARC-35: carta impagable muestra el sello NO ENTRA con el motivo exacto del motor',
   stampShown() && flowMount.querySelector('.recall-stamp strong').textContent === 'NO ENTRA' &&
   flowMount.querySelector('.recall-stamp span').textContent === betaReason && /Chaos/.test(betaReason) &&
-  flowMount.querySelector('.recall-stamp').getAttribute('aria-live') === 'polite');
+  announced(flowMount.querySelector('.recall-stamp')));
 check('AC-ARC-35: la celda sigue boca abajo, no se guarda nada y no hay toast duplicado',
   fstates() === 'down,down,down' && saves === 0 && toastText() === null);
 check('AC-ARC-35: el input queda marcado como rechazado mientras el sello está visible',
@@ -731,7 +740,7 @@ check('AC-ARC-39: una carta de Energía 0 avisa su motivo y no es un falso posit
   /Energía 0/.test(toastText()) && fstates() === 'found,down,found' && !stampShown());
 const liveToast = flowMount.querySelector('.recall-feedback__toast:not([hidden])');
 check('AC-ARC-60: el aviso vive en una región aria-live y se lee como advertencia, distinto del texto neutro',
-  liveToast?.getAttribute('role') === 'status' && liveToast.getAttribute('aria-live') === 'polite' &&
+  announced(liveToast) &&
   liveToast.dataset.tone === 'warning' &&
   getComputedStyle(liveToast).color !== getComputedStyle(flowMount.querySelector('.recall__message') ?? flowMount).color &&
   contrastOf(liveToast) >= 4.5,
@@ -815,7 +824,7 @@ for (const schema of [1, 999]) {
   press(type(staleMount, 'alp'), 'Enter');
   check(`AC-ARC-51: tras nombrar una carta el nivel 1 se guarda en schema 2 y conserva lo legacy`,
     actualStore.load({}).recall.schema === 2 && actualStore.load({}).legacy.streak === 3 &&
-    staleMount.querySelector('.wall__slot[data-card-id="alpha"]').dataset.state === 'found' && staleNotice.hidden);
+    staleMount.querySelector('.wall__slot[data-card-id="alpha"]').dataset.state === 'found' && staleNotice.textContent === '' && !staleNotice.hidden);
   stale.destroy(); staleMount.remove();
 }
 actualStore.clear();
@@ -925,6 +934,35 @@ const focusRule = (selector) => [...document.styleSheets].some((sheet) => {
 check('AC-ARC-60: foco visible definido para las celdas del cierre y los botones (Terminé, Repetir, Siguiente)',
   focusRule('.wall__slot[tabindex]:focus-visible') && focusRule('.btn:focus-visible'));
 closeFlow.destroy(); closeMount.remove();
+
+// ---- MOVIMIENTO REDUCIDO (AC-ARC-58): misma ronda, sin transiciones; el estado visible es idéntico.
+const motionRun = (reducedMotion) => {
+  const mount = document.createElement('div');
+  document.querySelector('#stage main').appendChild(mount);
+  const run = mountRecall(mount, { deck: closeDeck, cards: [...sampleCards, hard], seed: 5, initialLevel: 3, storage: stub, feedbackOptions, reducedMotion });
+  press(type(mount, 'alp'), 'Enter');
+  const duringRound = ['.wall__slot', '.wall__slot .card'].map((selector) => getComputedStyle(mount.querySelector(selector)).transitionDuration);
+  press(type(mount, 'bet'), 'Enter');
+  const stamp = mount.querySelector('.recall-stamp:not([hidden])')?.textContent;
+  mount.querySelector('[data-action="finish"]').click();
+  const closedSlots = [...mount.querySelectorAll('.wall__slot')];
+  const result = {
+    reducedClass: mount.querySelector('.recall').classList.contains('recall--reduced'),
+    durations: [...duringRound, ...closedSlots.map((slot) => getComputedStyle(slot).transitionDuration)],
+    animations: mount.getAnimations({ subtree: true }).length,
+    visible: JSON.stringify({ stamp, states: closedSlots.map((slot) => [slot.dataset.cardId, slot.dataset.state, slot.dataset.reason ?? null, !!slot.querySelector('.wall__tag')]) }),
+  };
+  run.destroy(); mount.remove();
+  return result;
+};
+const withMotion = motionRun(false);
+const reduced = motionRun(true);
+check('AC-ARC-58: con movimiento, voltear y cerrar sí animan (el test puede fallar)',
+  !withMotion.reducedClass && withMotion.durations.some((d) => d !== '0s') && withMotion.animations > 0, withMotion.durations.join());
+check('AC-ARC-58: con movimiento reducido no hay transiciones ni animaciones en el muro',
+  reduced.reducedClass && reduced.durations.every((d) => d === '0s') && reduced.animations === 0, `${reduced.durations.join()} ${reduced.animations}`);
+check('AC-ARC-58: el estado visible es idéntico con y sin movimiento (estados, motivos, rótulos y sello)',
+  reduced.visible === withMotion.visible && JSON.parse(reduced.visible).stamp?.includes('NO ENTRA'));
 
 // Cobertura visual de las doce fronteras: el nivel es abiertas, no mesa total.
 for (let level = 1; level <= 12; level++) {

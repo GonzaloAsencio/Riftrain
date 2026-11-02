@@ -529,6 +529,8 @@ button { font: inherit; color: inherit; }
 }
 
 /* ---------- MOTION ---------- */
+/* La clase la pone recall.js con la misma preferencia: cambia el movimiento, nunca el estado visible. */
+.recall--reduced .card, .recall--reduced .wall__slot { transition: none !important; animation: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .card, .hand__slot, .pick, .zoom, .wall__slot { transition: none !important; animation: none !important; }
 }
