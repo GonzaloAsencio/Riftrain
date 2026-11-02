@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { normalizeDeck, canonicalGroup, validateGroup, countGroups, countGroupsAsync, createMissingPager } from '../src/engine/deck-combos.js';
+import { normalizeDeck, checkCard, canonicalGroup, validateGroup, countGroups, countGroupsAsync, createMissingPager } from '../src/engine/deck-combos.js';
 import { canPlayCard } from '../src/engine/cost.js';
 
 const cards = [
@@ -340,4 +340,71 @@ test('AC-CMB-52: Ride×2 suma 2 Chaos de Poder, una Chaos agotada adicional sí 
   assert.equal(countGroups(fixture.index, exhausted).count, 2n);
   const actual = normalizeDeck(data.decks[0], data.cards);
   assert.match(canonicalGroup([{ cardId: ride.id, qty: 2 }], actual.index).reason, /1 copias/);
+});
+
+// ---- Muro del mazo: checkCard (AC-ARC-01..04) ----
+const wallCards = [
+  { id: 'zero', energy: 0, power: {} },
+  { id: 'floater', energy: 3, power: { fury: 1 } },
+  { id: 'ord2', energy: 1, power: { order: 2 } },
+  { id: 'big', energy: 5, power: {} },
+  { id: 'side', energy: 1, power: {} },
+];
+const wallDeck = { cards: ['zero', 'floater', 'ord2', 'big'].map((cardId) => ({ cardId, qty: 2 })) };
+const wallIndex = normalizeDeck(wallDeck, wallCards, { policy: 'positive-energy' }).index;
+const rune = (domain, ready = true) => ({ domain, ready });
+const board = (...runes) => ({ runes });
+
+test('AC-ARC-03: 3 de Energía + 1 Fury se paga con exactamente 3 runas Fury (floating)', () => {
+  const result = checkCard('floater', board(rune('fury'), rune('fury'), rune('fury')), wallIndex);
+  assert.equal(result.ok, true);
+  assert.equal(result.cardId, 'floater');
+  assert.equal(result.reason, null);
+  assert.equal(result.cost.energy, 3);
+  assert.equal(result.cost.powerTotal, 1);
+  assert.equal(result.detail.kind, 'ok');
+});
+
+test('AC-ARC-01: sin runas del dominio pedido devuelve el motivo y detail de dominio', () => {
+  const result = checkCard('ord2', board(rune('fury'), rune('fury')), wallIndex);
+  assert.equal(result.ok, false);
+  assert.match(result.reason, /Order/);
+  assert.deepEqual(result.detail, { kind: 'domain', domain: 'order', need: 2, have: 0 });
+});
+
+test('AC-ARC-02: más Energía que runas abiertas devuelve detail de energía', () => {
+  const result = checkCard('big', board(rune('fury'), rune('fury'), rune('fury', false)), wallIndex);
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.detail, { kind: 'energy', need: 5, have: 2 });
+});
+
+test('AC-ARC-02: una runa agotada cuenta para el Poder pero no para la Energía', () => {
+  const power = checkCard('ord2', board(rune('order', false), rune('order', false), rune('fury')), wallIndex);
+  assert.equal(power.ok, true);
+  const energy = checkCard('floater', board(rune('fury'), rune('fury'), rune('fury', false)), wallIndex);
+  assert.equal(energy.ok, false);
+  assert.deepEqual(energy.detail, { kind: 'energy', need: 3, have: 2 });
+});
+
+test('AC-ARC-04: id fuera del mazo, Energía 0, id vacío o runas inválidas se rechazan con motivo y sin detail', () => {
+  const runes = board(rune('fury'), rune('fury'), rune('fury'));
+  const cases = [
+    ['side', /side.*mazo principal/],
+    ['zero', /Energía 0 no cuentan/],
+    ['', /Falta|vacío|mazo principal/],
+    [undefined, /Falta|vacío|mazo principal/],
+  ];
+  for (const [id, message] of cases) {
+    const result = checkCard(id, runes, wallIndex);
+    assert.equal(result.ok, false, String(id));
+    assert.match(result.reason, message);
+    assert.equal(result.detail, null);
+    assert.equal(result.cost, null);
+  }
+  for (const bad of [board(rune('lunar')), board({ domain: 'fury', ready: 'si' }), { runes: null }, undefined]) {
+    const result = checkCard('big', bad, wallIndex);
+    assert.equal(result.ok, false);
+    assert.ok(result.reason);
+    assert.equal(result.detail, null);
+  }
 });
