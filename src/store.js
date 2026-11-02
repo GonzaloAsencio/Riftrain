@@ -8,7 +8,6 @@
  */
 
 const KEY = 'riftrain.v1';
-import { countGroups, validateGroup } from './engine/deck-combos.js';
 import { createRecallScenario } from './engine/recall-scenario.js';
 import { startRecall, reduceRecall } from './engine/recall-progress.js';
 
@@ -78,13 +77,16 @@ export function save(state) {
   return writeRoot(legacy);
 }
 
-const pairs = (found) => found.map(({ group }) => group.map(({ cardId, qty }) => [cardId, qty]));
 const snapshotHistory = (history) => history.map(({ level, identity, found, omitted }) => ({
-  level, identity, found: pairs(found), omitted,
+  level, identity, found: [...found], omitted,
 }));
 const problem = (reason) => ({ ok: false, reason });
+const SCHEMA = 2;
 
-/** Keep legacy root untouched; persist only validated references, never images or targets. */
+/**
+ * Guarda sólo referencias validables (cardId[]), nunca imágenes ni el objetivo.
+ * Los falsos positivos pertenecen al intento en curso: NO se persisten.
+ */
 export function saveRecallSnapshot(state) {
   if (!state?.scenario?.identity || !Array.isArray(state.found) || !Array.isArray(state.history)) {
     return problem('Snapshot de recall inválido');
@@ -92,8 +94,8 @@ export function saveRecallSnapshot(state) {
   let recall;
   try {
     const { seed, level, identity, runes } = state.scenario;
-    recall = { schema: 1, seed, level, identity, runes, status: state.status,
-      found: pairs(state.found), history: snapshotHistory(state.history) };
+    recall = { schema: SCHEMA, seed, level, identity, runes, status: state.status,
+      found: [...state.found], history: snapshotHistory(state.history) };
     JSON.stringify(recall);
   } catch {
     return problem('No se pudo serializar el snapshot de recall');
@@ -106,36 +108,33 @@ function replay(deck, index, seed, level, identity, runes, found, status) {
   const generated = createRecallScenario(deck, index, seed, level);
   if (!generated.ok || generated.scenario.identity !== identity ||
       JSON.stringify(generated.scenario.runes) !== JSON.stringify(runes)) return problem('Identidad o runas incompatibles');
-  const target = countGroups(index, generated.scenario.runes);
-  if (target.status !== 'exact' || !Array.isArray(found)) return problem('Objetivo o grupos inválidos');
-  let state = startRecall(generated.scenario, index, target).state;
-  for (const group of found) {
-    if (!Array.isArray(group) || !group.length || group.some((pair) => !Array.isArray(pair) || pair.length !== 2)) {
-      return problem('Grupo guardado inválido');
-    }
-    const entries = group.map(([cardId, qty]) => ({ cardId, qty }));
-    const check = validateGroup(entries, generated.scenario, index);
-    if (!check.ok) return problem('Grupo guardado no pagable o fuera del mazo');
-    const result = reduceRecall(state, { type: 'confirm', entries }, index);
-    if (result.kind !== 'accepted') return problem('Grupo guardado duplicado o incompatible');
+  if (!Array.isArray(found) || found.some((cardId) => typeof cardId !== 'string')) return problem('Cartas guardadas inválidas');
+  const started = startRecall(generated.scenario, index);
+  if (!started.ok) return problem(started.reason);
+  let state = started.state;
+  for (const cardId of found) {
+    const result = reduceRecall(state, { type: 'name', cardId }, index);
+    if (result.kind !== 'accepted') return problem('Carta guardada no pagable, duplicada o fuera del mazo');
     state = result.state;
   }
-  if (status === 'omitted' || (status === 'next' && target.count === 0n)) {
+  if (status === 'omitted' || (status === 'next' && state.payable.length === 0)) {
     const result = reduceRecall(state, { type: 'skip' }, index);
     if (result.kind !== 'skipped') return problem('Salto incompatible');
     state = result.state;
   } else if (['review', 'next', 'complete'].includes(status)) {
     const result = reduceRecall(state, { type: 'finish' }, index);
     if (!['review', 'finished'].includes(result.kind)) return problem('Cierre incompatible');
-    state = result.state;
+    // Los falsos positivos eran de la sesión y no se guardaron: con todas las pagables a la vista
+    // el cierre se recalcula como completo, pero el snapshot dice que quedó en revisión.
+    state = status === 'review' ? { ...result.state, status: 'review' } : result.state;
   }
   if (state.status !== status) return problem('Terminalidad del snapshot incompatible');
   return { ok: true, state };
 }
 
-/** Recompute count and replay each group; never trust persisted totals or foreign seeds. */
+/** Regenera el escenario y repite cada carta; nunca confía en totales ni en semillas ajenas. */
 function restoreSnapshot(deck, index, saved) {
-  if (!saved || saved.schema !== 1 || !Number.isSafeInteger(saved.seed) ||
+  if (!saved || saved.schema !== SCHEMA || !Number.isSafeInteger(saved.seed) ||
       !Number.isSafeInteger(saved.level) || !Array.isArray(saved.history) ||
       saved.history.length !== saved.level - 1) return problem('Snapshot ausente o versión incompatible');
   const result = replay(deck, index, saved.seed, saved.level, saved.identity,
@@ -149,75 +148,13 @@ function restoreSnapshot(deck, index, saved) {
     if (!earlier.ok) return problem('Escenario anterior inválido');
     const check = replay(deck, index, saved.seed, item.level, item.identity,
       earlier.scenario.runes, item.found, 'next');
-    if (!check.ok || item.omitted !== (check.state.target.count === 0n)) return problem('Historial incompatible');
+    if (!check.ok || item.omitted !== (check.state.payable.length === 0)) return problem('Historial incompatible');
     history.push({ level: item.level, identity: item.identity, found: check.state.found, omitted: item.omitted });
   }
   result.state.history = history;
   return result;
 }
 
-function migrateFullSnapshot(deck, index, old) {
-  const seed = old.scenario.seed;
-  const prior = old.history;
-  const history = [];
-  let current;
-  for (let level = 1; level <= old.scenario.level; level++) {
-    const generated = createRecallScenario(deck, index, seed, level);
-    if (!generated.ok) return problem('Escenario positivo incompatible');
-    const target = countGroups(index, generated.scenario.runes);
-    if (target.status !== 'exact') return problem('Objetivo positivo incompatible');
-    current = startRecall(generated.scenario, index, target).state;
-    const previous = prior[level - 1];
-    const originalFound = previous?.found ?? (level === old.scenario.level ? old.found : null);
-    if (!Array.isArray(originalFound)) return problem('Historial anterior incompatible');
-    for (const found of originalFound) {
-      // Never strip a zero-energy ID from a mixed group: that would invent a different answer.
-      if (!found.group.every(({ cardId }) => index.byId.has(cardId))) continue;
-      const applied = reduceRecall(current, { type: 'confirm', entries: found.group }, index);
-      if (applied.kind !== 'accepted') return problem('Grupo anterior incompatible');
-      current = applied.state;
-    }
-    if (previous) {
-      if (target.count === 0n) {
-        if (!previous.omitted) return problem('No se puede migrar nivel anterior sólo de Energía 0');
-        current = reduceRecall(current, { type: 'skip' }, index).state;
-      } else {
-        if (previous.omitted || BigInt(current.found.length) !== target.count) {
-          return problem('Historial positivo incompleto; revisar progreso anterior');
-        }
-        current = reduceRecall(current, { type: 'finish' }, index).state;
-      }
-      if (current.status !== 'next') return problem('Historial anterior incompatible');
-      history.push({ identity: current.scenario.identity, level, found: current.found, omitted: target.count === 0n });
-    }
-  }
-  current.history = history;
-  if (current.target.count === 0n) {
-    if (old.status === 'next' || old.status === 'complete') {
-      return problem('No se puede migrar un nivel terminado sólo con Energía 0');
-    }
-    if (old.status === 'omitted') current = reduceRecall(current, { type: 'skip' }, index).state;
-    else if (!['active', 'review', 'empty', 'next'].includes(old.status)) return problem('Cierre anterior incompatible');
-  } else if (old.status === 'review' || old.status === 'next' || old.status === 'complete') {
-    const finished = reduceRecall(current, { type: 'finish' }, index);
-    if (!['review', 'finished'].includes(finished.kind)) return problem('Cierre anterior incompatible');
-    current = finished.state;
-    if ((old.status === 'next' || old.status === 'complete') && current.status !== old.status) {
-      return problem('Historial positivo incompleto; revisar progreso anterior');
-    }
-  } else if (old.status !== 'active') return problem('Estado anterior incompatible');
-  return { ok: true, state: current,
-    migrated: true, warning: 'Progreso anterior adaptado: las cartas de Energía 0 no cuentan' };
-}
-
 export function loadRecallSnapshot(deck, index) {
-  const saved = load({}).recall;
-  const direct = restoreSnapshot(deck, index, saved);
-  if (direct.ok || index?.policy !== 'positive-energy') return direct;
-  if (!Array.isArray(index.fullCards) || !index.fullCards.length) return direct;
-  const full = { cards: index.fullCards,
-    byId: new Map(index.fullCards.map((card) => [card.id, card])) };
-  const source = restoreSnapshot(deck, full, saved);
-  if (!source.ok) return direct;
-  return migrateFullSnapshot(deck, index, source.state);
+  return restoreSnapshot(deck, index, load({}).recall);
 }

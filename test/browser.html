@@ -426,803 +426,367 @@ wall.destroy();
 check('AC-ARC-31: destroy deja el contenedor vacio', wallHost.children.length === 0);
 wallHost.remove();
 
-// U6: ejercicio de búsqueda visual, separado de la mano legacy.
-const recallMount = document.createElement('div');
-recallMount.id = 'recall-browser-stage';
-document.querySelector('#stage main').appendChild(recallMount);
-const { normalizeDeck, countGroups } = await import('../src/engine/deck-combos.js');
+// ---- EL DOCK (AC-ARC-32): un solo input; sugiere desde TODO el main y nombrar es un acto.
+const { normalizeDeck, checkCard } = await import('../src/engine/deck-combos.js');
 const { createRecallScenario } = await import('../src/engine/recall-scenario.js');
-const { startRecall, reduceRecall, advanceRecall } = await import('../src/engine/recall-progress.js');
 const { mountComposer } = await import('../src/ui/composer.js');
+const type = (root, text) => {
+  const input = root.querySelector('input[role="combobox"]');
+  input.value = text;
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  return input;
+};
+const press = (input, key) => input.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
 const sampleCards = [
   { id: 'alpha', name: 'Álpha', energy: 1, power: {}, img: PNG, type: 'unit', domain: 'order' },
   { id: 'beta', name: 'Beta', energy: 3, power: { chaos: 1 }, img: null, type: 'spell', domain: 'chaos' },
+  { id: 'gamma', name: 'Gamma', energy: 2, power: {}, img: PNG, type: 'unit', domain: 'order' },
+  { id: 'cero', name: 'Cero', energy: 0, power: { order: 1 }, img: PNG, type: 'gear', domain: 'order' },
 ];
-const sampleIndex = normalizeDeck({ cards: sampleCards.map((c) => ({ cardId: c.id, qty: 3 })) }, sampleCards).index;
-let composerConfirms = 0;
-let lastComposition = null;
-let composerEdits = 0;
-const composer = mountComposer(recallMount, {
-  cards: sampleCards, index: sampleIndex, onConfirm: (entries) => { composerConfirms++; lastComposition = entries; },
-  onUserEdit: () => { composerEdits++; },
-});
-const recallInput = recallMount.querySelector('input[role="combobox"]');
-check('AC-CMB-14: búsqueda del mazo ofrece input accesible, no respuestas predibujadas',
-  !!recallInput && recallMount.querySelectorAll('[role="option"]').length === 0);
-recallInput.value = 'alp';
-recallInput.dispatchEvent(new Event('input', { bubbles: true }));
-check('AC-CMB-14: busca en todo el main aunque la carta no esté pagable',
-  recallMount.querySelectorAll('[role="option"]').length === 1 &&
-  recallMount.querySelector('[role="option"]').textContent.includes('Álpha'));
-check('AC-CMB-14/21: sugerencia contiene imagen de carta real y nombre legible',
-  !!recallMount.querySelector('[role="option"] img') &&
-  recallMount.querySelector('[role="option"] img').getAttribute('src') === PNG &&
-  recallMount.querySelector('[role="option"]').textContent.includes('Álpha'));
-check('AC-CMB-14: sugerencia sólo añade nombre a la imagen, sin coste separado ni pista', (() => {
-  const option = recallMount.querySelector('[role="option"]');
-  return option?.children.length === 2 &&
-    option.querySelector(':scope > .recall-composer__name')?.textContent === 'Álpha' &&
-    !option.querySelector('.recall-composer__cost');
+const dockCards = [...sampleCards,
+  { id: 'ray1', name: 'Rayo Uno', energy: 1, power: {}, img: PNG, type: 'spell', domain: 'order' },
+  { id: 'ray2', name: 'Rayo Dos', energy: 1, power: {}, img: PNG, type: 'spell', domain: 'order' }];
+const dockMount = document.createElement('div');
+document.querySelector('#stage main').appendChild(dockMount);
+const named = [];
+let dockEdits = 0;
+const dock = mountComposer(dockMount, { cards: dockCards, onName: (id) => named.push(id), onUserEdit: () => { dockEdits++; } });
+const dockInput = dockMount.querySelector('input[role="combobox"]');
+check('AC-ARC-32: el dock es un solo input con placeholder, sin sugerencias, sin bandeja ni botones',
+  dockInput?.placeholder === 'Nombrá una carta que pueda jugar' && dockMount.querySelectorAll('input').length === 1 &&
+  dockMount.querySelectorAll('[role="option"]').length === 0 && dockMount.querySelectorAll('button').length === 0);
+type(dockMount, 'alp');
+check('AC-ARC-32: escribir sugiere la carta con su imagen y su nombre, sin coste aparte',
+  dockMount.querySelectorAll('[role="option"]').length === 1 &&
+  dockMount.querySelector('[role="option"] img')?.getAttribute('src') === PNG && (() => {
+    const option = dockMount.querySelector('[role="option"]');
+    return option.children.length === 2 && option.querySelector(':scope > .recall-composer__name')?.textContent === 'Álpha';
+  })());
+check('AC-ARC-32: la lista tiene un unico id, enlazado con aria-controls del input', (() => {
+  const lists = dockMount.querySelectorAll('[role="listbox"]');
+  return lists.length === 1 && dockInput.getAttribute('aria-controls') === lists[0].id &&
+    document.querySelectorAll(`#${lists[0].id}`).length === 1 && dockInput.getAttribute('aria-expanded') === 'true';
 })());
-recallInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-check('AC-CMB-21: teclado marca sugerencia activa',
-  !!recallInput.getAttribute('aria-activedescendant'));
-recallMount.querySelector('[role="option"] img')?.dispatchEvent(new Event('error'));
-check('AC-CMB-21: si falla la imagen, queda marco y nombre identificable',
-  !!recallMount.querySelector('[role="option"] .card__art--empty') &&
-  recallMount.querySelector('[role="option"] .card__name')?.textContent === 'Álpha');
-recallInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-check('AC-CMB-21: Escape cierra lista sin acreditar descubrimiento',
-  recallMount.querySelectorAll('[role="option"]').length === 0 && composerConfirms === 0);
-recallInput.value = 'sin coincidencias xyz';
-recallInput.dispatchEvent(new Event('input', { bubbles: true }));
-check('AC-CMB-23: sin coincidencias informa vacío accesible, sin carta inventada',
-  recallMount.textContent.includes('No hay coincidencias') && recallMount.querySelectorAll('[role="option"]').length === 0);
-recallInput.value = 'bet';
-recallInput.dispatchEvent(new Event('input', { bubbles: true }));
-recallInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
-recallInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-check('AC-CMB-21: flecha arriba y Enter eligen sugerencia y devuelven foco sin confirmar',
-  composer.entries()[0]?.cardId === 'beta' && document.activeElement === recallInput &&
-  composerConfirms === 0 && !recallMount.querySelector('[role="option"]'));
-recallMount.querySelector('.recall-composer__choice [data-action="remove"]')?.click();
-// U7: preview editable, jamás un acierto antes de confirmar.
-recallInput.value = 'bet';
-recallInput.dispatchEvent(new Event('input', { bubbles: true }));
-recallMount.querySelector('[role="option"]')?.click();
-check('AC-CMB-15: seleccionar dibuja preview de carta sin acreditar acierto',
-  !!recallMount.querySelector('.recall-composer__choice .card[data-face="up"]') &&
-  composerConfirms === 0);
-recallMount.querySelector('.recall-composer__choice [data-action="inc"]')?.click();
-check('AC-CMB-15: permite editar cantidad hasta las copias del main',
-  composer.entries()[0]?.qty === 2);
-recallMount.querySelector('.recall-composer__choice [data-action="inc"]')?.click();
-recallMount.querySelector('.recall-composer__choice [data-action="inc"]')?.click();
-check('AC-CMB-02/15: no permite superar tres copias aunque presupuesto actual sea menor',
-  composer.entries()[0]?.qty === 3);
-recallMount.querySelector('.recall-composer__choice [data-action="dec"]')?.click();
-check('AC-CMB-15: permite reducir cantidad sin revelar resultado',
-  composer.entries()[0]?.qty === 2 && composerConfirms === 0);
-recallMount.querySelector('.recall-composer__choice [data-action="remove"]')?.click();
-check('AC-CMB-15: retirar deja composición vacía sin falso acierto',
-  composer.entries().length === 0 && composerConfirms === 0);
-recallInput.value = 'bet';
-recallInput.dispatchEvent(new Event('input', { bubbles: true }));
-recallMount.querySelector('[role="option"]')?.click();
-recallMount.querySelector('.recall-composer__preview + button')?.click();
-check('AC-CMB-16: sólo confirmar entrega cantidades al controlador',
-  composerConfirms === 1 && lastComposition?.length === 1 &&
-  lastComposition[0].cardId === 'beta' && lastComposition[0].qty === 1);
-const editsBeforeClear = composerEdits;
-composer.clear();
-check('AC-CMB-46: clear programático es silencioso, pero teclear siguiente borrador avisa edición', (() => {
-  const silent = composerEdits === editsBeforeClear;
-  recallInput.value = 'alp'; recallInput.dispatchEvent(new Event('input', { bubbles: true }));
-  return silent && composerEdits === editsBeforeClear + 1;
+press(dockInput, 'ArrowDown');
+check('AC-ARC-32: ArrowDown marca la sugerencia activa con aria-activedescendant',
+  dockInput.getAttribute('aria-activedescendant') === dockMount.querySelector('[role="option"]').id &&
+  dockMount.querySelector('[role="option"]').getAttribute('aria-selected') === 'true');
+dockMount.querySelector('[role="option"] img')?.dispatchEvent(new Event('error'));
+check('AC-ARC-59: si falla la imagen, queda el marco y el nombre identificable',
+  !!dockMount.querySelector('[role="option"] .card__art--empty') &&
+  dockMount.querySelector('[role="option"] .card__name')?.textContent === 'Álpha');
+const typedBeforeEscape = dockInput.value;
+const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+dockInput.dispatchEvent(escape);
+check('AC-ARC-32: Escape cierra la lista sin nombrar nada',
+  dockMount.querySelectorAll('[role="option"]').length === 0 && named.length === 0 &&
+  !dockInput.hasAttribute('aria-activedescendant'));
+check('AC-ARC-32: Escape no borra lo escrito (cancela el borrado nativo del input de búsqueda)',
+  escape.defaultPrevented && dockInput.value === typedBeforeEscape && typedBeforeEscape !== '');
+type(dockMount, 'sin coincidencias xyz');
+check('AC-ARC-32: sin coincidencias informa el vacío, sin carta inventada',
+  dockMount.textContent.includes('No hay coincidencias') && dockMount.querySelectorAll('[role="option"]').length === 0);
+press(dockInput, 'Enter');
+check('AC-ARC-39: Enter sin coincidencias entrega el texto crudo; el motor dirá que no está en el mazo',
+  named.length === 1 && named[0] === 'sin coincidencias xyz' && document.activeElement === dockInput);
+type(dockMount, 'rayo');
+press(dockInput, 'Enter');
+check('AC-ARC-33: Enter sin sugerencia marcada nombra la primera y cierra la lista conservando el foco',
+  named.at(-1) === 'ray2' && dockMount.querySelectorAll('[role="option"]').length === 0 &&
+  document.activeElement === dockInput);
+type(dockMount, 'rayo');
+press(dockInput, 'ArrowDown');
+press(dockInput, 'ArrowDown');
+press(dockInput, 'Enter');
+check('AC-ARC-33: Enter con una sugerencia marcada nombra ESA carta', named.at(-1) === 'ray1');
+type(dockMount, 'rayo');
+const namedBefore = named.length;
+for (const modifier of ['ctrlKey', 'metaKey']) {
+  dockInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', [modifier]: true, bubbles: true }));
+}
+check('AC-ARC-52: Ctrl/Meta+Enter no nombra ni confirma nada y deja la lista como estaba',
+  named.length === namedBefore && dockMount.querySelectorAll('[role="option"]').length === 2);
+press(dockInput, 'Escape');
+press(dockInput, 'ArrowDown');
+press(dockInput, 'ArrowUp');
+check('AC-ARC-52: con la lista cerrada las flechas no hacen nada (no hay cantidades que mover)',
+  !dockInput.hasAttribute('aria-activedescendant') && named.length === namedBefore &&
+  dockMount.querySelectorAll('[role="option"]').length === 0);
+type(dockMount, 'rayo');
+press(dockInput, 'ArrowDown');
+press(dockInput, 'ArrowDown');
+press(dockInput, 'ArrowUp');
+press(dockInput, 'Enter');
+check('AC-ARC-32: ArrowUp sube una sugerencia', named.at(-1) === 'ray2');
+type(dockMount, 'cer');
+check('AC-ARC-32: la Energía 0 también se sugiere: nombrarla recibe un motivo, no un silencio',
+  dockMount.querySelector('[role="option"]')?.textContent.includes('Cero') &&
+  !!dockMount.querySelector('[role="option"] img'));
+dockMount.querySelector('[role="option"]')?.click();
+check('AC-ARC-33: click en una sugerencia nombra esa carta', named.at(-1) === 'cero');
+dock.clear();
+const editsBeforeEmpty = dockEdits;
+press(dockInput, 'Enter');
+check('AC-ARC-40: Enter con el input vacío entrega null y no inventa una carta',
+  named.at(-1) === null && dockEdits === editsBeforeEmpty);
+check('AC-ARC-37: clear programático es silencioso, pero teclear avisa la edición del usuario', (() => {
+  dock.clear();
+  const silent = dockEdits === editsBeforeEmpty;
+  type(dockMount, 'alp');
+  return silent && dockEdits === editsBeforeEmpty + 1 && dockInput.value === 'alp';
 })());
-recallMount.querySelector('[role="option"]')?.click();
-recallMount.querySelector('.recall-composer__choice [data-action="inc"]')?.click();
-recallMount.querySelector('.recall-composer__choice [data-action="dec"]')?.click();
-recallMount.querySelector('.recall-composer__choice [data-action="remove"]')?.click();
-check('AC-CMB-46: elegir y editar cantidad/retirar notifican gestos del usuario sin confirmar',
-  composerEdits === editsBeforeClear + 5 && composerConfirms === 1);
-composer.destroy();
-recallMount.remove();
+dock.setDisabled(true);
+check('AC-ARC-32: deshabilitado, el input no responde y no queda lista abierta',
+  dockInput.disabled && dockMount.querySelectorAll('[role="option"]').length === 0);
+dock.destroy();
+check('AC-ARC-32: destroy deja el contenedor vacío', dockMount.children.length === 0);
+dockMount.remove();
 
-// U8: los descubrimientos son cartas reveladas; la página limita DOM, no objetivo.
-const galleryMount = document.createElement('div');
-document.querySelector('#stage main').appendChild(galleryMount);
-const { mountComboResults } = await import('../src/ui/combo-results.js');
-const galleryCards = Array.from({ length: 10 }, (_, i) =>
-  ({ ...card(`g${i}`, `Grupo ${i}`, 0), img: PNG }));
-const gallery = mountComboResults(galleryMount, {
-  cardsById: new Map(galleryCards.map((c) => [c.id, c])),
-  found: galleryCards.map((c) => ({ key: JSON.stringify([[c.id, 1]]), group: [{ cardId: c.id, qty: 1 }] })),
-  pageSize: 8,
-});
-check('AC-CMB-16/18: revelados siguen visibles en color y con imagen',
-  galleryMount.querySelectorAll('.recall-results__group').length === 8 &&
-  galleryMount.querySelector('.recall-results__group .card')?.dataset.face === 'up' &&
-  !!galleryMount.querySelector('.recall-results__group .card img'));
-check('AC-CMB-21: página de ocho no recorta los diez grupos descubiertos',
-  galleryMount.textContent.includes('1–8 de 10') && !!galleryMount.querySelector('[data-page="next"]'));
-galleryMount.querySelector('[data-page="next"]')?.click();
-check('AC-CMB-18: última página muestra los dos restantes con identidad',
-  galleryMount.querySelectorAll('.recall-results__group').length === 2 &&
-  galleryMount.textContent.includes('9–10 de 10') && galleryMount.textContent.includes('Grupo 9'));
-galleryMount.querySelector('[data-page="previous"]')?.click();
-check('AC-CMB-18: se pueden volver a inspeccionar los primeros descubrimientos',
-  galleryMount.querySelectorAll('.recall-results__group').length === 8 &&
-  galleryMount.textContent.includes('Grupo 0'));
-gallery.destroy();
-galleryMount.remove();
-
-// U14c: sólo Energía positiva en recall, sin alterar el índice genérico de pruebas.
-const eligibilityMount = document.createElement('div');
-document.querySelector('#stage main').appendChild(eligibilityMount);
-const eligibilityDeck = { id: 'positive', name: 'Main válido',
-  cards: [{ cardId: 'alpha', qty: 1 }, { cardId: 'beta', qty: 1 }], runes: { chaos: 12 } };
-const zeroSample = { ...sampleCards[0], energy: 0 };
+// ---- LA RONDA COMPLETA: dock + muro + motor, con el store real (AC-ARC-12..24, 31..40, 50, 51).
+const { startRecall, reduceRecall, advanceRecall } = await import('../src/engine/recall-progress.js');
 const actualStore = await import('../src/store.js');
 const { mountRecall } = await import('../src/ui/recall.js');
-const eligibilityFlow = mountRecall(eligibilityMount, { deck: eligibilityDeck, cards: [zeroSample, sampleCards[1]],
-  seed: 42, initialLevel: 3,
-  storage: { loadRecallSnapshot: () => ({ ok: false }), saveRecallSnapshot: () => ({ ok: true, persisted: true }) },
-  scheduler: () => Promise.resolve() });
-await eligibilityFlow.ready;
-const eligibilityInput = eligibilityMount.querySelector('input[role="combobox"]');
-eligibilityInput.value = 'alp'; eligibilityInput.dispatchEvent(new Event('input', { bubbles: true }));
-check('AC-CMB-53: Alpha energía0 no aparece ni siquiera con búsqueda exacta, aviso pedagógico claro',
-  eligibilityMount.querySelectorAll('[role="option"]').length === 0 &&
-  eligibilityMount.textContent.includes('Energía 0'));
-eligibilityInput.value = 'bet'; eligibilityInput.dispatchEvent(new Event('input', { bubbles: true }));
-check('AC-CMB-53: carta elegible Beta del main sigue buscable con imagen',
-  eligibilityMount.querySelector('[role="option"]')?.textContent.includes('Beta') &&
-  !!eligibilityMount.querySelector('[role="option"] .card'));
-eligibilityMount.querySelector('[role="option"]')?.click();
-eligibilityMount.querySelector('.recall-composer__preview + button')?.click();
-eligibilityMount.querySelector('[data-action="finish"]')?.click();
-check('AC-CMB-53: objetivo positivo termina con Beta sola; Alpha no aparece gris ni gana crédito',
-  eligibilityMount.querySelector('[data-action="next"]')?.hidden === false &&
-  eligibilityMount.querySelectorAll('.recall__results .recall-results__group').length === 1 &&
-  eligibilityMount.querySelectorAll('.recall-missed .recall-results__group').length === 0);
-eligibilityFlow.destroy(); eligibilityMount.remove();
-const onlyZeroMount = document.createElement('div');
-document.querySelector('#stage main').appendChild(onlyZeroMount);
-const onlyZeroDeck = { cards: [{ cardId: 'alpha', qty: 2 }], runes: { order: 12 } };
-const onlyZero = mountRecall(onlyZeroMount, { deck: onlyZeroDeck, cards: [zeroSample], seed: 42,
-  storage: { loadRecallSnapshot: () => ({ ok: false }), saveRecallSnapshot: () => ({ ok: true, persisted: true }) },
-  scheduler: () => Promise.resolve() });
-await onlyZero.ready;
-check('AC-CMB-53: sólo Energía0 es vacío exacto DE ESTE ejercicio y sólo permite salto manual',
-  onlyZeroMount.textContent.includes('No hay jugadas para este ejercicio') &&
-  onlyZeroMount.querySelector('[data-action="skip"]')?.hidden === false &&
-  onlyZeroMount.querySelector('[data-action="finish"]')?.hidden === true &&
-  !onlyZeroMount.textContent.includes('Entrenamiento completado'));
-onlyZero.destroy(); onlyZeroMount.remove();
+const realData = await (await fetch('../data/cards.json')).json();
+const rootBefore = window.localStorage.getItem('riftrain.v1');
+actualStore.clear();
+const flowCards = sampleCards;
+const flowDeck = { id: 'fixture', name: 'Mazo de prueba', runes: { order: 12 },
+  cards: [{ cardId: 'alpha', qty: 3 }, { cardId: 'beta', qty: 1 }, { cardId: 'gamma', qty: 2 }, { cardId: 'cero', qty: 1 }] };
+const flowIndex = normalizeDeck(flowDeck, flowCards, { policy: 'positive-energy' }).index;
+const scenarioAt = (level) => createRecallScenario(flowDeck, flowIndex, 42, level).scenario;
+const play = (state, ...ids) => ids.reduce((s, cardId) => reduceRecall(s, { type: 'name', cardId }, flowIndex).state, state);
+const closeLevel = (state) => reduceRecall(state, { type: 'finish' }, flowIndex).state;
+// Historia REAL de dos niveles terminados, para que el nivel 3 se restaure desde el store.
+let past = startRecall(scenarioAt(1), flowIndex).state;
+past = advanceRecall(closeLevel(play(past, 'alpha')), scenarioAt(2), flowIndex).state;
+past = advanceRecall(closeLevel(play(past, 'alpha', 'gamma')), scenarioAt(3), flowIndex).state;
+check('AC-ARC-21: el fixture del nivel 3 viene de dos niveles realmente terminados y se guarda',
+  past.history.length === 2 && past.scenario.level === 3 && past.payable.join() === 'alpha,gamma' &&
+  actualStore.saveRecallSnapshot(past).ok === true);
 
-// U14c: migración real en storage del runner (sin tocar perfil del usuario; raw restaurado).
-const migrationRaw = window.localStorage.getItem('riftrain.v1');
-const migratingDeck = { id: 'migration-fixture', name: 'Mazo anterior', cards: [
-  { cardId: 'paid-test', qty: 1 }, { cardId: 'seal-test', qty: 1 },
-], runes: { order: 12 } };
-const migrationCards = [{ id: 'paid-test', name: 'Carta paga', energy: 1, power: {}, type: 'unit' },
-  { id: 'seal-test', name: 'Sello anterior', energy: 0, power: { order: 1 }, type: 'gear' }];
-const originalIndex = normalizeDeck(migratingDeck, migrationCards).index;
-const originalScenario = createRecallScenario(migratingDeck, originalIndex, 42, 1).scenario;
-let originalState = startRecall(originalScenario, originalIndex, countGroups(originalIndex, originalScenario.runes)).state;
-for (const entries of [
-  [{ cardId: 'seal-test', qty: 1 }],
-  [{ cardId: 'paid-test', qty: 1 }],
-  [{ cardId: 'paid-test', qty: 1 }, { cardId: 'seal-test', qty: 1 }],
-]) originalState = reduceRecall(originalState, { type: 'confirm', entries }, originalIndex).state;
-actualStore.saveRecallSnapshot(originalState);
-const oldRaw = window.localStorage.getItem('riftrain.v1');
-const migrationMount = document.createElement('div');
-document.querySelector('#stage main').appendChild(migrationMount);
-try {
-  const migrationFlow = mountRecall(migrationMount, { deck: migratingDeck, cards: migrationCards, seed: 99,
-    storage: actualStore, scheduler: () => Promise.resolve() });
-  await migrationFlow.ready;
-  check('AC-CMB-57: migración conserva sólo grupo pago entero y runas, muestra aviso, no sobrescribe raw',
-    migrationMount.querySelectorAll('.recall__results .recall-results__group').length === 1 &&
-    migrationMount.querySelector('.recall__results .recall-results__group')?.textContent.includes('Carta paga') &&
-    !migrationMount.querySelector('.recall__results .recall-results__group')?.textContent.includes('Sello anterior') &&
-    migrationMount.textContent.includes('Progreso anterior adaptado') &&
-    migrationMount.querySelectorAll('.rune:not(.rune--spent)').length === 1 &&
-    window.localStorage.getItem('riftrain.v1') === oldRaw);
-  migrationFlow.destroy();
-} finally {
-  if (migrationRaw === null) window.localStorage.removeItem('riftrain.v1');
-  else window.localStorage.setItem('riftrain.v1', migrationRaw);
-  migrationMount.remove();
-}
-const incompatibleBefore = window.localStorage.getItem('riftrain.v1');
-const oldZeroDeck = { cards: [{ cardId: 'seal-test', qty: 1 }], runes: { order: 12 } };
-const oldZeroIndex = normalizeDeck(oldZeroDeck, [migrationCards[1]]).index;
-const oldZeroScenario = createRecallScenario(oldZeroDeck, oldZeroIndex, 42, 1).scenario;
-let oldZeroState = startRecall(oldZeroScenario, oldZeroIndex, countGroups(oldZeroIndex, oldZeroScenario.runes)).state;
-oldZeroState = reduceRecall(oldZeroState, { type: 'confirm', entries: [{ cardId: 'seal-test', qty: 1 }] }, oldZeroIndex).state;
-oldZeroState = reduceRecall(oldZeroState, { type: 'finish' }, oldZeroIndex).state;
-actualStore.saveRecallSnapshot(oldZeroState);
-const oldZeroRaw = window.localStorage.getItem('riftrain.v1');
-const incompatibleMount = document.createElement('div');
-document.querySelector('#stage main').appendChild(incompatibleMount);
-try {
-  const incompatibleFlow = mountRecall(incompatibleMount, { deck: oldZeroDeck, cards: [migrationCards[1]], seed: 99,
-    storage: actualStore, scheduler: () => Promise.resolve() });
-  await incompatibleFlow.ready;
-  check('AC-CMB-51/57: cierre anterior sólo Energía0 no se reaplica, avisa y conserva raw hasta gesto',
-    incompatibleMount.textContent.includes('No se puede migrar') &&
-    incompatibleMount.textContent.includes('No hay jugadas para este ejercicio') &&
-    incompatibleMount.querySelector('[data-action="skip"]')?.hidden === false &&
-    incompatibleMount.querySelector('[data-action="next"]')?.hidden === true &&
-    window.localStorage.getItem('riftrain.v1') === oldZeroRaw);
-  incompatibleFlow.destroy();
-} finally {
-  if (incompatibleBefore === null) window.localStorage.removeItem('riftrain.v1');
-  else window.localStorage.setItem('riftrain.v1', incompatibleBefore);
-  incompatibleMount.remove();
-}
-
-// U9: flujo real del motor, sin reloj ni persistencia real acoplados al componente.
-const flowMount = document.createElement('div');
-document.querySelector('#stage main').appendChild(flowMount);
-const flowDeck = { id: 'fixture', name: 'Mazo de prueba', cards: [
-  { cardId: 'alpha', qty: 3 }, { cardId: 'beta', qty: 1 },
-], runes: { order: 12 } };
-const foreignCard = { id: 'foreign', name: 'Carta ajena', energy: 0, power: {}, type: 'unit' };
 let saves = 0;
-let visualTimer = 0;
-const visualTimers = new Map();
-const visualFrames = [];
-let visualFrameId = 0;
+const timers = new Map();
+let timerId = 0;
 const feedbackOptions = {
-  schedule: (callback) => { visualTimers.set(++visualTimer, callback); return visualTimer; },
-  cancel: (id) => visualTimers.delete(id),
-  frame: (callback) => {
-    const id = ++visualFrameId;
-    const run = () => callback();
-    run.id = id;
-    visualFrames.push(run);
-    return id;
-  },
-  cancelFrame: (id) => {
-    const i = visualFrames.findIndex((run) => run.id === id);
-    if (i !== -1) visualFrames.splice(i, 1);
-  },
-  reducedMotion: () => false,
+  schedule: (callback) => { timers.set(++timerId, callback); return timerId; },
+  cancel: (id) => timers.delete(id),
 };
 const memoryStore = {
+  load: (fallback) => actualStore.load(fallback),
   loadRecallSnapshot: (deck, index) => actualStore.loadRecallSnapshot(deck, index),
   saveRecallSnapshot: (state) => { saves++; return actualStore.saveRecallSnapshot(state); },
 };
-// Primero se ejercita pending sin restauración; la corrida principal usa historial REAL 1→2→3.
-const pendingMount = document.createElement('div');
-document.querySelector('#stage main').appendChild(pendingMount);
-const pendingFlow = mountRecall(pendingMount, { deck: flowDeck, cards: [...sampleCards, foreignCard],
-  seed: 42, initialLevel: 3,
-  storage: { loadRecallSnapshot: () => ({ ok: false }) }, scheduler: () => Promise.resolve() });
-check('AC-CMB-26: mientras calcula, no anuncia vacío ni permite confirmar',
-  pendingMount.textContent.includes('Calculando') && !pendingMount.querySelector('.recall-composer__preview + button:not([disabled])'));
-check('AC-CMB-26: pendiente no ofrece salto ni siguiente nivel',
-  pendingMount.querySelector('[data-action="skip"]')?.hidden === true &&
-  pendingMount.querySelector('[data-action="next"]')?.hidden === true &&
-  pendingMount.querySelector('[data-action="finish"]')?.hidden === true);
-pendingFlow.destroy(); await pendingFlow.ready; pendingMount.remove();
-const flowIndex = normalizeDeck(flowDeck, [...sampleCards, foreignCard], { policy: 'positive-energy' }).index;
-let historyState = startRecall(createRecallScenario(flowDeck, flowIndex, 42, 1).scenario, flowIndex,
-  countGroups(flowIndex, createRecallScenario(flowDeck, flowIndex, 42, 1).scenario.runes)).state;
-historyState = reduceRecall(historyState, { type: 'confirm', entries: [{ cardId: 'alpha', qty: 1 }] }, flowIndex).state;
-historyState = reduceRecall(historyState, { type: 'finish' }, flowIndex).state;
-const secondScenario = createRecallScenario(flowDeck, flowIndex, 42, 2).scenario;
-historyState = advanceRecall(historyState, secondScenario, flowIndex, countGroups(flowIndex, secondScenario.runes)).state;
-for (const qty of [1, 2]) historyState = reduceRecall(historyState,
-  { type: 'confirm', entries: [{ cardId: 'alpha', qty }] }, flowIndex).state;
-historyState = reduceRecall(historyState, { type: 'finish' }, flowIndex).state;
-const thirdScenario = createRecallScenario(flowDeck, flowIndex, 42, 3).scenario;
-historyState = advanceRecall(historyState, thirdScenario, flowIndex, countGroups(flowIndex, thirdScenario.runes)).state;
-check('AC-CMB-40/51: fixture de nivel3 proviene de dos niveles positivos realmente terminados',
-  historyState.history.length === 2 && historyState.scenario.level === 3 && historyState.found.length === 0 &&
-  actualStore.saveRecallSnapshot(historyState).ok === true);
-const currentGroups = (root, level) => [...root.querySelectorAll('.recall__results .recall-results__group')]
-  .filter((row) => row.querySelector('h3')?.textContent.startsWith(`Nivel ${level} ·`));
-const flow = mountRecall(flowMount, { deck: flowDeck, cards: [...sampleCards, foreignCard],
-  seed: 42, initialLevel: 3, storage: memoryStore, scheduler: () => Promise.resolve(), feedbackOptions });
+const flowMount = document.createElement('div');
+document.querySelector('#stage main').appendChild(flowMount);
+const mountFlow = () => mountRecall(flowMount, { deck: flowDeck, cards: flowCards, seed: 7, storage: memoryStore, feedbackOptions });
+const fslot = (id) => flowMount.querySelector(`.wall__slot[data-card-id="${id}"]`);
+const fstates = () => ['alpha', 'beta', 'gamma'].map((id) => fslot(id)?.dataset.state).join(',');
+const stampShown = () => { const s = flowMount.querySelector('.recall-stamp'); return !!s && !s.hidden; };
+const toastText = () => flowMount.querySelector('.recall-feedback__toast:not([hidden])')?.textContent ?? null;
+const action = (name) => flowMount.querySelector(`[data-action="${name}"]`);
+const removedUi = (root) => !root.querySelector('.recall-tray, .recall-results, .recall-missed, .recall-composer__preview, .recall-composer__choice, [data-action="inc"], [data-action="dec"], [data-page], .recall-feedback__fan, .recall-feedback__slot, .recall-feedback__badge') &&
+  !/Confirmar|Tu jugada|Jugadas descubiertas|Jugada nueva|¡Correcto!|Anteriores|Siguientes/.test(root.textContent);
+const feedbackText = () => ['.recall__message', '.recall-feedback', '.wall__why']
+  .map((s) => flowMount.querySelector(s)?.textContent ?? '').join(' ');
+let flow = mountFlow();
 await flow.ready;
-check('AC-CMB-43: siete dorsos decorativos bajo runas, sin reemplazar la lista', (() => {
-  const fan = flowMount.querySelector('.recall__table .recall-feedback__fan');
-  const gallery = flowMount.querySelector('.recall__results');
-  return !!fan && fan.getAttribute('aria-hidden') === 'true' &&
-    fan.querySelectorAll('.recall-feedback__slot').length === 7 &&
-    fan.querySelectorAll('.card[data-face="down"]').length === 7 &&
-    !!(fan.compareDocumentPosition(gallery) & Node.DOCUMENT_POSITION_FOLLOWING);
-})());
-check('AC-CMB-01/19/31: nivel tres muestra mesa real, 3 abiertas y total de doce',
-  flowMount.textContent.includes('Nivel 3') && flowMount.textContent.includes('Mazo de prueba') &&
+const flowInput = () => flowMount.querySelector('input[role="combobox"]');
+check('AC-ARC-31: nivel 3 restaurado con una celda por carta distinta con Energía > 0, todas boca abajo',
+  flowMount.textContent.includes('Nivel 3') && flowMount.querySelectorAll('.wall__slot').length === 3 &&
+  fstates() === 'down,down,down' && !fslot('cero') &&
+  flowMount.querySelectorAll('.wall__slot > .card[data-face="down"]').length === 3);
+check('AC-ARC-52: la ronda no tiene bandeja, cantidades, Confirmar, lista de jugadas ni paginador', removedUi(flowMount));
+check('AC-ARC-32: el dock está listo con su placeholder y sin Terminé de más',
+  flowInput()?.placeholder === 'Nombrá una carta que pueda jugar' && !flowInput().disabled &&
+  action('finish')?.hidden === false && action('next')?.hidden === true && action('repeat')?.hidden === true);
+check('AC-CMB-19: la mesa del nivel 3 muestra 3 abiertas y el total de doce',
   flowMount.querySelectorAll('.rune:not(.rune--spent)').length === 3 &&
-  flowMount.textContent.includes('en el Mazo de Runas'));
-check('AC-CMB-19: tres runas abiertas se anuncian en plural',
-  flowMount.textContent.includes('3 abiertas'));
-const flowInput = flowMount.querySelector('input[role="combobox"]');
-flowInput.value = 'ajena'; flowInput.dispatchEvent(new Event('input', { bubbles: true }));
-check('AC-CMB-02/14: carta ajena del catálogo no aparece como respuesta del mazo',
-  flowMount.querySelectorAll('[role="option"]').length === 0 &&
-  flowMount.textContent.includes('No hay coincidencias'));
-flowMount.querySelector('.recall-composer__preview + button')?.click();
-check('AC-CMB-03: confirmar vacío explica rechazo sin acierto, guardado ni promoción',
-  flowMount.textContent.includes('La combinación está vacía') &&
-  currentGroups(flowMount, 3).length === 0 &&
-  saves === 0 && flowMount.textContent.includes('Nivel 3'));
-check('AC-CMB-45: confirmar vacío no voltea ni anuncia Correcto',
-  flowMount.querySelectorAll('.recall-feedback__fan .card[data-face="up"]').length === 0 &&
-  !flowMount.querySelector('.recall-feedback__toast:not([hidden])'));
-const submitFlow = (query) => {
-  const input = flowMount.querySelector('input[role="combobox"]');
-  input.value = query;
-  input.dispatchEvent(new Event('input', { bubbles: true }));
-  flowMount.querySelector('[role="option"]')?.click();
-  flowMount.querySelector('.recall-composer__preview + button')?.click();
-};
-submitFlow('bet');
-check('AC-CMB-10/17: dominio ausente devuelve motivo sin éxito ni descenso',
-  flowMount.textContent.includes('Chaos') &&
-  currentGroups(flowMount, 3).length === 0 &&
-  flowMount.textContent.includes('Nivel 3'));
-check('AC-CMB-45: combinación rechazada no produce frente ilustrativo ni toast',
-  flowMount.querySelectorAll('.recall-feedback__fan .card[data-face="up"]').length === 0 &&
-  !flowMount.querySelector('.recall-feedback__toast:not([hidden])'));
-flowMount.querySelector('.recall-composer__choice [data-action="remove"]')?.click();
-submitFlow('alp');
-check('AC-CMB-16/22: confirmar revela carta, guarda de inmediato, conserva nivel incompleto',
-  currentGroups(flowMount, 3).length === 1 && saves === 1 &&
-  currentGroups(flowMount, 3)[0]?.querySelector('.card')?.dataset.face === 'up' &&
-  flowMount.textContent.includes('Nivel 3'));
-visualFrames.shift()?.();
-const firstFanCard = flowMount.querySelector('.recall-feedback__fan .card[data-face="up"]');
-check('AC-CMB-44: acierto voltea carta Álpha y anuncia Correcto sin quitar grupo de lista',
-  firstFanCard?.dataset.cardId === 'alpha' &&
-  flowMount.querySelector('.recall-feedback__toast:not([hidden])')?.textContent === '¡Correcto!' &&
-  flowMount.querySelector('.recall-feedback__toast')?.getAttribute('aria-live') === 'polite' &&
-  currentGroups(flowMount, 3).length === 1 &&
-  document.activeElement === flowMount.querySelector('input[role="combobox"]'));
-const oldVisualTimer = [...visualTimers.values()][0];
-check('AC-CMB-36: Terminé es distinto a Confirmar y no acredita borrador',
-  !!flowMount.querySelector('[data-action="finish"]') &&
-  flowMount.querySelector('[data-action="next"]')?.hidden === true);
-check('AC-CMB-16: una jugada descubierta se anuncia en singular',
-  flowMount.textContent.includes('1 jugada descubierta') && !flowMount.textContent.includes('1 jugadas descubiertas'));
-const nextDraft = flowMount.querySelector('input[role="combobox"]');
-nextDraft.value = 'alp'; nextDraft.dispatchEvent(new Event('input', { bubbles: true }));
-check('AC-CMB-46: editar siguiente input devuelve TODAS las caras a siete dorsos y quita Correcto, lista intacta',
-  flowMount.querySelectorAll('.recall-feedback__fan .card[data-face="up"]').length === 0 &&
-  flowMount.querySelectorAll('.recall-feedback__fan .card[data-face="down"]').length === 7 &&
-  !flowMount.querySelector('.recall-feedback__toast:not([hidden])') &&
-  currentGroups(flowMount, 3).length === 1);
-flowMount.querySelector('[role="option"]')?.click();
-flowMount.querySelector('.recall-composer__preview + button')?.click();
-check('AC-CMB-06: grupo repetido no agrega acierto ni borra el previo',
-  currentGroups(flowMount, 3).length === 1 && saves === 1 &&
-  flowMount.textContent.includes('ya descubierta'));
-oldVisualTimer?.();
-check('AC-CMB-45: duplicado descarta Correcto previo y no voltea otra carta',
-  flowMount.querySelectorAll('.recall-feedback__fan .card[data-face="up"]').length === 0 &&
-  !flowMount.querySelector('.recall-feedback__toast:not([hidden])') && saves === 1);
-const finishAttempt = flowMount.querySelector('[data-action="finish"]');
-if (finishAttempt) {
-  const reviewed = new Promise((resolve) => {
-    const observer = new MutationObserver(() => {
-      if (flowMount.querySelectorAll('.recall-missed .recall-results__group').length === 2) {
-        observer.disconnect(); resolve();
-      }
-    });
-    observer.observe(flowMount, { subtree: true, childList: true });
-  });
-  finishAttempt.click();
-  await reviewed;
-}
-const missedFace = flowMount.querySelector('.recall-missed .card__face--front');
-const foundFace = flowMount.querySelector('.recall__results .card__face--front');
-check('AC-CMB-37: Terminé muestra dos omitidas grises en la misma mesa; acierto sigue color',
-  !!missedFace && getComputedStyle(missedFace).filter.includes('grayscale(1)') &&
-  parseFloat(getComputedStyle(missedFace).opacity) < .5 &&
-  !getComputedStyle(foundFace).filter.includes('grayscale(1)') &&
-  currentGroups(flowMount, 3).length === 1 &&
-  saves === 2 && flowMount.querySelector('[data-action="next"]')?.hidden === true);
-check('AC-CMB-45: Terminé no dispara Correcto nuevo ni altera el gris de omitidas',
-  !flowMount.querySelector('.recall-feedback__toast:not([hidden])') &&
-  flowMount.querySelectorAll('.recall-missed .card[data-result="missed"]').length >= 2);
-check('AC-CMB-39: cierre parcial ofrece Repetir nivel sin esconder aciertos',
-  !!flowMount.querySelector('[data-action="repeat"]:not([hidden])') &&
-  !flowMount.querySelector('input[role="combobox"]:not([disabled])'));
+  flowMount.textContent.includes('3 abiertas') && flowMount.textContent.includes('en el Mazo de Runas'));
+
+// Falso positivo: el sello lleva el motivo EXACTO del motor y la celda no se da vuelta.
+press(type(flowMount, 'bet'), 'Enter');
+const betaReason = checkCard('beta', scenarioAt(3), flowIndex).reason;
+check('AC-ARC-35: carta impagable muestra el sello NO ENTRA con el motivo exacto del motor',
+  stampShown() && flowMount.querySelector('.recall-stamp strong').textContent === 'NO ENTRA' &&
+  flowMount.querySelector('.recall-stamp span').textContent === betaReason && /Chaos/.test(betaReason) &&
+  flowMount.querySelector('.recall-stamp').getAttribute('aria-live') === 'polite');
+check('AC-ARC-35: la celda sigue boca abajo, no se guarda nada y no hay toast duplicado',
+  fstates() === 'down,down,down' && saves === 0 && toastText() === null);
+type(flowMount, 'g');
+check('AC-ARC-37: editar el input limpia el sello', !stampShown());
+press(type(flowMount, ''), 'Enter');
+check('AC-ARC-40: Enter con el input vacío avisa en un toast y no cambia nada',
+  toastText() === 'Nombrá una carta antes de seguir' && fstates() === 'down,down,down' && saves === 0);
+
+// Acierto: se da vuelta SOLO esa celda, con el brillo de su dominio.
+press(type(flowMount, 'alp'), 'Enter');
+check('AC-ARC-33: nombrar una pagable da vuelta sólo esa celda, con el brillo de su dominio',
+  fstates() === 'found,down,down' && fslot('alpha').dataset.glow === 'order' &&
+  fslot('alpha').querySelector('.card').dataset.face === 'up' && !fslot('gamma').hasAttribute('data-glow'));
+check('AC-ARC-33: el input queda vacío y con el foco, y el acierto se guardó',
+  flowInput().value === '' && document.activeElement === flowInput() && saves === 1 && toastText() === null);
+check('AC-ARC-34: nada celebra con carteles ni contadores',
+  !flowMount.textContent.includes('¡Correcto!') && !/%|\d+\s*(de|\/)\s*\d+|descubiert/i.test(feedbackText()));
+press(type(flowMount, 'gam'), 'Enter');
+check('AC-ARC-34: la última pagable nombrada lleva el brillo y el anterior lo cede',
+  fstates() === 'found,down,found' && fslot('gamma').dataset.glow === 'order' &&
+  fslot('gamma').hasAttribute('data-fresh') && !fslot('alpha').hasAttribute('data-glow') && saves === 2);
+
+// Duplicado, fuera del mazo y Energía 0: avisan, no tocan el muro, no son falsos positivos.
+press(type(flowMount, 'alp'), 'Enter');
+const firstToast = toastText();
+const staleCallback = timers.get([...timers.keys()].at(-1));
+check('AC-ARC-38: nombrar de nuevo un acierto avisa "ya nombrada" y no cambia el muro ni guarda',
+  /ya nombrada/.test(firstToast) && fstates() === 'found,down,found' && saves === 2);
+press(type(flowMount, 'bet'), 'Enter');
+check('AC-ARC-38: un falso positivo nombrado de nuevo también es duplicado',
+  /ya nombrada/.test(toastText()) && fstates() === 'found,down,found' && !stampShown());
+staleCallback();
+check('AC-ARC-38: el temporizador viejo no apaga el aviso nuevo; el vigente sí lo apaga',
+  toastText() !== null && (() => { timers.get([...timers.keys()].at(-1))(); return toastText() === null; })());
+press(type(flowMount, 'zzzz'), 'Enter');
+check('AC-ARC-39: un texto fuera del mazo avisa con el motivo del motor, sin tocar el muro',
+  /no está en el mazo principal/.test(toastText()) && fstates() === 'found,down,found' && !stampShown());
+press(type(flowMount, 'cer'), 'Enter');
+check('AC-ARC-39: una carta de Energía 0 avisa su motivo y no es un falso positivo',
+  /Energía 0/.test(toastText()) && fstates() === 'found,down,found' && !stampShown());
+
+// Terminé con un falso positivo: revisión, no avanza.
+action('finish').click();
+check('AC-ARC-47: todo lo pagable más un falso positivo cierra en revisión, sin avanzar',
+  fstates() === 'found,false-positive,found' && !!fslot('beta').querySelector('.wall__tag') &&
+  action('repeat').hidden === false && action('next').hidden === true && flowInput().disabled && saves === 3);
+check('AC-ARC-52: el cierre tampoco muestra jugadas descubiertas ni "Jugada nueva"', removedUi(flowMount));
+check('AC-ARC-47: cerrar no inventa celdas "missed" cuando todo lo pagable está nombrado',
+  flowMount.querySelectorAll('.wall__slot[data-state="missed"]').length === 0);
 flow.destroy();
-check('AC-CMB-27: controlador desmontado cancela estado viejo y quita listeners', !flowMount.children.length);
-const resumed = mountRecall(flowMount, { deck: flowDeck, cards: [...sampleCards, foreignCard], seed: 99,
-  storage: memoryStore, scheduler: () => Promise.resolve(), feedbackOptions });
-await resumed.ready;
-check('AC-CMB-27: reabrir conserva nivel, runas y descubrimiento sin promover',
-  flowMount.textContent.includes('Nivel 3') && currentGroups(flowMount, 3).length === 1 &&
-  flowMount.querySelectorAll('.recall-missed .recall-results__group').length === 2);
-check('AC-CMB-45: restaurar revisión no repite flip ni Correcto',
-  flowMount.querySelectorAll('.recall-feedback__fan .card[data-face="down"]').length === 7 &&
-  !flowMount.querySelector('.recall-feedback__toast:not([hidden])'));
-resumed && flowMount.querySelector('[data-action="repeat"]')?.click();
-check('AC-CMB-39: repetir continúa nivel3 con misma mesa/hallada, sin grises ni crédito nuevo',
-  flowMount.querySelectorAll('.recall-missed .recall-results__group').length === 0 &&
-  currentGroups(flowMount, 3).length === 1 &&
-  !!flowMount.querySelector('input[role="combobox"]:not([disabled])') && saves === 3);
-const addCopies = (n) => {
-  const input = flowMount.querySelector('input[role="combobox"]');
-  input.value = 'alp'; input.dispatchEvent(new Event('input', { bubbles: true }));
-  flowMount.querySelector('[role="option"]')?.click();
-  for (let i = 1; i < n; i++) flowMount.querySelector('.recall-composer__choice [data-action="inc"]')?.click();
-  flowMount.querySelector('.recall-composer__preview + button')?.click();
-};
-addCopies(2);
-visualFrames.shift()?.();
-const previousVisualTimer = [...visualTimers.values()][0];
-check('AC-CMB-44: segunda aceptación con misma carta voltea otra ranura y muestra qty propio',
-  flowMount.querySelectorAll('.recall-feedback__fan .card[data-card-id="alpha"][data-face="up"]').length === 2 &&
-  flowMount.querySelectorAll('.recall-feedback__badge').length === 0 &&
-  flowMount.querySelector('.recall-feedback__toast:not([hidden])')?.textContent === '¡Correcto!');
-check('AC-CMB-18: dos copias agregan otro multiset sin adelantar nivel todavía',
-  currentGroups(flowMount, 3).length === 2 &&
-  flowMount.textContent.includes('Nivel 3') && !flowMount.querySelector('[data-action="next"]:not([hidden])'));
-addCopies(3);
-visualFrames.shift()?.();
-previousVisualTimer?.();
-check('AC-CMB-44/45: nueva aceptación reinicia flip y timer viejo no borra Correcto',
-  flowMount.querySelectorAll('.recall-feedback__fan .card[data-card-id="alpha"][data-face="up"]').length === 3 &&
-  flowMount.querySelectorAll('.recall-feedback__badge').length === 0 &&
-  flowMount.querySelector('.recall-feedback__toast:not([hidden])')?.textContent === '¡Correcto!');
-check('AC-CMB-36/38: incluso la última confirmación espera Terminé antes de habilitar avance',
-  currentGroups(flowMount, 3).length === 3 &&
-  flowMount.querySelector('[data-action="next"]')?.hidden === true && saves === 5);
-flowMount.querySelector('[data-action="finish"]')?.click();
-check('AC-CMB-38: Terminé con todas permite avanzar y no revela grises',
-  flowMount.querySelector('[data-action="next"]')?.hidden === false &&
-  flowMount.querySelectorAll('.recall-missed .recall-results__group').length === 0 && saves === 6);
-const reachedTwo = new Promise((resolve) => {
-  const observer = new MutationObserver(() => {
-    if (flowMount.textContent.includes('Nivel 4') && flowMount.querySelector('input[role="combobox"]')) {
-      observer.disconnect(); resolve();
-    }
-  });
-  observer.observe(flowMount, { subtree: true, childList: true, characterData: true });
-});
-const advance = flowMount.querySelector('[data-action="next"]');
-if (advance && !advance.hidden) { advance.click(); await reachedTwo; }
-check('AC-CMB-18/19: avanzar genera nivel4 con cuatro abiertas, no reutiliza mesa vieja',
-  flowMount.textContent.includes('Nivel 4') && flowMount.querySelectorAll('.rune:not(.rune--spent)').length === 4 && saves === 7);
-check('AC-CMB-16/24: al avanzar, historia niveles1–3 sigue visible e inspeccionable',
-  flowMount.querySelectorAll('.recall-results__group').length === 6 &&
-  flowMount.querySelector('.recall-results__group h3')?.textContent.includes('Nivel 1') &&
-  flowMount.querySelectorAll('.recall-results__group h3')[3]?.textContent.includes('Nivel 3') &&
-  !!flowMount.querySelector('.recall-results__group .card[data-face="up"]'));
-const nextInput = flowMount.querySelector('input[role="combobox"]');
-nextInput.value = 'alp'; nextInput.dispatchEvent(new Event('input', { bubbles: true }));
-flowMount.querySelector('[role="option"]')?.click();
-flowMount.querySelector('.recall-composer__preview + button')?.click();
-check('AC-CMB-16/18: mismo multiset en nivel4 es nuevo, sin borrar aciertos de nivel3',
-  flowMount.querySelectorAll('.recall-results__group').length === 7 &&
-  flowMount.querySelectorAll('.recall-results__group h3')[6]?.textContent.includes('Nivel 4') &&
-  flowMount.textContent.includes('Nivel 4') && saves === 8);
-resumed.destroy();
-const reopened = mountRecall(flowMount, { deck: flowDeck, cards: [...sampleCards, foreignCard], seed: 7,
-  storage: memoryStore, scheduler: () => Promise.resolve() });
-await reopened.ready;
-check('AC-CMB-20/27: tras reiniciar con otra semilla, nivel4 conserva historial y runas',
-  flowMount.textContent.includes('Nivel 4') &&
-  flowMount.querySelectorAll('.rune:not(.rune--spent)').length === 4 &&
-  !flowMount.textContent.includes('No hay jugadas posibles'));
-check('AC-CMB-16/27: tras reabrir, resultados de niveles1–4 permanecen juntos',
-  flowMount.querySelectorAll('.recall-results__group').length === 7 &&
-  flowMount.querySelectorAll('.recall-results__group h3')[0]?.textContent.includes('Nivel 1') &&
-  flowMount.querySelectorAll('.recall-results__group h3')[6]?.textContent.includes('Nivel 4'));
-reopened.destroy();
+check('AC-CMB-27: desmontar deja el contenedor vacío', flowMount.children.length === 0);
+flow = mountFlow();
+await flow.ready;
+check('AC-ARC-50: reabrir una revisión conserva lo hallado, sin falsos positivos persistidos ni sello',
+  fstates() === 'found,irrelevant,found' && action('repeat').hidden === false && !stampShown() &&
+  !flowMount.querySelector('.wall__tag') && saves === 3);
+action('repeat').click();
+check('AC-ARC-48: Repetir nivel conserva lo hallado, tapa el resto y devuelve el foco al input',
+  fstates() === 'found,down,found' && !stampShown() && !flowInput().disabled &&
+  document.activeElement === flowInput() && flowMount.textContent.includes('Nivel 3') && saves === 4);
+check('AC-ARC-48: tras repetir no quedan celdas con motivo ni etiquetas',
+  !flowMount.querySelector('.wall__tag, [data-reason]'));
 
-// AC29: snapshot corrupto real en storage del runner (se restaura raíz original).
-const originalRoot = window.localStorage.getItem('riftrain.v1');
-const corruptedRoot = JSON.parse(originalRoot);
-corruptedRoot.recall = { ...corruptedRoot.recall, schema: 999 };
-window.localStorage.setItem('riftrain.v1', JSON.stringify(corruptedRoot));
-const corruptMount = document.createElement('div');
-document.querySelector('#stage main').appendChild(corruptMount);
-try {
-  const corruptFlow = mountRecall(corruptMount, { deck: flowDeck, cards: [...sampleCards, foreignCard], seed: 42,
-    storage: actualStore, scheduler: () => Promise.resolve() });
-  await corruptFlow.ready;
-  check('AC-CMB-29: snapshot corrupto no aplica grupos ni falso nivel2',
-    corruptMount.textContent.includes('Nivel 1') &&
-    corruptMount.querySelectorAll('.recall-results__group').length === 0 &&
-    corruptMount.querySelector('[data-action="next"]')?.hidden === true);
-  corruptFlow.destroy();
-} finally {
-  if (originalRoot === null) window.localStorage.removeItem('riftrain.v1');
-  else window.localStorage.setItem('riftrain.v1', originalRoot);
-  corruptMount.remove();
+// Con la mesa repetida y limpia, el nivel se completa y se avanza.
+action('finish').click();
+check('AC-ARC-45: lo pagable completo y cero falsos positivos ofrece avanzar, sin Repetir ni grises',
+  action('next').hidden === false && action('repeat').hidden === true &&
+  fstates() === 'found,irrelevant,found' && flowMount.querySelectorAll('[data-state="missed"]').length === 0 && saves === 5);
+action('next').click();
+check('AC-ARC-21: avanzar genera el nivel 4 con otra mesa y un muro nuevo boca abajo',
+  flowMount.textContent.includes('Nivel 4') && flowMount.querySelectorAll('.rune:not(.rune--spent)').length === 4 &&
+  fstates() === 'down,down,down' && saves === 6 && actualStore.load({}).recall.schema === 2);
+check('AC-ARC-52: el nivel siguiente arranca limpio, sin restos de la UI combinatoria', removedUi(flowMount));
+press(type(flowMount, 'alp'), 'Enter');
+press(type(flowMount, 'bet'), 'Enter');
+flow.destroy();
+flow = mountFlow();
+await flow.ready;
+check('AC-ARC-50: recargar a mitad de ronda restaura los aciertos y el falso positivo vuelve boca abajo',
+  flowMount.textContent.includes('Nivel 4') && fstates() === 'found,down,down' && !stampShown() &&
+  !flowMount.querySelector('.wall__tag') && flowInput().value === '');
+check('AC-CMB-27: el historial de los niveles 1 a 3 sobrevive en el snapshot',
+  actualStore.load({}).recall.history.map((h) => h.found.join('+')).join() === 'alpha,alpha+gamma,alpha+gamma');
+flow.destroy();
+
+// Un mazo distinto no aplica progreso ajeno; un snapshot schema 1 o ilegible se descarta con aviso.
+const otherMount = document.createElement('div');
+document.querySelector('#stage main').appendChild(otherMount);
+const otherDeck = { ...flowDeck, cards: [{ cardId: 'alpha', qty: 2 }, { cardId: 'beta', qty: 1 }, { cardId: 'gamma', qty: 2 }] };
+const other = mountRecall(otherMount, { deck: otherDeck, cards: flowCards, seed: 9, storage: actualStore });
+await other.ready;
+check('AC-CMB-28/29: un mazo incompatible no aplica el progreso de otra identidad: arranca en nivel 1 con aviso',
+  otherMount.textContent.includes('Nivel 1') && otherMount.querySelectorAll('.wall__slot[data-state="found"]').length === 0 &&
+  otherMount.textContent.includes('No pudimos recuperar el progreso anterior'));
+other.destroy();
+const staleRoot = (schema) => JSON.stringify({ legacy: { streak: 3 },
+  recall: { schema, seed: 42, level: 1, identity: 'old', runes: [], status: 'active', found: [[['alpha', 1]]], history: [] } });
+for (const schema of [1, 999]) {
+  window.localStorage.setItem('riftrain.v1', staleRoot(schema));
+  const legacyRaw = window.localStorage.getItem('riftrain.v1');
+  const staleMount = document.createElement('div');
+  document.querySelector('#stage main').appendChild(staleMount);
+  const stale = mountRecall(staleMount, { deck: flowDeck, cards: flowCards, seed: 42, storage: actualStore });
+  await stale.ready;
+  const staleNotice = staleMount.querySelector('.recall__notice');
+  check(`AC-ARC-51: un snapshot schema ${schema} se descarta con el aviso y el nivel 1 funciona`,
+    !staleNotice.hidden && staleNotice.textContent.includes('No pudimos recuperar el progreso anterior') &&
+    // Promete sólo lo que pasa: cualquier avance (acertar o saltar) guarda y reemplaza el registro.
+    staleNotice.textContent.includes('se reemplaza con tu primer avance') && !/hasta que aciertes/.test(staleNotice.textContent) &&
+    staleMount.textContent.includes('Nivel 1') && staleMount.querySelectorAll('.wall__slot').length === 3 &&
+    !staleMount.querySelector('input[role="combobox"]').disabled);
+  check(`AC-ARC-24: con schema ${schema} la raíz legacy queda intacta hasta el primer acierto`,
+    window.localStorage.getItem('riftrain.v1') === legacyRaw);
+  press(type(staleMount, 'alp'), 'Enter');
+  check(`AC-ARC-51: tras nombrar una carta el nivel 1 se guarda en schema 2 y conserva lo legacy`,
+    actualStore.load({}).recall.schema === 2 && actualStore.load({}).legacy.streak === 3 &&
+    staleMount.querySelector('.wall__slot[data-card-id="alpha"]').dataset.state === 'found' && staleNotice.hidden);
+  stale.destroy(); staleMount.remove();
 }
+actualStore.clear();
 
+// Nivel 12 completo, nivel sin pagables y mazo sólo de Energía 0.
+const stub = { loadRecallSnapshot: () => ({ ok: false }), saveRecallSnapshot: () => ({ ok: true, persisted: true }) };
 const terminalMount = document.createElement('div');
 document.querySelector('#stage main').appendChild(terminalMount);
 const terminalCard = { id: 'free', name: 'Carta de costo uno', energy: 1, power: {}, type: 'unit' };
 const terminalDeck = { id: 'terminal', name: 'Deck final', cards: [{ cardId: 'free', qty: 1 }], runes: { order: 12 } };
-const terminalFlow = mountRecall(terminalMount, { deck: terminalDeck, cards: [terminalCard], seed: 17,
-  initialLevel: 12, storage: { loadRecallSnapshot: () => ({ ok: false }), saveRecallSnapshot: () => ({ ok: true, persisted: true }) },
-  scheduler: () => Promise.resolve() });
-await terminalFlow.ready;
-const terminalInput = terminalMount.querySelector('input[role="combobox"]');
-terminalInput.value = 'costo uno'; terminalInput.dispatchEvent(new Event('input', { bubbles: true }));
-terminalMount.querySelector('[role="option"]')?.click();
-terminalMount.querySelector('.recall-composer__preview + button')?.click();
-check('AC-CMB-36/38: nivel12 con todas confirmadas aún no anuncia final',
-  !terminalMount.textContent.includes('Entrenamiento completado') &&
-  terminalMount.querySelector('[data-action="finish"]')?.hidden === false);
-terminalMount.querySelector('[data-action="finish"]')?.click();
-check('AC-CMB-35: último hallazgo nivel12 cierra completo con carta visible y sin nivel13',
-  terminalMount.textContent.includes('Entrenamiento completado') &&
-  terminalMount.querySelectorAll('.recall-results__group').length === 1 &&
-  !terminalMount.textContent.includes('Nivel 13') &&
-  terminalMount.querySelector('[data-action="next"]')?.hidden === true);
+const terminalFlow = mountRecall(terminalMount, { deck: terminalDeck, cards: [terminalCard], seed: 17, initialLevel: 12, storage: stub });
+press(type(terminalMount, 'costo uno'), 'Enter');
+check('AC-ARC-34: en el nivel 12 nombrar todo no cierra solo: espera a Terminé',
+  !terminalMount.textContent.includes('Entrenamiento completado') && terminalMount.querySelector('[data-action="finish"]')?.hidden === false);
+terminalMount.querySelector('[data-action="finish"]').click();
+check('AC-CMB-35: cerrar el nivel 12 completo termina el entrenamiento, sin nivel 13',
+  terminalMount.textContent.includes('Entrenamiento completado') && !terminalMount.textContent.includes('Nivel 13') &&
+  terminalMount.querySelector('[data-action="next"]').hidden === true &&
+  terminalMount.querySelector('.wall__slot[data-card-id="free"]').dataset.state === 'found');
 terminalFlow.destroy(); terminalMount.remove();
 
 const emptyMount = document.createElement('div');
 document.querySelector('#stage main').appendChild(emptyMount);
 const hard = { id: 'hard', name: 'Carta costosa', energy: 13, power: {}, type: 'spell' };
-const hardDeck = { id: 'hard', name: 'Deck sin jugadas', cards: [{ cardId: 'hard', qty: 1 }], runes: { order: 12 } };
-const emptyFlow = mountRecall(emptyMount, { deck: hardDeck, cards: [hard], seed: 42,
-  initialLevel: 12, storage: { loadRecallSnapshot: () => ({ ok: false }), saveRecallSnapshot: () => ({ ok: true, persisted: true }) },
-  scheduler: () => Promise.resolve() });
-await emptyFlow.ready;
-check('AC-CMB-24/26: vacío exacto en nivel12 avisa y espera salto manual, no nivel13',
-  emptyMount.textContent.includes('No hay jugadas para este ejercicio') &&
-  !!emptyMount.querySelector('[data-action="skip"]') && !emptyMount.textContent.includes('Nivel 13'));
-emptyMount.querySelector('[data-action="skip"]')?.click();
-check('AC-CMB-24: salto12 termina omitido y conserva estado, no cuenta acierto',
-  emptyMount.textContent.includes('Recorrido terminado con nivel omitido') &&
-  !emptyMount.textContent.includes('Entrenamiento completado') && !emptyMount.textContent.includes('Nivel 13'));
-emptyFlow.destroy(); emptyMount.remove(); flowMount.remove();
+const emptyFlow = mountRecall(emptyMount, { deck: { id: 'hard', name: 'Deck sin jugadas', cards: [{ cardId: 'hard', qty: 1 }], runes: { order: 12 } },
+  cards: [hard], seed: 42, initialLevel: 12, storage: stub });
+check('AC-ARC-49: un nivel sin pagables ofrece Saltar y no ofrece Terminé ni avanzar',
+  emptyMount.textContent.includes('no puede pagar ninguna carta') && emptyMount.querySelector('[data-action="skip"]').hidden === false &&
+  emptyMount.querySelector('[data-action="finish"]').hidden === true && emptyMount.querySelector('[data-action="next"]').hidden === true);
+press(type(emptyMount, 'costosa'), 'Enter');
+check('AC-ARC-49: en un nivel sin pagables cualquier carta nombrada es falso positivo',
+  !!emptyMount.querySelector('.recall-stamp:not([hidden])') && emptyMount.querySelector('.wall__slot').dataset.state === 'down');
+emptyMount.querySelector('[data-action="skip"]').click();
+check('AC-ARC-49: saltar cierra el nivel sin celdas missed; en el 12 termina con nivel omitido',
+  emptyMount.textContent.includes('Recorrido terminado con nivel omitido') && !emptyMount.textContent.includes('Nivel 13') &&
+  emptyMount.querySelectorAll('[data-state="missed"]').length === 0 &&
+  emptyMount.querySelector('.wall__slot').dataset.state === 'false-positive');
+emptyFlow.destroy(); emptyMount.remove();
 
-// AC10/14/25/32: el main sigue buscable cuando el objetivo exacto es vacío.
-const realData = await (await fetch('../data/cards.json')).json();
-const seal = realData.cards.find((c) => c.id === 'seal-of-discord');
-const ride = realData.cards.find((c) => c.id === 'ride-the-wind');
-const orderDeck = { id: 'order-only', name: 'Mesa Order',
-  cards: [{ cardId: seal.id, qty: 1 }, { cardId: ride.id, qty: 1 }], runes: { order: 12 } };
-const orderMount = document.createElement('div');
-document.querySelector('#stage main').appendChild(orderMount);
-let orderSaves = 0;
-const orderFlow = mountRecall(orderMount, { deck: orderDeck, cards: [seal, ride], seed: 42, initialLevel: 2,
-  storage: { loadRecallSnapshot: () => ({ ok: false }), saveRecallSnapshot: () => { orderSaves++; return { ok: true, persisted: true }; } },
-  scheduler: () => Promise.resolve() });
-await orderFlow.ready;
-check('AC-CMB-24/53: mesa Order sin Chaos avisa vacío DE ESTE ejercicio pero NO cambia nivel sola',
-  orderMount.textContent.includes('No hay jugadas para este ejercicio') && orderMount.textContent.includes('Nivel 2') &&
-  orderMount.querySelector('[data-action="skip"]')?.hidden === false &&
-  orderMount.querySelector('[data-action="finish"]')?.hidden === true);
-const orderSearch = orderMount.querySelector('input[role="combobox"]');
-if (orderSearch) {
-  orderSearch.value = 'seal'; orderSearch.dispatchEvent(new Event('input', { bubbles: true }));
-}
-check('AC-CMB-49/53: Seal energía0 no se sugiere aunque sea legal con Chaos',
-  orderMount.querySelectorAll('[role="option"]').length === 0);
-orderSearch.value = 'ride the wind'; orderSearch.dispatchEvent(new Event('input', { bubbles: true }));
-check('AC-CMB-53: Ride elegible se sugiere aunque no se pueda pagar con esta mesa',
-  orderMount.querySelector('[role="option"]')?.textContent.includes('Ride the Wind') &&
-  !!orderMount.querySelector('[role="option"] img'));
-orderMount.querySelector('[role="option"]')?.click();
-orderMount.querySelector('.recall-composer__preview + button')?.click();
-check('AC-CMB-10/17/58: confirmar Ride rechaza por falta de Chaos, sin acreditar ni saltar',
-  orderMount.textContent.includes('Chaos') &&
-  orderMount.querySelectorAll('.recall-results__group').length === 0 &&
-  orderMount.textContent.includes('Nivel 2') && orderSaves === 0);
-const orderNext = new Promise((resolve) => {
-  const observer = new MutationObserver(() => {
-    if (orderMount.textContent.includes('Nivel 3') && orderMount.querySelector('[data-action="skip"]')?.hidden === false) {
-      observer.disconnect(); resolve();
-    }
-  });
-  observer.observe(orderMount, { subtree: true, childList: true, characterData: true });
-});
-orderMount.querySelector('[data-action="skip"]')?.click();
-orderMount.querySelector('[data-action="next"]')?.click();
-await orderNext;
-check('AC-CMB-25: sólo salto manual lleva vacío2 a nivel3, sin acierto',
-  orderMount.textContent.includes('Nivel 3') && orderMount.querySelectorAll('.recall-results__group').length === 0 && orderSaves === 2);
-orderFlow.destroy(); orderMount.remove();
-
-const mixedDeck = { ...orderDeck, id: 'mixed', runes: { order: 3, chaos: 9 } };
-const mixedIndex = normalizeDeck(mixedDeck, [seal, ride], { policy: 'positive-energy' }).index;
-let mixedSeed = null;
-for (let candidate = 0; candidate < 10000; candidate++) {
-  const board = createRecallScenario(mixedDeck, mixedIndex, candidate, 2).scenario?.runes;
-  if (board?.[0]?.domain === 'order' && board?.[1]?.domain === 'order' &&
-      board.some((r) => r.domain === 'chaos' && !r.ready)) {
-    mixedSeed = candidate; break;
-  }
-}
-check('AC-CMB-32/58: fixture legal con 2 Order abiertas y Chaos agotada existe', mixedSeed !== null);
-const mixedMount = document.createElement('div');
-document.querySelector('#stage main').appendChild(mixedMount);
-const mixedFlow = mountRecall(mixedMount, { deck: mixedDeck, cards: [seal, ride], seed: mixedSeed, initialLevel: 2,
-  storage: { loadRecallSnapshot: () => ({ ok: false }), saveRecallSnapshot: () => ({ ok: true, persisted: true }) },
-  scheduler: () => Promise.resolve() });
-await mixedFlow.ready;
-const mixedSearch = mixedMount.querySelector('input[role="combobox"]');
-mixedSearch.value = 'ride the wind'; mixedSearch.dispatchEvent(new Event('input', { bubbles: true }));
-mixedMount.querySelector('[role="option"]')?.click();
-mixedMount.querySelector('.recall-composer__preview + button')?.click();
-check('AC-CMB-08/32/58: Chaos agotada paga Ride, Order abiertas pagan Energía',
-  mixedMount.querySelectorAll('.recall-results__group').length === 1 &&
-  mixedMount.querySelectorAll('.rune:not(.rune--spent)').length === 2 &&
-  mixedMount.textContent.includes('Nivel 2'));
-mixedFlow.destroy(); mixedMount.remove();
-
-// Objetivo de más de una página: no se materializan todos los faltantes al cerrar.
-const manyMount = document.createElement('div');
-document.querySelector('#stage main').appendChild(manyMount);
-const manyCard = { id: 'zero', name: 'Carta de costo uno', energy: 1, power: {}, type: 'unit' };
-const manyCards = [manyCard, ...Array.from({ length: 10 }, (_, i) =>
-  ({ id: `other-${i}`, name: `Carta adicional ${i}`, energy: 1, power: {}, type: 'unit' }))];
-const manyDeck = { id: 'many', name: 'Deck de cartas',
-  cards: manyCards.map((card) => ({ cardId: card.id, qty: 1 })), runes: { order: 12 } };
-const many = mountRecall(manyMount, { deck: manyDeck, cards: manyCards, seed: 14,
-  storage: actualStore, scheduler: () => Promise.resolve() });
-await many.ready;
-const manyInput = manyMount.querySelector('input[role="combobox"]');
-manyInput.value = 'costo uno'; manyInput.dispatchEvent(new Event('input', { bubbles: true }));
-manyMount.querySelector('[role="option"]')?.click();
-manyMount.querySelector('.recall-composer__preview + button')?.click();
-manyMount.querySelector('[data-action="finish"]')?.click();
-const firstMissing = new Promise((resolve) => {
-  const observer = new MutationObserver(() => {
-    if (manyMount.querySelectorAll('.recall-missed .recall-results__group').length === 8) {
-      observer.disconnect(); resolve();
-    }
-  });
-  observer.observe(manyMount, { subtree: true, childList: true });
-});
-await firstMissing;
-check('AC-CMB-37/41: once grupos positivos, uno color y ocho faltantes grises iniciales',
-  manyMount.querySelectorAll('.recall__results .recall-results__group').length === 1 &&
-  manyMount.querySelectorAll('.recall-missed .recall-results__group').length === 8 &&
-  manyMount.textContent.includes('1–8 de 10') &&
-  manyMount.querySelector('.recall-missed .card')?.dataset.result === 'missed');
-const lastMissing = new Promise((resolve) => {
-  const observer = new MutationObserver(() => {
-    if (manyMount.querySelectorAll('.recall-missed .recall-results__group').length === 2) {
-      observer.disconnect(); resolve();
-    }
-  });
-  observer.observe(manyMount, { subtree: true, childList: true });
-});
-manyMount.querySelector('.recall-missed [data-page="next"]')?.click();
-await lastMissing;
-check('AC-CMB-41: segunda página muestra restantes dos con cantidad real, sin cap',
-  manyMount.textContent.includes('9–10 de 10') &&
-  manyMount.querySelectorAll('.recall-missed .recall-results__group').length === 2 &&
-  !!manyMount.querySelector('.recall-missed .recall-results__badge'));
-const backToFirst = new Promise((resolve) => {
-  const observer = new MutationObserver(() => {
-    if (manyMount.textContent.includes('1–8 de 10')) { observer.disconnect(); resolve(); }
-  });
-  observer.observe(manyMount, { subtree: true, childList: true, characterData: true });
-});
-manyMount.querySelector('.recall-missed [data-page="previous"]')?.click();
-await backToFirst;
-check('AC-CMB-41: se puede volver a inspeccionar la primera página gris sin perder ninguna',
-  manyMount.querySelectorAll('.recall-missed .recall-results__group').length === 8);
-const boardBeforeRepeat = manyMount.querySelector('.runes__meta')?.textContent;
-many.destroy();
-const manyAgain = mountRecall(manyMount, { deck: manyDeck, cards: manyCards, seed: 99,
-  storage: actualStore, scheduler: () => Promise.resolve() });
-await manyAgain.ready;
-check('AC-CMB-40: revisión restaurada regenera primera página gris sin persistir soluciones',
-  manyMount.querySelectorAll('.recall-missed .recall-results__group').length === 8 &&
-  manyMount.querySelectorAll('.recall__results .recall-results__group').length === 1 &&
-  !window.localStorage.getItem('riftrain.v1').includes('"missed"'));
-manyMount.querySelector('[data-action="repeat"]')?.click();
-check('AC-CMB-39: continuar nivel conserva mesa y acierto, retira todos los grises',
-  manyMount.querySelector('.runes__meta')?.textContent === boardBeforeRepeat &&
-  manyMount.querySelectorAll('.recall-missed .recall-results__group').length === 0 &&
-  manyMount.querySelectorAll('.recall__results .recall-results__group').length === 1 &&
-  !!manyMount.querySelector('input[role="combobox"]:not([disabled])'));
-manyAgain.destroy(); manyMount.remove();
-
-const burstMount = document.createElement('div');
-document.querySelector('#stage main').appendChild(burstMount);
-const burstDeck = { ...manyDeck, id: 'burst', cards: [{ cardId: 'zero', qty: 9 }] };
-const burst = mountRecall(burstMount, { deck: burstDeck, cards: [manyCard], seed: 14,
-  initialLevel: 12, storage: { loadRecallSnapshot: () => ({ ok: false }), saveRecallSnapshot: () => ({ ok: true, persisted: true }) },
-  scheduler: () => Promise.resolve(), feedbackOptions });
-await burst.ready;
-let burstFeedback = 0;
-for (let qty = 1; qty <= 8; qty++) {
-  const input = burstMount.querySelector('input[role="combobox"]');
-  input.value = 'costo uno'; input.dispatchEvent(new Event('input', { bubbles: true }));
-  burstMount.querySelector('[role="option"]')?.click();
-  for (let copy = 1; copy < qty; copy++) burstMount.querySelector('.recall-composer__choice [data-action="inc"]')?.click();
-  burstMount.querySelector('.recall-composer__preview + button')?.click();
-  visualFrames.shift()?.();
-  if (burstMount.querySelector('.recall-feedback__toast:not([hidden])')?.textContent === '¡Correcto!') burstFeedback++;
-}
-check('AC-CMB-44/47: ocho aciertos reinician fan y muestran aviso sin perder lista',
-  burstFeedback === 8 && burstMount.querySelectorAll('.recall-feedback__slot').length === 8 &&
-  burstMount.querySelectorAll('.recall__results .recall-results__group').length === 8 &&
-  burstMount.querySelectorAll('.recall-feedback__fan .card[data-face="up"]').length === 8,
-  `toasts=${burstFeedback} slots=${burstMount.querySelectorAll('.recall-feedback__slot').length} list=${burstMount.querySelectorAll('.recall__results .recall-results__group').length} faces=${burstMount.querySelectorAll('.recall-feedback__fan .card[data-face="up"]').length}`);
-check('AC-CMB-47: qty8 válido revela ocho copias físicas sin cap visual de siete',
-  burstMount.querySelectorAll('.recall-feedback__slot').length === 8 &&
-  burstMount.querySelectorAll('.recall-feedback__fan .card[data-card-id="zero"][data-face="up"]').length === 8 &&
-  !burstMount.querySelector('.recall-feedback__badge'),
-  `slots=${burstMount.querySelectorAll('.recall-feedback__slot').length} zero=${burstMount.querySelectorAll('.recall-feedback__fan .card[data-card-id="zero"][data-face="up"]').length}`);
-burstMount.querySelector('.recall-composer__preview + button')?.click();
-check('AC-CMB-45: error luego de Correcto retira aviso sin acreditar otra jugada',
-  !burstMount.querySelector('.recall-feedback__toast:not([hidden])') &&
-  burstMount.querySelectorAll('.recall__results .recall-results__group').length === 8);
-const staleToastCallback = [...visualTimers.values()][0];
-burst.destroy(); staleToastCallback?.();
-check('AC-CMB-45: desmontaje borra fan/aviso y callbacks viejos no resucitan UI', burstMount.children.length === 0);
-burstMount.remove();
-
-const pairMount = document.createElement('div');
-document.querySelector('#stage main').appendChild(pairMount);
-const pairCards = [
-  { id: 'a-pair', name: 'Carta A', energy: 1, power: {}, type: 'unit' },
-  { id: 'b-pair', name: 'Carta B', energy: 1, power: {}, type: 'unit' },
-];
-const pairDeck = { id: 'pair', name: 'Par', cards: [{ cardId: 'a-pair', qty: 2 }, { cardId: 'b-pair', qty: 1 }], runes: { order: 12 } };
-const pairFlow = mountRecall(pairMount, { deck: pairDeck, cards: pairCards, seed: 17,
-  initialLevel: 3,
-  storage: { loadRecallSnapshot: () => ({ ok: false }), saveRecallSnapshot: () => ({ ok: true, persisted: true }) },
-  scheduler: () => Promise.resolve(), feedbackOptions: { ...feedbackOptions, reducedMotion: () => true } });
-await pairFlow.ready;
-const pairInput = pairMount.querySelector('input[role="combobox"]');
-for (const query of ['Carta A', 'Carta A', 'Carta B']) {
-  pairInput.value = query;
-  pairInput.dispatchEvent(new Event('input', { bubbles: true }));
-  pairMount.querySelector('[role="option"]')?.click();
-}
-pairMount.querySelector('.recall-composer__preview + button')?.click();
-check('AC-CMB-47: grupo multicarta da vuelta A×2 y B×1 sin multiplicador agregado',
-  pairMount.querySelectorAll('.recall-feedback__fan .card[data-card-id="a-pair"][data-face="up"]').length === 2 &&
-  pairMount.querySelectorAll('.recall-feedback__fan .card[data-card-id="b-pair"][data-face="up"]').length === 1 &&
-  !pairMount.querySelector('.recall-feedback__badge') &&
-  pairMount.querySelectorAll('.recall__results .recall-results__group .card').length === 2);
-pairFlow.destroy(); pairMount.remove();
-
-const calmMount = document.createElement('div');
-document.querySelector('#stage main').appendChild(calmMount);
-const calmOptions = { ...feedbackOptions, reducedMotion: () => true };
-const calm = mountRecall(calmMount, { deck: terminalDeck, cards: [terminalCard], seed: 17,
-  storage: { loadRecallSnapshot: () => ({ ok: false }), saveRecallSnapshot: () => ({ ok: true, persisted: true }) },
-  scheduler: () => Promise.resolve(), feedbackOptions: calmOptions });
-await calm.ready;
-const calmInput = calmMount.querySelector('input[role="combobox"]');
-calmInput.value = 'costo uno'; calmInput.dispatchEvent(new Event('input', { bubbles: true }));
-calmMount.querySelector('[role="option"]')?.click();
-calmMount.querySelector('.recall-composer__preview + button')?.click();
-const calmCard = calmMount.querySelector('.recall-feedback__fan .card[data-face="up"]');
-check('AC-CMB-45: reduced motion deja frente y Correcto sin giro ni robar foco',
-  !!calmCard && getComputedStyle(calmCard).transform === 'none' &&
-  calmMount.querySelector('.recall-feedback__toast:not([hidden])')?.textContent === '¡Correcto!' &&
-  document.activeElement === calmInput);
-calm.destroy(); calmMount.remove();
+const zeroMount = document.createElement('div');
+document.querySelector('#stage main').appendChild(zeroMount);
+const zeroFlow = mountRecall(zeroMount, { deck: { cards: [{ cardId: 'cero', qty: 2 }], runes: { order: 12 } },
+  cards: [sampleCards[3]], seed: 42, storage: stub });
+press(type(zeroMount, 'cer'), 'Enter');
+check('AC-ARC-39: un mazo sólo de Energía 0 tiene muro vacío, se puede nombrar y explica la Energía 0, y se salta',
+  zeroMount.querySelectorAll('.wall__slot').length === 0 && /Energía 0/.test(zeroMount.querySelector('.recall-feedback__toast').textContent) &&
+  zeroMount.querySelector('[data-action="skip"]').hidden === false && zeroMount.querySelector('[data-action="finish"]').hidden === true &&
+  !zeroMount.textContent.includes('Entrenamiento completado'));
+zeroFlow.destroy(); zeroMount.remove();
 
 // Cobertura visual de las doce fronteras: el nivel es abiertas, no mesa total.
 for (let level = 1; level <= 12; level++) {
   const boardMount = document.createElement('div');
   document.querySelector('#stage main').appendChild(boardMount);
-  const boardFlow = mountRecall(boardMount, { deck: terminalDeck, cards: [terminalCard], seed: 17,
-    initialLevel: level, storage: { loadRecallSnapshot: () => ({ ok: false }) },
-    scheduler: () => Promise.resolve() });
-  await boardFlow.ready;
+  const boardFlow = mountRecall(boardMount, { deck: terminalDeck, cards: [terminalCard], seed: 17, initialLevel: level, storage: stub });
   const open = boardMount.querySelectorAll('.rune:not(.rune--spent)').length;
   const exhausted = boardMount.querySelectorAll('.rune--spent').length;
   const remaining = 12 - open - exhausted;
   check(`AC-CMB-19/31/33: nivel ${level} muestra ${level} abiertas y suma 12`,
-    open === level && remaining >= 0 &&
-    boardMount.textContent.includes(`${remaining} en el Mazo de Runas`) &&
+    open === level && remaining >= 0 && boardMount.textContent.includes(`${remaining} en el Mazo de Runas`) &&
     (level !== 12 || exhausted === 0));
   boardFlow.destroy(); boardMount.remove();
 }
@@ -1231,60 +795,22 @@ const warningMount = document.createElement('div');
 document.querySelector('#stage main').appendChild(warningMount);
 const warningFlow = mountRecall(warningMount, { deck: terminalDeck, cards: [terminalCard], seed: 17,
   storage: { loadRecallSnapshot: () => ({ ok: false }),
-    saveRecallSnapshot: () => ({ ok: true, persisted: false, warning: 'Sólo en memoria: no se garantiza continuidad' }) },
-  scheduler: () => Promise.resolve() });
-await warningFlow.ready;
-const warningInput = warningMount.querySelector('input[role="combobox"]');
-warningInput.value = 'costo uno'; warningInput.dispatchEvent(new Event('input', { bubbles: true }));
-warningMount.querySelector('[role="option"]')?.click();
-warningMount.querySelector('.recall-composer__preview + button')?.click();
-check('AC-CMB-22: almacenamiento bloqueado muestra aviso honesto y conserva acierto en memoria',
+    saveRecallSnapshot: () => ({ ok: true, persisted: false, warning: 'Sólo en memoria: no se garantiza continuidad' }) } });
+press(type(warningMount, 'costo uno'), 'Enter');
+check('AC-CMB-22: almacenamiento bloqueado muestra aviso honesto y conserva el acierto en memoria',
   warningMount.textContent.includes('Sólo en memoria') &&
-  warningMount.querySelectorAll('.recall-results__group').length === 1);
+  warningMount.querySelector('.wall__slot').dataset.state === 'found');
 warningFlow.destroy(); warningMount.remove();
-
-const changedMount = document.createElement('div');
-document.querySelector('#stage main').appendChild(changedMount);
-const changedDeck = { ...flowDeck, cards: [{ cardId: 'alpha', qty: 2 }, { cardId: 'beta', qty: 1 }] };
-const changedFlow = mountRecall(changedMount, { deck: changedDeck, cards: sampleCards, seed: 9,
-  storage: actualStore, scheduler: () => Promise.resolve() });
-await changedFlow.ready;
-check('AC-CMB-28/29: deck incompatible no aplica grupos persistidos de otra identidad',
-  changedMount.textContent.includes('Nivel 1') &&
-  changedMount.querySelectorAll('.recall-results__group').length === 0);
-changedFlow.destroy(); changedMount.remove();
-
-const staleMount = document.createElement('div');
-document.querySelector('#stage main').appendChild(staleMount);
-let releaseCount;
-const staleCards = Array.from({ length: 1100 }, (_, i) =>
-  ({ id: `stale-${i}`, name: `Carta ${i}`, energy: 1, power: {}, type: 'unit' }));
-const staleDeck = { ...terminalDeck, cards: staleCards.map((card) => ({ cardId: card.id, qty: 1 })) };
-const staleFlow = mountRecall(staleMount, { deck: staleDeck, cards: staleCards, seed: 17,
-  storage: { loadRecallSnapshot: () => ({ ok: false }) },
-  scheduler: () => new Promise((resolve) => { releaseCount = resolve; }) });
-check('AC-CMB-26: conteo cooperativo cede al navegador con controles pendientes',
-  typeof releaseCount === 'function' &&
-  staleMount.querySelector('[data-action="skip"]')?.hidden === true &&
-  !staleMount.querySelector('input[role="combobox"]'));
-staleFlow.destroy();
-releaseCount?.();
-await staleFlow.ready;
-check('AC-CMB-26: desmontar durante conteo descarta resultado viejo sin pintar acierto',
-  staleMount.children.length === 0);
-staleMount.remove();
 
 const invalidMount = document.createElement('div');
 document.querySelector('#stage main').appendChild(invalidMount);
 const invalidFlow = mountRecall(invalidMount, { deck: { ...flowDeck, cards: [{ cardId: 'missing', qty: 1 }] },
-  cards: sampleCards, seed: 42, storage: memoryStore });
-await invalidFlow.ready;
-check('AC-CMB-13/26: dato desconocido bloquea acciones, no se anuncia vacío comprobado',
-  invalidMount.textContent.includes('desconocido') &&
-  invalidMount.querySelector('[data-action="skip"]')?.hidden === true &&
-  invalidMount.querySelector('[data-action="next"]')?.hidden === true &&
-  !invalidMount.textContent.includes('No hay jugadas posibles'));
-invalidFlow.destroy(); invalidMount.remove();
+  cards: flowCards, seed: 42, storage: memoryStore });
+check('AC-CMB-13: un dato desconocido bloquea la ronda y no se anuncia como nivel vacío',
+  invalidMount.textContent.includes('desconocido') && !invalidMount.querySelector('input') &&
+  !invalidMount.querySelector('.wall__slot') && invalidMount.querySelector('[data-action="skip"]').hidden === true);
+invalidFlow.destroy(); invalidMount.remove(); flowMount.remove();
+if (rootBefore === null) actualStore.clear(); else window.localStorage.setItem('riftrain.v1', rootBefore);
 
 // U10: app real desde su propio index y data/cards.json, no sólo componentes de test.
 const liveFrame = document.createElement('iframe');
@@ -1295,16 +821,18 @@ document.querySelector('#stage main').appendChild(liveFrame);
 await new Promise((resolve) => { liveFrame.onload = resolve; });
 await liveFrame.contentWindow.__riftrainReady;
 const liveDoc = liveFrame.contentDocument;
-check('AC-CMB-01/19: index arranca en recall nivel1, no en cuestionario legacy',
+const liveDeck = realData.decks[0];
+const mainCards = new Set(liveDeck.cards.filter(({ cardId }) => realData.cards.find((c) => c.id === cardId).energy > 0).map(({ cardId }) => cardId));
+const liveSlot = (id) => liveDoc.querySelector(`#recall-root .wall__slot[data-card-id="${id}"]`);
+check('AC-CMB-01/19: index arranca en recall nivel 1, no en el cuestionario legacy',
   !!liveDoc.querySelector('#recall-root input[role="combobox"]') &&
   liveDoc.querySelector('#recall-root').textContent.includes('Nivel 1') &&
   getComputedStyle(liveDoc.querySelector('#legacy-mode')).display === 'none');
-check('AC-CMB-43: app real a 320px mantiene fan de siete dorsos y lista sin scroll horizontal',
-  liveDoc.querySelectorAll('#recall-root .recall-feedback__slot').length === 7 &&
-  liveDoc.querySelectorAll('#recall-root .recall-feedback__fan .card[data-face="down"]').length === 7 &&
-  !!liveDoc.querySelector('#recall-root .recall__results') &&
+check('AC-ARC-31: la app real muestra un muro con una celda por carta distinta con Energía > 0, boca abajo',
+  liveDoc.querySelectorAll('#recall-root .wall__slot').length === mainCards.size && mainCards.size > 10 &&
+  [...mainCards].every((id) => liveSlot(id)?.dataset.state === 'down') &&
   liveDoc.documentElement.scrollWidth <= liveDoc.documentElement.clientWidth + 1);
-check('AC-CMB-14: app real usa todo el mazo main y muestra carta Gust con imagen', (() => {
+check('AC-ARC-59: la app real sugiere desde todo el main (Gust) con su imagen oficial', (() => {
   const input = liveDoc.querySelector('#recall-root input[role="combobox"]');
   if (!input) return false;
   input.value = 'gust'; input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1312,13 +840,9 @@ check('AC-CMB-14: app real usa todo el mazo main y muestra carta Gust con imagen
   return !!option?.textContent.includes('Gust') && !!option.querySelector('img');
 })());
 liveDoc.querySelector('#recall-root [role="option"]')?.click();
-liveDoc.querySelector('#recall-root .recall-composer__preview + button')?.click();
-check('AC-CMB-16/27: app real revela Gust y sigue en nivel1',
-  liveDoc.querySelectorAll('#recall-root .recall-results__group').length >= 1 &&
+check('AC-ARC-33: en la app real nombrar Gust da vuelta su celda, con su imagen oficial, y el nivel sigue en 1',
+  liveSlot('gust')?.dataset.state === 'found' && !!liveSlot('gust').querySelector('.card__face--image img') &&
   liveDoc.querySelector('#recall-root').textContent.includes('Nivel 1'));
-check('AC-CMB-44: app real conserva Gust en lista y avisa Correcto al voltear ilustración',
-  liveDoc.querySelectorAll('#recall-root .recall__results .recall-results__group').length >= 1 &&
-  liveDoc.querySelector('#recall-root .recall-feedback__toast:not([hidden])')?.textContent === '¡Correcto!');
 liveDoc.querySelector('#btn-mode')?.click();
 check('AC-CMB-01: modo cartas legacy sigue disponible y recall se desmonta',
   getComputedStyle(liveDoc.querySelector('#legacy-mode')).display !== 'none' &&
@@ -1326,52 +850,20 @@ check('AC-CMB-01: modo cartas legacy sigue disponible y recall se desmonta',
   !!liveDoc.querySelector('#hand .card'));
 const legacyBefore = actualStore.load({}).answered ?? 0;
 liveDoc.querySelector('#btn-primary')?.click();
-check('AC-CMB-27: cerrar ronda legacy preserva snapshot recall y actualiza progreso legacy',
+check('AC-CMB-27: cerrar ronda legacy preserva el snapshot recall y actualiza el progreso legacy',
   (actualStore.load({}).answered ?? 0) === legacyBefore + 1 &&
-  actualStore.load({}).recall?.found?.length >= 1);
+  actualStore.load({}).recall?.found?.includes('gust'));
 liveDoc.querySelector('#btn-mode')?.click();
 check('AC-CMB-01: modo runas legacy sigue disponible',
   getComputedStyle(liveDoc.querySelector('#input-num')).display !== 'none');
 liveDoc.querySelector('#btn-mode')?.click();
 await liveFrame.contentWindow.__riftrainReady;
-check('AC-CMB-27: volver a recall restaura Gust, sin reiniciar progreso',
-  liveDoc.querySelectorAll('#recall-root .recall-results__group').length >= 1 &&
+check('AC-CMB-27: volver a recall restaura Gust levantada, sin reiniciar progreso ni repetir el brillo',
+  liveSlot('gust')?.dataset.state === 'found' && !liveSlot('gust').hasAttribute('data-fresh') &&
   getComputedStyle(liveDoc.querySelector('#legacy-mode')).display === 'none');
-check('AC-CMB-45: volver de legacy restaura lista pero no repite fan ni Correcto',
-  liveDoc.querySelectorAll('#recall-root .recall-feedback__fan .card[data-face="down"]').length === 7 &&
-  !liveDoc.querySelector('#recall-root .recall-feedback__toast:not([hidden])'));
-check('AC-CMB-21: app completa no desborda documento a 320px',
+check('AC-CMB-21: la app completa no desborda el documento a 320px',
   liveDoc.documentElement.scrollWidth <= liveDoc.documentElement.clientWidth + 1,
   `${liveDoc.documentElement.scrollWidth} / ${liveDoc.documentElement.clientWidth}`);
-// Fixture legal con ocho copias de cartas REALES positivas: abanico sin cap a 320.
-liveDoc.querySelector('#btn-mode')?.click(); // desmontar el controlador real antes de usar el host del test
-liveDoc.querySelector('#legacy-mode').classList.add('hidden');
-const nineHost = liveDoc.querySelector('#recall-root');
-nineHost.classList.remove('hidden');
-const nineIds = ['lightning-rush', 'gust', 'traveling-merchant', 'shadow-order-disciple'];
-const nineCards = nineIds.map((id) => realData.cards.find((c) => c.id === id));
-const nineQty = [3, 1, 3, 1];
-const nineDeck = { id: 'eight-test', name: 'Fixture legal', cards: nineIds.map((cardId, i) => ({ cardId, qty: nineQty[i] })),
-  runes: { chaos: 9, order: 3 } };
-const nineFlow = mountRecall(nineHost, { deck: nineDeck, cards: nineCards, seed: 3, initialLevel: 12,
-  storage: { loadRecallSnapshot: () => ({ ok: false }), saveRecallSnapshot: () => ({ ok: true, persisted: true }) },
-  scheduler: () => Promise.resolve(), feedbackOptions: { ...feedbackOptions, reducedMotion: () => true } });
-await nineFlow.ready;
-for (const card of nineCards) {
-  const input = nineHost.querySelector('input[role="combobox"]');
-  input.value = card.name; input.dispatchEvent(new Event('input', { bubbles: true }));
-  [...nineHost.querySelectorAll('[role="option"]')].find((option) =>
-    option.querySelector('.recall-composer__name')?.textContent === card.name)?.click();
-  const qty = nineQty[nineCards.indexOf(card)];
-  for (let copy = 1; copy < qty; copy++) nineHost.querySelector(`.recall-composer__choice [data-action="inc"]:not([disabled])`)?.click();
-}
-nineHost.querySelector('.recall-composer__preview + button')?.click();
-check('AC-CMB-47/48/53: 8 copias pagables positivas reales dan 8 caras 3+1+3+1 a 320 sin cap',
-  nineIds.every((id, i) => nineHost.querySelectorAll(`.recall-feedback__fan .card[data-card-id="${id}"][data-face="up"]`).length === nineQty[i]) &&
-  nineHost.querySelectorAll('.recall-feedback__slot').length === 8 &&
-  nineHost.querySelectorAll('.recall__results .recall-results__group .card').length === 4 &&
-  liveDoc.documentElement.scrollWidth <= liveDoc.documentElement.clientWidth + 1);
-nineFlow.destroy();
 liveFrame.remove();
 
 const head = document.createElement('div');
