@@ -347,6 +347,8 @@ button { font: inherit; color: inherit; }
   border-radius: 10px; padding: 12px; font-size: 15px; font-weight: 650; cursor: pointer;
 }
 .btn:active { transform: translateY(1px); }
+.btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.recall__controls .btn { min-height: 44px; }
 .btn--ghost { background: var(--surface); color: var(--ink-soft); border-color: var(--line); }
 .btn[disabled] { opacity: .45; cursor: default; }
 
@@ -410,6 +412,9 @@ button { font: inherit; color: inherit; }
 .recall-feedback__toast[hidden] { display: none; }
 .recall-feedback__toast[data-tone="warning"] { color: var(--warn); }
 .recall__message { min-height: 1.5em; margin: 9px 0; font-size: 13px; color: var(--ink-soft); }
+.recall__message:focus { outline: none; }   /* recibe el foco por codigo, no es un control */
+/* Siempre renderizado (region live), pero vacio no ocupa lugar: sin display:none, que la sacaria del arbol. */
+.recall__notice:empty { position: absolute; width: 1px; height: 1px; margin: 0; padding: 0; overflow: hidden; clip-path: inset(50%); }
 .recall__controls { display: flex; margin-top: 12px; }
 .recall__controls button[hidden] { display: none; }
 .recall-composer { min-width: 0; }
@@ -460,9 +465,10 @@ button { font: inherit; color: inherit; }
 .wall__slot[tabindex]:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .wall__tag {
   position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); z-index: 3;
-  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  padding: 1px 5px; border-radius: 3px; background: var(--bad); color: #fff;
-  font-size: 8px; font-weight: 700;
+  /* 11px legible en un telefono; si la carta es angosta, parte en dos renglones en vez de cortarse. */
+  width: max-content; max-width: calc(100% - 6px); text-align: center; line-height: 1.15;
+  padding: 2px 5px; border-radius: 3px; background: var(--bad); color: #fff;
+  font-size: 11px; font-weight: 700; overflow-wrap: anywhere;
 }
 .wall__why { margin: 10px 0 0; font-size: 13px; color: var(--ink-soft); min-height: 1.5em; }
 
@@ -526,6 +532,8 @@ button { font: inherit; color: inherit; }
 }
 
 /* ---------- MOTION ---------- */
+/* La clase la pone recall.js con la misma preferencia: cambia el movimiento, nunca el estado visible. */
+.recall--reduced .card, .recall--reduced .wall__slot { transition: none !important; animation: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .card, .hand__slot, .pick, .zoom, .wall__slot { transition: none !important; animation: none !important; }
 }

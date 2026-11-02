@@ -9,10 +9,12 @@ export function mountRecallFeedback(root, {
 } = {}) {
   const container = document.createElement('div');
   container.className = 'recall-feedback';
+  // La region live es el contenedor, siempre presente: sello y toast aparecen DENTRO de ella.
+  // Una region que se muestra junto con su texto no siempre se anuncia.
+  container.setAttribute('role', 'status');
+  container.setAttribute('aria-live', 'polite');
   const stamp = document.createElement('p');
   stamp.className = 'recall-stamp';
-  stamp.setAttribute('role', 'status');
-  stamp.setAttribute('aria-live', 'polite');
   stamp.hidden = true;
   const stampLabel = document.createElement('strong');
   stampLabel.textContent = 'NO ENTRA';
@@ -20,8 +22,6 @@ export function mountRecallFeedback(root, {
   stamp.append(stampLabel, stampReason);
   const toast = document.createElement('span');
   toast.className = 'recall-feedback__toast';
-  toast.setAttribute('role', 'status');
-  toast.setAttribute('aria-live', 'polite');
   toast.hidden = true;
   container.append(stamp, toast);
   root.replaceChildren(container);

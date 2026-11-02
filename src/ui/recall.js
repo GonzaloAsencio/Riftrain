@@ -29,15 +29,19 @@ const MESSAGES = {
 };
 
 export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
-  storage = defaultStore, feedbackOptions }) {
+  storage = defaultStore, feedbackOptions,
+  // Inyectable para testear: el navegador headless no deja emular prefers-reduced-motion.
+  reducedMotion = !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches }) {
   let disposed = false;
   let state = null;
   let runSeed = seed;
   let composer = null;
   let wall = null;
+  let outcomes = [];
   const normalized = normalizeDeck(deck, cards, { policy: 'positive-energy' });
   const cardsById = new Map(cards.map((card) => [card.id, card]));
   const panel = node('section', 'recall');
+  panel.classList.toggle('recall--reduced', reducedMotion);
   const head = node('header', 'recall__head');
   const title = node('h1', null, 'Recordá las cartas');
   const levelText = node('span', 'recall__level');
@@ -71,10 +75,10 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
   const message = node('p', 'recall__message');
   message.setAttribute('role', 'status');
   message.setAttribute('aria-live', 'polite');
+  message.tabIndex = -1;   // enfocable por codigo: destino del foco cuando no queda ningun boton
   const notice = node('p', 'recall__notice');
   notice.setAttribute('role', 'status');
-  notice.setAttribute('aria-live', 'polite');
-  notice.hidden = true;
+  notice.setAttribute('aria-live', 'polite');   // nunca hidden: vacio cuando no hay nada que avisar
   const wallHost = node('div', 'recall__wall');
   const inputHost = node('div', 'recall__input');
   const controls = node('div', 'recall__controls');
@@ -145,7 +149,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
       const result = storage.saveRecallSnapshot(state);
       if (!result.ok) message.textContent = result.reason ?? 'No se pudo guardar este avance';
       else if (!result.persisted) message.textContent = result.warning ?? 'Sólo en memoria; no se garantiza continuidad';
-      else notice.hidden = true;
+      else notice.textContent = '';
     } catch {
       message.textContent = 'No se pudo guardar; este avance podría perderse al cerrar';
     }
@@ -162,6 +166,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     if (!state || disposed) return;
     showBoard(state.scenario);
     const playable = ['active', 'empty'].includes(state.status);
+    panel.dataset.phase = CLOSED.includes(state.status) ? 'closed' : 'round';
     if (!composer && normalized.ok) composer = mountComposer(inputHost, {
       cards: searchCards, onName: name, onUserEdit: clearRejection,
     });
@@ -172,8 +177,15 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     repeat.hidden = state.status !== 'review';
     message.textContent = MESSAGES[state.status] ?? '';
     if (CLOSED.includes(state.status)) {
-      wall.showOutcomes(levelCardOutcomes(normalized.index, state.scenario, state.found, state.misses).cards);
+      outcomes = levelCardOutcomes(normalized.index, state.scenario, state.found, state.misses).cards;
+      wall.showOutcomes(outcomes);
     }
+  }
+
+  /** El boton que se toco se oculta: el foco pasa a lo que sigue en vez de caer al <body>. */
+  function focusNextAction() {
+    // Sin boton que siga (nivel 12 completo u omitido): el mensaje final, que es lo que hay para leer.
+    ([repeat, next].find((item) => !item.hidden) ?? message).focus();
   }
 
   function name(cardId) {
@@ -202,6 +214,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     composer.clear();
     draw();
     save();
+    focusNextAction();
   });
   finish.addEventListener('click', () => {
     if (disposed || state?.status !== 'active') return;
@@ -212,6 +225,9 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     composer.clear();
     draw();
     save();
+    // Las que faltaron las marca el motor (missed); un falso positivo solo no es "faltar".
+    if (outcomes.some((card) => card.outcome === 'missed')) feedback.notify('Te faltaron cartas. Revisá las que están en gris');
+    focusNextAction();
   });
   repeat.addEventListener('click', () => {
     if (disposed || state?.status !== 'review') return;
@@ -241,7 +257,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     state = started.state;
     mountWall();
     draw();
-    if (previous) save();
+    if (previous) { save(); composer?.focus(); }
   }
 
   if (!normalized.ok) {
@@ -258,7 +274,6 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
       try {
         if (typeof storage.load === 'function' && Object.hasOwn(storage.load({}), 'recall')) {
           notice.textContent = `No pudimos recuperar el progreso anterior: ${restored?.reason ?? 'datos incompatibles'}. Empezamos de nuevo; el registro anterior se reemplaza con tu primer avance.`;
-          notice.hidden = false;
         }
       } catch { /* storage bloqueado: el aviso de fallback lo maneja el store */ }
       prepare(initialLevel);
