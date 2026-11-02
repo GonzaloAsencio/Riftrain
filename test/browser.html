@@ -713,6 +713,12 @@ check('AC-ARC-39: un texto fuera del mazo avisa con el motivo del motor, sin toc
 press(type(flowMount, 'cer'), 'Enter');
 check('AC-ARC-39: una carta de Energía 0 avisa su motivo y no es un falso positivo',
   /Energía 0/.test(toastText()) && fstates() === 'found,down,found' && !stampShown());
+const liveToast = flowMount.querySelector('.recall-feedback__toast:not([hidden])');
+check('AC-ARC-60: el aviso vive en una región aria-live y se lee como advertencia, distinto del texto neutro',
+  liveToast?.getAttribute('role') === 'status' && liveToast.getAttribute('aria-live') === 'polite' &&
+  liveToast.dataset.tone === 'warning' &&
+  getComputedStyle(liveToast).color !== getComputedStyle(flowMount.querySelector('.recall__message') ?? flowMount).color,
+  `${liveToast?.dataset.tone} ${liveToast && getComputedStyle(liveToast).color}`);
 
 // Terminé con un falso positivo: revisión, no avanza.
 action('finish').click();
