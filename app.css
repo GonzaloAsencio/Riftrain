@@ -197,7 +197,7 @@ button { font: inherit; color: inherit; }
 
 /* Dorso: el dorso real de la carta. El color de fondo es el mismo verde, por si
    la imagen tarda: nunca un hueco. */
-.card__face--back {
+.card__face--back, .recall-hand__back {
   background: #1d4f57 url("assets/card-back.png") center / cover no-repeat;
 }
 
@@ -379,10 +379,20 @@ button { font: inherit; color: inherit; }
 
 /* Recall: la mesa y las cartas existentes siguen siendo el centro de la tarea. */
 .recall { padding-bottom: 28px; min-width: 0; }
-.recall__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 14px 0 12px; }
+.recall__head { display: flex; align-items: baseline; gap: 12px; margin: 14px 0 12px; }
 .recall__head h1 { margin: 0; font-size: clamp(20px, 5vw, 26px); letter-spacing: -.025em; line-height: 1.2; }
-.recall__level { flex: 0 0 auto; font-size: 13px; font-weight: 700; color: var(--ink-soft); }
+.recall__level { flex: 0 0 auto; font-size: 15px; font-weight: 700; color: var(--ink); }
 .recall__table { min-width: 0; }
+/* La leyenda se queda dentro de la banda aunque la pantalla sea ancha. */
+.recall-band .legend { position: static; width: auto; }
+/* La mano del rival: siete dorsos en abanico, sólo para dar contexto. */
+.recall-hand { display: flex; justify-content: center; padding: 12px 0 0; pointer-events: none; }
+.recall-hand__back {
+  flex: 0 0 auto; width: 44px; aspect-ratio: 63 / 88; border-radius: 5px; margin-inline: -7px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.55);
+  transform-origin: 50% 120%;
+  transform: rotate(calc((var(--i) - 3) * 4deg));
+}
 .recall__table .board { margin-bottom: 0; }
 .recall__feedback { min-height: 1.5em; margin-top: 8px; }
 .recall-feedback { min-width: 0; }

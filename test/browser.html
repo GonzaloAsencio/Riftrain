@@ -603,6 +603,27 @@ check('AC-CMB-19: la mesa del nivel 3 muestra 3 abiertas y el total de doce',
   flowMount.querySelectorAll('.rune:not(.rune--spent)').length === 3 &&
   flowMount.textContent.includes('3 abiertas') && flowMount.textContent.includes('en el Mazo de Runas'));
 
+// La banda superior: la mesa del rival (runas) y su mano de siete dorsos, sólo contexto.
+const flowBand = flowMount.querySelector('.recall-band');
+const flowHand = flowBand?.querySelector('.recall-hand');
+const flowBacks = [...(flowHand?.children ?? [])];
+check('AC-ARC-30: la banda es lo primero tras el encabezado y trae la mesa con sus runas',
+  !!flowBand && flowBand.previousElementSibling?.classList.contains('recall__head') &&
+  flowBand.querySelectorAll('.runes .rune').length === scenarioAt(3).runes.length && flowBand.querySelectorAll('.rune:not(.rune--spent)').length === 3,
+  `${flowBand?.querySelectorAll('.runes .rune').length} / ${flowBand?.previousElementSibling?.className}`);
+check('AC-ARC-30: la mano del rival son exactamente siete dorsos reales',
+  flowBacks.length === 7 && flowBacks.every((back) => getComputedStyle(back).backgroundImage.includes('card-back.png')) &&
+  !flowHand.querySelector('img, button, input, a, [tabindex], [data-card-id], [data-face]'));
+check('AC-ARC-30: la mano está estática (aria-hidden, sin handlers) y abierta en abanico por CSS',
+  flowHand.getAttribute('aria-hidden') === 'true' && getComputedStyle(flowHand).pointerEvents === 'none' &&
+  flowBacks.map((back) => back.style.getPropertyValue('--i')).join() === '0,1,2,3,4,5,6' &&
+  new Set(flowBacks.map((back) => getComputedStyle(back).transform)).size === 7);
+check('AC-ARC-30: la mano queda dentro de la banda y no ensancha la página',
+  flowBacks.every((back) => back.getBoundingClientRect().right <= flowBand.getBoundingClientRect().right + 1) &&
+  document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1);
+check('AC-ARC-53: el nivel real es lo primero del encabezado, a la izquierda',
+  flowMount.querySelector('.recall__head').firstElementChild.textContent === 'Nivel 3');
+
 // Falso positivo: el sello lleva el motivo EXACTO del motor y la celda no se da vuelta.
 press(type(flowMount, 'bet'), 'Enter');
 const betaReason = checkCard('beta', scenarioAt(3), flowIndex).reason;
@@ -828,6 +849,16 @@ check('AC-CMB-01/19: index arranca en recall nivel 1, no en el cuestionario lega
   !!liveDoc.querySelector('#recall-root input[role="combobox"]') &&
   liveDoc.querySelector('#recall-root').textContent.includes('Nivel 1') &&
   getComputedStyle(liveDoc.querySelector('#legacy-mode')).display === 'none');
+check('AC-ARC-30: en la app real la banda muestra leyenda y campeón con sus imágenes oficiales',
+  liveDoc.querySelectorAll('#recall-root .recall-band .legend .card img').length === 2 &&
+  liveDoc.querySelectorAll('#recall-root .recall-band .recall-hand > *').length === 7);
+check('AC-ARC-53: un solo indicador de nivel visible, "Nivel 1" arriba a la izquierda; el #level viejo no se ve', (() => {
+  const visible = [...liveDoc.querySelectorAll('.level, .recall__level, #level')]
+    .filter((item) => item.getClientRects().length && getComputedStyle(item).visibility !== 'hidden');
+  const box = visible[0]?.getBoundingClientRect();
+  return visible.length === 1 && visible[0].textContent === 'Nivel 1' && box.left < 40 && box.top < 140 &&
+    getComputedStyle(liveDoc.getElementById('level')).display === 'none';
+})());
 check('AC-ARC-31: la app real muestra un muro con una celda por carta distinta con Energía > 0, boca abajo',
   liveDoc.querySelectorAll('#recall-root .wall__slot').length === mainCards.size && mainCards.size > 10 &&
   [...mainCards].every((id) => liveSlot(id)?.dataset.state === 'down') &&

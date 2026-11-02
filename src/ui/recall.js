@@ -16,7 +16,8 @@ const node = (tag, cls, text) => {
   return item;
 };
 
-const CLOSED = ['review', 'next', 'complete', 'omitted'];
+const HAND_SIZE = 7;
+const CLOSED =['review', 'next', 'complete', 'omitted'];
 const MESSAGES = {
   empty: 'Con esta mesa el rival no puede pagar ninguna carta; podés saltar el nivel',
   next: 'Nombraste todas las cartas que se podían jugar',
@@ -38,8 +39,8 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
   const head = node('header', 'recall__head');
   const title = node('h1', null, 'Recordá las cartas');
   const levelText = node('span', 'recall__level');
-  head.append(title, levelText);
-  const table = node('section', 'table recall__table');
+  head.append(levelText, title);
+  const table = node('section', 'table recall__table recall-band');
   table.setAttribute('aria-label', 'Mesa del rival');
   const tableHead = node('div', 'table__head');
   tableHead.appendChild(node('span', 'table__deck', deck?.name ?? 'Mazo'));
@@ -49,7 +50,15 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
   const runes = node('div', 'runes');
   runes.setAttribute('aria-label', 'Runas en mesa');
   board.append(publicCards, runes);
-  table.append(tableHead, board);
+  // La mano del rival: siete dorsos, puro contexto. El abanico lo da el CSS con --i.
+  const hand = node('div', 'recall-hand');
+  hand.setAttribute('aria-hidden', 'true');
+  for (let i = 0; i < HAND_SIZE; i++) {
+    const back = node('span', 'recall-hand__back');
+    back.style.setProperty('--i', String(i));
+    hand.appendChild(back);
+  }
+  table.append(tableHead, board, hand);
   const prompt = node('p', 'ask', '¿Qué cartas del mazo puede pagar el rival con esta mesa?');
   prompt.appendChild(node('span', 'ask__hint', 'Las cartas de Energía 0 no cuentan en este entrenamiento.'));
   const feedbackHost = node('div', 'recall__feedback');
