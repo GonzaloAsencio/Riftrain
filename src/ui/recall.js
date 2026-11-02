@@ -85,7 +85,12 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
   const repeat = button('Repetir nivel', 'repeat');
   const next = button('Siguiente nivel', 'next');
   controls.append(skip, finish, repeat, next);
-  panel.append(head, table, prompt, notice, message, wallHost, inputHost, feedbackHost, controls);
+  // Cuatro zonas: encabezado, banda, muro, dock. El dock junta lo que se contesta y lo que avisa.
+  const info = node('div', 'recall__info');
+  info.append(feedbackHost, notice, message);
+  const dock = node('div', 'recall-dock');
+  dock.append(prompt, inputHost, controls, info);
+  panel.append(head, table, wallHost, dock);
   root.replaceChildren(panel);
   const wallCards = normalized.ok ? normalized.index.cards.map(({ id }) => cardsById.get(id)) : [];
   const searchCards = normalized.ok ? normalized.index.fullCards.map(({ id }) => cardsById.get(id)) : [];

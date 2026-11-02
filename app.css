@@ -434,9 +434,12 @@ button { font: inherit; color: inherit; }
 
 /* ---------- MURO DEL MAZO ---------- */
 /* Una celda por carta distinta. El estado se lee en la imagen (levantada, gris, inclinada), no en un numero. */
-.wall { min-width: 0; margin-top: 14px; }
-.wall__grid { display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); gap: 8px; }
-@media (min-width: 700px) { .wall__grid { --cols: 7; } }
+.wall { min-width: 0; margin-top: 14px; container: wall / inline-size; }
+.wall__grid { --gap: 8px; display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); gap: var(--gap); }
+/* Las columnas las decide el ancho REAL del muro, no el de la ventana. */
+@container wall (min-width: 420px) { .wall__grid { --cols: 5; } }
+@container wall (min-width: 560px) { .wall__grid { --cols: 6; } }
+@container wall (min-width: 760px) { .wall__grid { --cols: 7; } }
 .wall__slot { position: relative; min-width: 0; transition: transform var(--flip) var(--ease), opacity var(--flip) var(--ease); }
 /* El brillo del dominio vive sólo en la ultima carta nombrada (y en los aciertos al cerrar). */
 .wall__slot[data-glow] .card { box-shadow: 0 0 0 2px var(--glow), 0 0 18px 2px var(--glow); }
@@ -453,6 +456,58 @@ button { font: inherit; color: inherit; }
   font-size: 8px; font-weight: 700;
 }
 .wall__why { margin: 10px 0 0; font-size: 13px; color: var(--ink-soft); min-height: 1.5em; }
+
+/* ---------- ESCRITORIO: la pantalla completa, sin scroll de página ----------
+   Mismos elementos que en el teléfono; sólo cambia la disposición. Encabezado, banda,
+   muro y dock en cuatro filas; el muro se queda con todo el alto que sobra. */
+.recall-dock { min-width: 0; }
+.recall__info { display: flex; flex-wrap: wrap; column-gap: 16px; }
+@media (min-width: 1024px) and (min-height: 700px) {
+  body:has(.recall) {
+    --bg: #16181d; --surface: #22262d; --ink: #e8eaee; --ink-soft: #b9c0cb;
+    --muted: #98a0ad; --line: #333842; --line-soft: #2a2e36;
+  }
+  .app:has(.recall) { max-width: none; height: 100dvh; min-height: 0; }
+  .app:has(.recall) #btn-mode { margin-left: auto; }   /* el nivel queda arriba a la izquierda */
+  .app:has(.recall) > main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  .app:has(.recall) #recall-root { flex: 1 1 auto; min-height: 0; }
+  .recall {
+    height: 100%; padding-bottom: 12px; row-gap: 10px;
+    display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto;
+  }
+  .recall__head { margin: 0; }
+  .recall-band {
+    display: grid; grid-template: "head head" auto "board hand" auto / minmax(0, 1fr) auto; column-gap: 24px;
+  }
+  .recall-band .table__head { grid-area: head; margin-bottom: 6px; }
+  .recall-band .board { grid-area: board; margin: 0; }
+  .recall-band .legend { flex-direction: row; flex-basis: auto; }
+  .recall-band .legend .card { width: 56px; }
+  .recall-hand { grid-area: hand; padding: 8px 20px 0; }
+  .recall__wall { position: relative; min-height: 0; }
+  .wall { position: absolute; inset: 0; margin: 0; container-type: size; }
+  /* Alto y ancho a la vez: la carta es la menor de las dos medidas, siempre en 63:88. */
+  .wall__grid {
+    --rows: round(up, calc(var(--n) / var(--cols)), 1);
+    --card-w: min(calc((100cqw - (var(--cols) - 1) * var(--gap)) / var(--cols)),
+      calc((100cqh - 2.4rem - (var(--rows) - 1) * var(--gap)) / var(--rows) * 63 / 88));
+    grid-template-columns: repeat(var(--cols), var(--card-w)); justify-content: center;
+  }
+  .wall__why { margin-top: 8px; text-align: center; }
+  .recall-dock {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; align-items: start;
+  }
+  .recall-dock .ask { grid-column: 1 / -1; margin: 0 0 4px; }
+  .recall-dock .ask__hint { display: inline; margin-left: 10px; }
+  .recall__controls { margin-top: 6px; }
+  .recall__info { grid-column: 1 / -1; }
+  .recall__feedback, .recall__message { margin: 0; }
+  .recall-composer { position: relative; }
+  .recall-composer__list {
+    position: absolute; left: 0; right: 0; bottom: 100%; z-index: 30;
+    border: 1px solid var(--line); box-shadow: 0 -12px 28px -16px rgba(0,0,0,.6);
+  }
+}
 
 /* ---------- MOTION ---------- */
 @media (prefers-reduced-motion: reduce) {

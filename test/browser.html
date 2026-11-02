@@ -895,7 +895,62 @@ check('AC-CMB-27: volver a recall restaura Gust levantada, sin reiniciar progres
 check('AC-CMB-21: la app completa no desborda el documento a 320px',
   liveDoc.documentElement.scrollWidth <= liveDoc.documentElement.clientWidth + 1,
   `${liveDoc.documentElement.scrollWidth} / ${liveDoc.documentElement.clientWidth}`);
+const phoneShape = [...liveDoc.querySelectorAll('.recall > *')].map((item) => item.className).join('|');
 liveFrame.remove();
+
+// ---- DESKTOP (AC-ARC-54, 57): pantalla completa 1280x800, sin scroll de página.
+actualStore.clear();
+const deskFrame = document.createElement('iframe');
+deskFrame.title = 'App real en escritorio';
+deskFrame.style.cssText = 'width:1280px;height:800px;border:0;display:block';
+deskFrame.src = '../index.html';
+document.querySelector('#stage main').appendChild(deskFrame);
+await new Promise((resolve) => { deskFrame.onload = resolve; });
+await deskFrame.contentWindow.__riftrainReady;
+const deskWin = deskFrame.contentWindow;
+const deskDoc = deskFrame.contentDocument;
+const dq = (selector) => deskDoc.querySelector(selector);
+const rect = (selector) => dq(selector).getBoundingClientRect();
+const inside = (inner, outer) => inner.left >= outer.left - 1 && inner.right <= outer.right + 1 &&
+  inner.top >= outer.top - 1 && inner.bottom <= outer.bottom + 1;
+const wallSlots = [...deskDoc.querySelectorAll('.recall .wall__slot')];
+check('AC-ARC-54: a 1280x800 el orden es banda, muro, dock (de arriba hacia abajo)',
+  rect('.recall-band').bottom <= rect('.wall').top + 1 && rect('.wall').bottom <= rect('.recall-dock').top + 1 &&
+  rect('.recall__head').bottom <= rect('.recall-band').top + 1);
+check('AC-ARC-54: la página entera cabe en 1280x800 sin scroll, ni vertical ni horizontal',
+  deskDoc.documentElement.scrollHeight <= deskWin.innerHeight && deskDoc.documentElement.scrollWidth <= deskDoc.documentElement.clientWidth + 1,
+  `${deskDoc.documentElement.scrollHeight} / ${deskWin.innerHeight}`);
+check('AC-ARC-54: runas, leyenda y los siete dorsos quedan dentro de la banda',
+  deskDoc.querySelectorAll('.recall-band .rune').length > 0 &&
+  [...deskDoc.querySelectorAll('.recall-band .rune, .recall-band .legend .card, .recall-hand__back')]
+    .every((item) => inside(item.getBoundingClientRect(), rect('.recall-band'))));
+check('AC-ARC-54: todo el muro es visible dentro de su zona, en 7 columnas y con la proporción de la carta', (() => {
+  const lefts = new Set(wallSlots.map((slot) => Math.round(slot.getBoundingClientRect().left)));
+  const cards = wallSlots.map((slot) => slot.querySelector('.card').getBoundingClientRect());
+  return wallSlots.length > 10 && lefts.size === 7 && wallSlots.every((slot) => inside(slot.getBoundingClientRect(), rect('.wall'))) &&
+    cards.every((box) => Math.abs(box.width / box.height - 63 / 88) < 0.02) && cards[0].width > 60;
+})());
+check('AC-ARC-54: la mesa es oscura de punta a punta y no hay un panel claro suelto',
+  (getComputedStyle(deskDoc.body).backgroundColor.match(/\d+/g) ?? []).slice(0, 3).every((value) => Number(value) < 60));
+check('AC-ARC-57: en escritorio la pantalla es una grilla de cuatro filas; en una ventana baja vuelve a fluir',
+  getComputedStyle(dq('.recall')).display === 'grid' && deskDoc.querySelectorAll('.recall > *').length === 4 &&
+  [...deskDoc.querySelectorAll('.recall > *')].map((item) => item.className).join('|') === phoneShape);
+const deskInput = dq('.recall input[role="combobox"]');
+deskInput.focus();
+const focusStyle = getComputedStyle(deskInput);
+check('AC-ARC-60: el input enfocado tiene un anillo visible',
+  focusStyle.outlineStyle !== 'none' && parseFloat(focusStyle.outlineWidth) >= 2);
+deskInput.value = 'gust';
+deskInput.dispatchEvent(new Event('input', { bubbles: true }));
+check('AC-ARC-54: las sugerencias se abren hacia arriba y no agregan scroll a la página',
+  deskDoc.querySelectorAll('.recall [role="option"]').length > 0 &&
+  dq('.recall-composer__list').getBoundingClientRect().bottom <= deskInput.getBoundingClientRect().top + 1 &&
+  deskDoc.documentElement.scrollHeight <= deskWin.innerHeight,
+  `${deskDoc.querySelectorAll('.recall [role="option"]').length} ${dq('.recall-composer__list').getBoundingClientRect().bottom} ${deskInput.getBoundingClientRect().top} ${deskDoc.documentElement.scrollHeight}`);
+deskFrame.style.height = '600px';
+check('AC-ARC-57: con ventana baja (1280x600) la misma pantalla deja de ser grilla de pantalla completa',
+  getComputedStyle(dq('.recall')).display !== 'grid');
+deskFrame.remove();
 
 const head = document.createElement('div');
 head.textContent = `\n=== ${pass} PASS / ${fail} FAIL ===`;
