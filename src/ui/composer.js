@@ -1,4 +1,8 @@
-/** Search the WHOLE active main, not the playable subset; selection is not discovery. */
+/**
+ * El dock: un solo input para nombrar una carta del mazo.
+ * Sugiere desde TODO el main (incluida la Energía 0) y nombrar es un acto: Enter o click
+ * entregan la carta a `onName`. El input no decide nada, el motor responde.
+ */
 import { search } from '../engine/match.js';
 import { renderCard } from './card.js';
 
@@ -10,67 +14,28 @@ const el = (tag, cls, text) => {
   return node;
 };
 
-export function mountComposer(root, { cards, index, onConfirm, onUserEdit = () => {} }) {
+export function mountComposer(root, { cards, onName, onUserEdit = () => {} }) {
   const id = `recall-list-${++sequence}`;
   const panel = el('section', 'recall-composer');
-  const label = el('label', 'recall-composer__label', 'Buscá una carta del mazo');
   const input = el('input', 'recall-composer__input');
   input.type = 'search';
+  input.placeholder = 'Nombrá una carta que pueda jugar';
+  input.setAttribute('aria-label', input.placeholder);
   input.autocomplete = 'off';
   input.spellcheck = false;
   input.setAttribute('role', 'combobox');
   input.setAttribute('aria-autocomplete', 'list');
   input.setAttribute('aria-controls', id);
-  label.appendChild(input);
+  input.setAttribute('aria-expanded', 'false');
   const list = el('div', 'recall-composer__list');
   list.id = id;
   list.setAttribute('role', 'listbox');
   const status = el('p', 'recall-composer__status');
   status.setAttribute('role', 'status');
   status.setAttribute('aria-live', 'polite');
-  const preview = el('div', 'recall-composer__preview');
-  const confirm = el('button', 'btn', 'Confirmar combinación');
-  confirm.type = 'button';
-  const chosen = new Map();
   let hits = [];
   let active = -1;
-  let disabled = false;
 
-  function renderPreview() {
-    preview.replaceChildren();
-    for (const [cardId, qty] of chosen) {
-      const card = cards.find((c) => c.id === cardId);
-      const row = el('div', 'recall-composer__choice');
-      const art = el('div', 'recall-composer__chosen-card');
-      art.appendChild(renderCard(card, { faceUp: true }));
-      const name = el('span', 'recall-composer__name', card.name);
-      const actions = el('span', 'recall-composer__quantity');
-      const control = (action, label, text, handler, inactive = false) => {
-        const button = el('button', null, text);
-        button.type = 'button';
-        button.dataset.action = action;
-        button.setAttribute('aria-label', `${label} ${card.name}`);
-        button.disabled = disabled || inactive;
-        button.addEventListener('click', () => { onUserEdit(); handler(); });
-        return button;
-      };
-      actions.append(
-        control('dec', 'Quitar una copia de', '−', () => {
-          if (qty === 1) chosen.delete(cardId);
-          else chosen.set(cardId, qty - 1);
-          renderPreview();
-        }),
-        el('span', 'num', String(qty)),
-        control('inc', 'Agregar una copia de', '+', () => {
-          chosen.set(cardId, qty + 1);
-          renderPreview();
-        }, qty >= index.byId.get(cardId).qty),
-        control('remove', 'Retirar', 'Retirar', () => { chosen.delete(cardId); renderPreview(); }),
-      );
-      row.append(art, name, actions);
-      preview.appendChild(row);
-    }
-  }
   function close() {
     list.replaceChildren();
     hits = [];
@@ -78,19 +43,15 @@ export function mountComposer(root, { cards, index, onConfirm, onUserEdit = () =
     input.removeAttribute('aria-activedescendant');
     input.setAttribute('aria-expanded', 'false');
   }
-  function choose(card) {
-    onUserEdit();
-    const qty = chosen.get(card.id) ?? 0;
-    if (qty < index.byId.get(card.id).qty) chosen.set(card.id, qty + 1);
-    renderPreview();
-    input.value = '';
+  function name(cardId) {
     close();
     status.textContent = '';
     input.focus();
+    onName(cardId);
   }
   function update() {
     close();
-    if (!input.value.trim() || disabled) { status.textContent = ''; return; }
+    if (!input.value.trim() || input.disabled) { status.textContent = ''; return; }
     hits = search(input.value, cards, { limit: 8 });
     if (!hits.length) { status.textContent = 'No hay coincidencias en este mazo'; return; }
     status.textContent = `${hits.length} coincidencia${hits.length === 1 ? '' : 's'}`;
@@ -103,10 +64,18 @@ export function mountComposer(root, { cards, index, onConfirm, onUserEdit = () =
       const thumb = el('span', 'recall-composer__thumb');
       thumb.appendChild(renderCard(card, { faceUp: true }));
       option.append(thumb, el('span', 'recall-composer__name', card.name));
-      option.addEventListener('click', () => choose(card));
+      option.addEventListener('click', () => name(card.id));
       list.appendChild(option);
     });
     input.setAttribute('aria-expanded', 'true');
+  }
+  /** Enter nombra la sugerencia marcada o la primera; sin coincidencias entrega el texto crudo. */
+  function submit() {
+    const text = input.value.trim();
+    if (!text) { name(null); return; }
+    const pool = hits.length ? hits : search(text, cards, { limit: 8 });
+    const choice = pool[active >= 0 ? active : 0];
+    name(choice ? choice.id : text);
   }
   input.addEventListener('input', () => { onUserEdit(); update(); });
   input.addEventListener('keydown', (event) => {
@@ -118,18 +87,17 @@ export function mountComposer(root, { cards, index, onConfirm, onUserEdit = () =
       [...list.children].forEach((node, i) => node.setAttribute('aria-selected', String(i === active)));
       input.setAttribute('aria-activedescendant', `${id}-${active}`);
     }
-    if (event.key === 'Enter' && active >= 0 && hits[active]) {
+    if (event.key === 'Enter') {
       event.preventDefault();
-      choose(hits[active]);
+      submit();
     }
   });
-  confirm.addEventListener('click', () => onConfirm([...chosen].map(([cardId, qty]) => ({ cardId, qty }))));
-  panel.append(label, list, status, preview, confirm);
+  panel.append(input, list, status);
   root.replaceChildren(panel);
   return {
-    entries: () => [...chosen].map(([cardId, qty]) => ({ cardId, qty })),
-    clear: () => { chosen.clear(); renderPreview(); },
-    setDisabled: (value) => { disabled = value; input.disabled = value; confirm.disabled = value; renderPreview(); if (value) close(); },
-    destroy: () => root.replaceChildren(),
+    clear() { input.value = ''; close(); status.textContent = ''; },
+    focus() { input.focus(); },
+    setDisabled(value) { input.disabled = value; if (value) close(); },
+    destroy() { root.replaceChildren(); },
   };
 }
