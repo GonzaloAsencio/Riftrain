@@ -627,6 +627,10 @@ const regionReady = (item) => !!item && !item.hidden && getComputedStyle(item).d
 check('AC-ARC-60: antes de cualquier aviso, las regiones live ya están renderizadas y vacías (sello/toast adentro, aviso de restore)',
   regionReady(flowMount.querySelector('.recall-feedback')) && regionReady(flowMount.querySelector('.recall__notice')) &&
   flowMount.querySelector('.recall__notice').textContent === '' && !flowMount.querySelector('.recall-stamp:not([hidden])'));
+check('AC-ARC-54: el aviso vacío no ocupa lugar (sin alto ni márgenes) aunque siga renderizado',
+  getComputedStyle(flowMount.querySelector('.recall__notice')).position === 'absolute' &&
+  flowMount.querySelector('.recall__notice').getBoundingClientRect().width <= 1 && flowMount.querySelector('.recall__notice').getBoundingClientRect().height <= 1,
+  (() => { const n = flowMount.querySelector('.recall__notice'); const c = getComputedStyle(n); return `h=${n.getBoundingClientRect().height} m=${c.marginTop}/${c.marginBottom} p=${c.paddingTop} minh=${c.minHeight} empty=${n.matches(':empty')} kids=${n.childNodes.length}`; })());
 
 // La banda superior: la mesa del rival (runas) y su mano de siete dorsos, sólo contexto.
 const flowBand = flowMount.querySelector('.recall-band');
@@ -844,6 +848,8 @@ check('AC-CMB-35: cerrar el nivel 12 completo termina el entrenamiento, sin nive
   terminalMount.textContent.includes('Entrenamiento completado') && !terminalMount.textContent.includes('Nivel 13') &&
   terminalMount.querySelector('[data-action="next"]').hidden === true &&
   terminalMount.querySelector('.wall__slot[data-card-id="free"]').dataset.state === 'found');
+check('AC-ARC-60: al terminar el entrenamiento no queda botón que enfocar: el foco va al mensaje final, no al body',
+  document.activeElement === terminalMount.querySelector('.recall__message'));
 terminalFlow.destroy(); terminalMount.remove();
 
 const emptyMount = document.createElement('div');

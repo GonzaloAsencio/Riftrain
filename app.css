@@ -412,6 +412,9 @@ button { font: inherit; color: inherit; }
 .recall-feedback__toast[hidden] { display: none; }
 .recall-feedback__toast[data-tone="warning"] { color: var(--warn); }
 .recall__message { min-height: 1.5em; margin: 9px 0; font-size: 13px; color: var(--ink-soft); }
+.recall__message:focus { outline: none; }   /* recibe el foco por codigo, no es un control */
+/* Siempre renderizado (region live), pero vacio no ocupa lugar: sin display:none, que la sacaria del arbol. */
+.recall__notice:empty { position: absolute; width: 1px; height: 1px; margin: 0; padding: 0; overflow: hidden; clip-path: inset(50%); }
 .recall__controls { display: flex; margin-top: 12px; }
 .recall__controls button[hidden] { display: none; }
 .recall-composer { min-width: 0; }

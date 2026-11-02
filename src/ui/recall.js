@@ -75,6 +75,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
   const message = node('p', 'recall__message');
   message.setAttribute('role', 'status');
   message.setAttribute('aria-live', 'polite');
+  message.tabIndex = -1;   // enfocable por codigo: destino del foco cuando no queda ningun boton
   const notice = node('p', 'recall__notice');
   notice.setAttribute('role', 'status');
   notice.setAttribute('aria-live', 'polite');   // nunca hidden: vacio cuando no hay nada que avisar
@@ -183,7 +184,8 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
 
   /** El boton que se toco se oculta: el foco pasa a lo que sigue en vez de caer al <body>. */
   function focusNextAction() {
-    [repeat, next].find((item) => !item.hidden)?.focus();
+    // Sin boton que siga (nivel 12 completo u omitido): el mensaje final, que es lo que hay para leer.
+    ([repeat, next].find((item) => !item.hidden) ?? message).focus();
   }
 
   function name(cardId) {
