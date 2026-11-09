@@ -1,5 +1,5 @@
 {
- "_generated": "2026-11-09T19:21:43.432Z",
+ "_generated": "2026-11-09T19:23:32.628Z",
  "_source": "https://riftbound.leagueoflegends.com/en-us/card-gallery/",
  "_buildId": "saXcR0KxRzJ_Rr6squY8u",
  "_warning": "GENERADO por tools/fetch-cards.mjs. No editar a mano. Datos de carta (c) Riot Games.",
@@ -227,6 +227,32 @@
    ]
   },
   {
+   "id": "ahri-alluring",
+   "name": "Ahri, Alluring",
+   "baseName": "Ahri",
+   "subtitle": "Alluring",
+   "code": "OGN-066/298",
+   "collectorNumber": 66,
+   "energy": 5,
+   "power": {
+    "calm": 1
+   },
+   "domain": "calm",
+   "domains": [
+    "calm"
+   ],
+   "type": "unit",
+   "might": 4,
+   "text": "<p>When I hold, you score 1 point.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/fabbcc2f83f397cf07299236a702db05a151053b-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "OGN-066"
+   ]
+  },
+  {
    "id": "ahri-confident",
    "name": "Ahri, Confident",
    "baseName": "Ahri",
@@ -251,32 +277,6 @@
    "printings": [
     "RAD-038",
     "RAD-SP1"
-   ]
-  },
-  {
-   "id": "ahri-alluring",
-   "name": "Ahri, Alluring",
-   "baseName": "Ahri",
-   "subtitle": "Alluring",
-   "code": "OGN-066/298",
-   "collectorNumber": 66,
-   "energy": 5,
-   "power": {
-    "calm": 1
-   },
-   "domain": "calm",
-   "domains": [
-    "calm"
-   ],
-   "type": "unit",
-   "might": 4,
-   "text": "<p>When I hold, you score 1 point.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/fabbcc2f83f397cf07299236a702db05a151053b-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "OGN-066"
    ]
   },
   {
@@ -307,30 +307,6 @@
    ]
   },
   {
-   "id": "akali-deadly-weapon",
-   "name": "Akali, Deadly Weapon",
-   "baseName": "Akali",
-   "subtitle": "Deadly Weapon",
-   "code": "VEN-021/166",
-   "collectorNumber": 21,
-   "energy": 3,
-   "power": {},
-   "domain": "fury",
-   "domains": [
-    "fury"
-   ],
-   "type": "unit",
-   "might": 3,
-   "text": "<p>[Empower] :rb_energy_2::rb_rune_fury: (:rb_energy_2::rb_rune_fury:: Empower me. Use only if not Empowered.)<br />When I move, you may deal 1 to a unit at a battlefield I moved to or from. If I'm [Empowered], deal 2 instead.<br />[Empowered][&gt;] I have +1 :rb_might:.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/564e5f35ae39b6604290e83f39ffb61c2b2b9175-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "VEN-021"
-   ]
-  },
-  {
    "id": "akali-silent",
    "name": "Akali, Silent",
    "baseName": "Akali",
@@ -354,6 +330,30 @@
    "source": "gallery",
    "printings": [
     "VEN-038"
+   ]
+  },
+  {
+   "id": "akali-deadly-weapon",
+   "name": "Akali, Deadly Weapon",
+   "baseName": "Akali",
+   "subtitle": "Deadly Weapon",
+   "code": "VEN-021/166",
+   "collectorNumber": 21,
+   "energy": 3,
+   "power": {},
+   "domain": "fury",
+   "domains": [
+    "fury"
+   ],
+   "type": "unit",
+   "might": 3,
+   "text": "<p>[Empower] :rb_energy_2::rb_rune_fury: (:rb_energy_2::rb_rune_fury:: Empower me. Use only if not Empowered.)<br />When I move, you may deal 1 to a unit at a battlefield I moved to or from. If I'm [Empowered], deal 2 instead.<br />[Empowered][&gt;] I have +1 :rb_might:.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/564e5f35ae39b6604290e83f39ffb61c2b2b9175-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "VEN-021"
    ]
   },
   {
@@ -594,30 +594,6 @@
    ]
   },
   {
-   "id": "ambessa-the-wolf",
-   "name": "Ambessa, The Wolf",
-   "baseName": "Ambessa",
-   "subtitle": "The Wolf",
-   "code": "VEN-084/166",
-   "collectorNumber": 84,
-   "energy": 4,
-   "power": {},
-   "domain": "body",
-   "domains": [
-    "body"
-   ],
-   "type": "unit",
-   "might": 4,
-   "text": "<p>[Empower] :rb_energy_3::rb_rune_body: (:rb_energy_3::rb_rune_body:: Empower me. Use only if not Empowered.)<br />[Empowered][&gt;] I have +3 :rb_might: and can't be dealt damage unless I'm in combat.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/3907dc56d3a639e62f5222eaa0fd589c7a582da6-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "VEN-084"
-   ]
-  },
-  {
    "id": "ambessa-respected-and-feared",
    "name": "Ambessa, Respected and Feared",
    "baseName": "Ambessa",
@@ -640,6 +616,30 @@
    "printings": [
     "VEN-136",
     "VEN-187"
+   ]
+  },
+  {
+   "id": "ambessa-the-wolf",
+   "name": "Ambessa, The Wolf",
+   "baseName": "Ambessa",
+   "subtitle": "The Wolf",
+   "code": "VEN-084/166",
+   "collectorNumber": 84,
+   "energy": 4,
+   "power": {},
+   "domain": "body",
+   "domains": [
+    "body"
+   ],
+   "type": "unit",
+   "might": 4,
+   "text": "<p>[Empower] :rb_energy_3::rb_rune_body: (:rb_energy_3::rb_rune_body:: Empower me. Use only if not Empowered.)<br />[Empowered][&gt;] I have +3 :rb_might: and can't be dealt damage unless I'm in combat.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/3907dc56d3a639e62f5222eaa0fd589c7a582da6-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "VEN-084"
    ]
   },
   {
@@ -817,32 +817,6 @@
    ]
   },
   {
-   "id": "annie-stubborn",
-   "name": "Annie, Stubborn",
-   "baseName": "Annie",
-   "subtitle": "Stubborn",
-   "code": "OGS-010/024",
-   "collectorNumber": 10,
-   "energy": 4,
-   "power": {
-    "chaos": 1
-   },
-   "domain": "chaos",
-   "domains": [
-    "chaos"
-   ],
-   "type": "unit",
-   "might": 3,
-   "text": "<p>When you play me, return a spell from your trash to your hand.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/44eb968cf0c54e75970588b69eef5c5f5ccc9b24-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "OGS-010"
-   ]
-  },
-  {
    "id": "annie-fiery",
    "name": "Annie, Fiery",
    "baseName": "Annie",
@@ -866,6 +840,32 @@
    "source": "gallery",
    "printings": [
     "OGS-001"
+   ]
+  },
+  {
+   "id": "annie-stubborn",
+   "name": "Annie, Stubborn",
+   "baseName": "Annie",
+   "subtitle": "Stubborn",
+   "code": "OGS-010/024",
+   "collectorNumber": 10,
+   "energy": 4,
+   "power": {
+    "chaos": 1
+   },
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "unit",
+   "might": 3,
+   "text": "<p>When you play me, return a spell from your trash to your hand.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/44eb968cf0c54e75970588b69eef5c5f5ccc9b24-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "OGS-010"
    ]
   },
   {
@@ -2742,7 +2742,7 @@
    "name": "Body Rune",
    "baseName": "Body Rune",
    "subtitle": null,
-   "code": "RAD-R04a",
+   "code": "RAD-R04",
    "collectorNumber": 4,
    "energy": null,
    "power": {},
@@ -2752,8 +2752,8 @@
    ],
    "type": "rune",
    "might": null,
-   "text": "<p>[NO TEXT]</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/90b2706af9f1eaf167065087a09a8451f303ffe1-744x1039.png?accountingTag=RB",
+   "text": "",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/6d78f8e8cf237cc19a8546184501d4be97df29fd-744x1039.png?accountingTag=RB",
    "needsCost": true,
    "reason": "la galeria no publica costo para esta carta",
    "source": "gallery",
@@ -6898,6 +6898,30 @@
    ]
   },
   {
+   "id": "ekko-ingenious",
+   "name": "Ekko, Ingenious",
+   "baseName": "Ekko",
+   "subtitle": "Ingenious",
+   "code": "RAD-061/167",
+   "collectorNumber": 61,
+   "energy": 3,
+   "power": {},
+   "domain": "mind",
+   "domains": [
+    "mind"
+   ],
+   "type": "unit",
+   "might": 4,
+   "text": "<p>As an additional cost to play me, return a friendly unit to its owner's hand.<br />[Ganking] (I can move from battlefield to battlefield.)</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/3129469742d7aa5c6921ebae841ccee1923bb279-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "RAD-061"
+   ]
+  },
+  {
    "id": "ekko-revolutionary",
    "name": "Ekko, Revolutionary",
    "baseName": "Ekko",
@@ -6922,30 +6946,6 @@
    "printings": [
     "RAD-021",
     "RAD-177"
-   ]
-  },
-  {
-   "id": "ekko-ingenious",
-   "name": "Ekko, Ingenious",
-   "baseName": "Ekko",
-   "subtitle": "Ingenious",
-   "code": "RAD-061/167",
-   "collectorNumber": 61,
-   "energy": 3,
-   "power": {},
-   "domain": "mind",
-   "domains": [
-    "mind"
-   ],
-   "type": "unit",
-   "might": 4,
-   "text": "<p>As an additional cost to play me, return a friendly unit to its owner's hand.<br />[Ganking] (I can move from battlefield to battlefield.)</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/3129469742d7aa5c6921ebae841ccee1923bb279-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "RAD-061"
    ]
   },
   {
@@ -7362,6 +7362,32 @@
    ]
   },
   {
+   "id": "evelynn-consuming",
+   "name": "Evelynn, Consuming",
+   "baseName": "Evelynn",
+   "subtitle": "Consuming",
+   "code": "RAD-090/167",
+   "collectorNumber": 90,
+   "energy": 5,
+   "power": {
+    "body": 1
+   },
+   "domain": "body",
+   "domains": [
+    "body"
+   ],
+   "type": "unit",
+   "might": 5,
+   "text": "<p>[Ambush] (You may play me as a [Reaction] to a battlefield where you have units.)<br />When you play a card from face down, ready me and give me +1 :rb_might: this turn.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/26b83de26622fb5163d2fe321ff29e2bf16ac027-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "RAD-090"
+   ]
+  },
+  {
    "id": "evelynn-in-control",
    "name": "Evelynn, In Control",
    "baseName": "Evelynn",
@@ -7386,32 +7412,6 @@
    "printings": [
     "RAD-109",
     "RAD-SP3"
-   ]
-  },
-  {
-   "id": "evelynn-consuming",
-   "name": "Evelynn, Consuming",
-   "baseName": "Evelynn",
-   "subtitle": "Consuming",
-   "code": "RAD-090/167",
-   "collectorNumber": 90,
-   "energy": 5,
-   "power": {
-    "body": 1
-   },
-   "domain": "body",
-   "domains": [
-    "body"
-   ],
-   "type": "unit",
-   "might": 5,
-   "text": "<p>[Ambush] (You may play me as a [Reaction] to a battlefield where you have units.)<br />When you play a card from face down, ready me and give me +1 :rb_might: this turn.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/26b83de26622fb5163d2fe321ff29e2bf16ac027-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "RAD-090"
    ]
   },
   {
@@ -9071,32 +9071,6 @@
    ]
   },
   {
-   "id": "garen-commander",
-   "name": "Garen, Commander",
-   "baseName": "Garen",
-   "subtitle": "Commander",
-   "code": "OGS-013/024",
-   "collectorNumber": 13,
-   "energy": 6,
-   "power": {
-    "order": 1
-   },
-   "domain": "order",
-   "domains": [
-    "order"
-   ],
-   "type": "unit",
-   "might": 5,
-   "text": "<p>Other friendly units have +1 :rb_might: here.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/cbf2c12d69a86566e4cda07050b2d4495e40187e-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "OGS-013"
-   ]
-  },
-  {
    "id": "garen-rugged",
    "name": "Garen, Rugged",
    "baseName": "Garen",
@@ -9120,6 +9094,32 @@
    "source": "gallery",
    "printings": [
     "OGS-007"
+   ]
+  },
+  {
+   "id": "garen-commander",
+   "name": "Garen, Commander",
+   "baseName": "Garen",
+   "subtitle": "Commander",
+   "code": "OGS-013/024",
+   "collectorNumber": 13,
+   "energy": 6,
+   "power": {
+    "order": 1
+   },
+   "domain": "order",
+   "domains": [
+    "order"
+   ],
+   "type": "unit",
+   "might": 5,
+   "text": "<p>Other friendly units have +1 :rb_might: here.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/cbf2c12d69a86566e4cda07050b2d4495e40187e-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "OGS-013"
    ]
   },
   {
@@ -10187,32 +10187,6 @@
    ]
   },
   {
-   "id": "heimerdinger-inventor",
-   "name": "Heimerdinger, Inventor",
-   "baseName": "Heimerdinger",
-   "subtitle": "Inventor",
-   "code": "OGN-111/298",
-   "collectorNumber": 111,
-   "energy": 3,
-   "power": {
-    "mind": 1
-   },
-   "domain": "mind",
-   "domains": [
-    "mind"
-   ],
-   "type": "unit",
-   "might": 3,
-   "text": "<p>I have all :rb_exhaust: abilities of all friendly legends, units, and gear.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/5b14a5f9d567c90329c151a8cc72d870b47b1434-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "OGN-111"
-   ]
-  },
-  {
    "id": "heimerdinger-academy-instructor",
    "name": "Heimerdinger, Academy Instructor",
    "baseName": "Heimerdinger",
@@ -10236,6 +10210,32 @@
    "source": "gallery",
    "printings": [
     "RAD-132"
+   ]
+  },
+  {
+   "id": "heimerdinger-inventor",
+   "name": "Heimerdinger, Inventor",
+   "baseName": "Heimerdinger",
+   "subtitle": "Inventor",
+   "code": "OGN-111/298",
+   "collectorNumber": 111,
+   "energy": 3,
+   "power": {
+    "mind": 1
+   },
+   "domain": "mind",
+   "domains": [
+    "mind"
+   ],
+   "type": "unit",
+   "might": 3,
+   "text": "<p>I have all :rb_exhaust: abilities of all friendly legends, units, and gear.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/5b14a5f9d567c90329c151a8cc72d870b47b1434-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "OGN-111"
    ]
   },
   {
@@ -11747,32 +11747,6 @@
    ]
   },
   {
-   "id": "jarvan-iv-martial-paragon",
-   "name": "Jarvan IV, Martial Paragon",
-   "baseName": "Jarvan IV",
-   "subtitle": "Martial Paragon",
-   "code": "RAD-091/167",
-   "collectorNumber": 91,
-   "energy": 4,
-   "power": {
-    "body": 1
-   },
-   "domain": "body",
-   "domains": [
-    "body"
-   ],
-   "type": "unit",
-   "might": 4,
-   "text": "<p>Your gear with [Deploy] have [Action]. (They can be played on your turn or in showdowns.)<br />When I conquer, if there is a friendly gear with [Deploy] here, channel 1 rune exhausted.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/8edacba51db193506e13e1afb6a8509256cdf55c-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "RAD-091"
-   ]
-  },
-  {
    "id": "jarvan-iv-royal-heir",
    "name": "Jarvan IV, Royal Heir",
    "baseName": "Jarvan IV",
@@ -11796,6 +11770,32 @@
    "source": "gallery",
    "printings": [
     "RAD-133"
+   ]
+  },
+  {
+   "id": "jarvan-iv-martial-paragon",
+   "name": "Jarvan IV, Martial Paragon",
+   "baseName": "Jarvan IV",
+   "subtitle": "Martial Paragon",
+   "code": "RAD-091/167",
+   "collectorNumber": 91,
+   "energy": 4,
+   "power": {
+    "body": 1
+   },
+   "domain": "body",
+   "domains": [
+    "body"
+   ],
+   "type": "unit",
+   "might": 4,
+   "text": "<p>Your gear with [Deploy] have [Action]. (They can be played on your turn or in showdowns.)<br />When I conquer, if there is a friendly gear with [Deploy] here, channel 1 rune exhausted.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/8edacba51db193506e13e1afb6a8509256cdf55c-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "RAD-091"
    ]
   },
   {
@@ -11829,7 +11829,7 @@
    "name": "Jax, Unrelenting",
    "baseName": "Jax",
    "subtitle": "Unrelenting",
-   "code": "SFD-119a/221",
+   "code": "SFD-119/221",
    "collectorNumber": 119,
    "energy": 4,
    "power": {
@@ -11842,7 +11842,7 @@
    "type": "unit",
    "might": 3,
    "text": "<p>[Weaponmaster] (When you play me, you may [Equip] one of your Equipment to me for :rb_rune_rainbow: less, even if it's already attached.)<br />When you attach an Equipment to me, you may pay :rb_energy_1: to draw 1.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/a5796125bdb0af8ceb60cd0c5c273c6417e0f7da-744x1039.png?accountingTag=RB",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/e63ab3370a6e4ce4baddfba12ab92468f6cc9541-744x1039.png?accountingTag=RB",
    "needsCost": false,
    "reason": null,
    "source": "gallery",
@@ -11874,32 +11874,6 @@
    "source": "gallery",
    "printings": [
     "SFD-054"
-   ]
-  },
-  {
-   "id": "jayce-hammer-in-hand",
-   "name": "Jayce, Hammer in Hand",
-   "baseName": "Jayce",
-   "subtitle": "Hammer in Hand",
-   "code": "VEN-088/166",
-   "collectorNumber": 88,
-   "energy": 4,
-   "power": {
-    "body": 1
-   },
-   "domain": "body",
-   "domains": [
-    "body"
-   ],
-   "type": "unit",
-   "might": 5,
-   "text": "<p>When I become ready, choose one to give me this turn —</p><ul><li>[Assault 2] (+2 :rb_might: while I'm an attacker.)</li><li>[Deflect 2] (Opponents must pay :rb_rune_rainbow::rb_rune_rainbow: to choose me with a spell or ability.)</li><li>[Ganking] (I can move from battlefield to battlefield.)</li></ul>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/2dcecc0aab2b62e48388177cc27d220fd70b8a78-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "VEN-088"
    ]
   },
   {
@@ -11951,6 +11925,32 @@
    "source": "gallery",
    "printings": [
     "VEN-068"
+   ]
+  },
+  {
+   "id": "jayce-hammer-in-hand",
+   "name": "Jayce, Hammer in Hand",
+   "baseName": "Jayce",
+   "subtitle": "Hammer in Hand",
+   "code": "VEN-088/166",
+   "collectorNumber": 88,
+   "energy": 4,
+   "power": {
+    "body": 1
+   },
+   "domain": "body",
+   "domains": [
+    "body"
+   ],
+   "type": "unit",
+   "might": 5,
+   "text": "<p>When I become ready, choose one to give me this turn —</p><ul><li>[Assault 2] (+2 :rb_might: while I'm an attacker.)</li><li>[Deflect 2] (Opponents must pay :rb_rune_rainbow::rb_rune_rainbow: to choose me with a spell or ability.)</li><li>[Ganking] (I can move from battlefield to battlefield.)</li></ul>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/2dcecc0aab2b62e48388177cc27d220fd70b8a78-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "VEN-088"
    ]
   },
   {
@@ -13666,30 +13666,6 @@
    ]
   },
   {
-   "id": "lucian-merciless",
-   "name": "Lucian, Merciless",
-   "baseName": "Lucian",
-   "subtitle": "Merciless",
-   "code": "SFD-113/221",
-   "collectorNumber": 113,
-   "energy": 3,
-   "power": {},
-   "domain": "body",
-   "domains": [
-    "body"
-   ],
-   "type": "unit",
-   "might": 3,
-   "text": "<p>[Weaponmaster] (When you play me, you may [Equip] one of your Equipment to me for :rb_rune_rainbow: less, even if it's already attached.)<br />The first time I conquer each turn, ready me.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/bc192b6e22e7a277c53f035809c59db4548a0fd5-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "SFD-113"
-   ]
-  },
-  {
    "id": "lucian-gunslinger",
    "name": "Lucian, Gunslinger",
    "baseName": "Lucian",
@@ -13711,6 +13687,30 @@
    "source": "gallery",
    "printings": [
     "SFD-028"
+   ]
+  },
+  {
+   "id": "lucian-merciless",
+   "name": "Lucian, Merciless",
+   "baseName": "Lucian",
+   "subtitle": "Merciless",
+   "code": "SFD-113/221",
+   "collectorNumber": 113,
+   "energy": 3,
+   "power": {},
+   "domain": "body",
+   "domains": [
+    "body"
+   ],
+   "type": "unit",
+   "might": 3,
+   "text": "<p>[Weaponmaster] (When you play me, you may [Equip] one of your Equipment to me for :rb_rune_rainbow: less, even if it's already attached.)<br />The first time I conquer each turn, ready me.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/bc192b6e22e7a277c53f035809c59db4548a0fd5-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "SFD-113"
    ]
   },
   {
@@ -13762,31 +13762,6 @@
    ]
   },
   {
-   "id": "lux-crownguard",
-   "name": "Lux, Crownguard",
-   "baseName": "Lux",
-   "subtitle": "Crownguard",
-   "code": "VEN-SP6/006",
-   "collectorNumber": 6,
-   "energy": 4,
-   "power": {},
-   "domain": "order",
-   "domains": [
-    "order"
-   ],
-   "type": "unit",
-   "might": 2,
-   "text": "<p>:rb_exhaust:: [Reaction] — [Add] :rb_energy_2:. Spend this Energy only to play spells.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/b9778ec229e052268ea66213ca2dbf60612b2862-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "OGS-014",
-    "VEN-SP6"
-   ]
-  },
-  {
    "id": "lux-illuminated",
    "name": "Lux, Illuminated",
    "baseName": "Lux",
@@ -13810,6 +13785,31 @@
    "source": "gallery",
    "printings": [
     "OGS-006"
+   ]
+  },
+  {
+   "id": "lux-crownguard",
+   "name": "Lux, Crownguard",
+   "baseName": "Lux",
+   "subtitle": "Crownguard",
+   "code": "VEN-SP6/006",
+   "collectorNumber": 6,
+   "energy": 4,
+   "power": {},
+   "domain": "order",
+   "domains": [
+    "order"
+   ],
+   "type": "unit",
+   "might": 2,
+   "text": "<p>:rb_exhaust:: [Reaction] — [Add] :rb_energy_2:. Spend this Energy only to play spells.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/b9778ec229e052268ea66213ca2dbf60612b2862-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "OGS-014",
+    "VEN-SP6"
    ]
   },
   {
@@ -14409,31 +14409,6 @@
    ]
   },
   {
-   "id": "mel-defiant-soul",
-   "name": "Mel, Defiant Soul",
-   "baseName": "Mel",
-   "subtitle": "Defiant Soul",
-   "code": "VEN-110/166",
-   "collectorNumber": 110,
-   "energy": 5,
-   "power": {},
-   "domain": "chaos",
-   "domains": [
-    "chaos"
-   ],
-   "type": "unit",
-   "might": 4,
-   "text": "<p>[Empower] — Discard a spell (Pay the cost: Empower me. Use only if not Empowered.)<br />When I become [Empowered], banish an enemy unit at a battlefield with 3 :rb_might: or less.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/214567717b4f0156ff06c923e1603234cb52db61-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "VEN-110",
-    "VEN-188"
-   ]
-  },
-  {
    "id": "mel-newly-awakened",
    "name": "Mel, Newly Awakened",
    "baseName": "Mel",
@@ -14457,6 +14432,31 @@
    "source": "gallery",
    "printings": [
     "VEN-069"
+   ]
+  },
+  {
+   "id": "mel-defiant-soul",
+   "name": "Mel, Defiant Soul",
+   "baseName": "Mel",
+   "subtitle": "Defiant Soul",
+   "code": "VEN-110/166",
+   "collectorNumber": 110,
+   "energy": 5,
+   "power": {},
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "unit",
+   "might": 4,
+   "text": "<p>[Empower] — Discard a spell (Pay the cost: Empower me. Use only if not Empowered.)<br />When I become [Empowered], banish an enemy unit at a battlefield with 3 :rb_might: or less.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/214567717b4f0156ff06c923e1603234cb52db61-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "VEN-110",
+    "VEN-188"
    ]
   },
   {
@@ -14565,7 +14565,7 @@
    "name": "Mind Rune",
    "baseName": "Mind Rune",
    "subtitle": null,
-   "code": "RAD-R03a",
+   "code": "RAD-R03",
    "collectorNumber": 3,
    "energy": null,
    "power": {},
@@ -14575,8 +14575,8 @@
    ],
    "type": "rune",
    "might": null,
-   "text": "<p>[NO TEXT]</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/7216a84b4c3c2446e9f96f1dae02cb4fd96283d8-744x1039.png?accountingTag=RB",
+   "text": "",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/10804d84483e8813a6b5277e4527ac148bbabdd0-744x1039.png?accountingTag=RB",
    "needsCost": true,
    "reason": "la galeria no publica costo para esta carta",
    "source": "gallery",
@@ -16957,30 +16957,6 @@
    ]
   },
   {
-   "id": "poppy-paragon",
-   "name": "Poppy, Paragon",
-   "baseName": "Poppy",
-   "subtitle": "Paragon",
-   "code": "UNL-116/219",
-   "collectorNumber": 116,
-   "energy": 5,
-   "power": {},
-   "domain": "body",
-   "domains": [
-    "body"
-   ],
-   "type": "unit",
-   "might": 5,
-   "text": "<p>[Deflect] (Opponents must pay :rb_rune_rainbow: to choose me with a spell or ability.)<br />When you play me, if an opponent's score is within 3 points of the Victory Score, ready me and gain 3 XP.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/ef8a8434e1a4c4262dd97213741a4b126cb1449b-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "UNL-116"
-   ]
-  },
-  {
    "id": "poppy-defender-of-the-meek",
    "name": "Poppy, Defender of the Meek",
    "baseName": "Poppy",
@@ -17004,6 +16980,30 @@
    "source": "gallery",
    "printings": [
     "UNL-178"
+   ]
+  },
+  {
+   "id": "poppy-paragon",
+   "name": "Poppy, Paragon",
+   "baseName": "Poppy",
+   "subtitle": "Paragon",
+   "code": "UNL-116/219",
+   "collectorNumber": 116,
+   "energy": 5,
+   "power": {},
+   "domain": "body",
+   "domains": [
+    "body"
+   ],
+   "type": "unit",
+   "might": 5,
+   "text": "<p>[Deflect] (Opponents must pay :rb_rune_rainbow: to choose me with a spell or ability.)<br />When you play me, if an opponent's score is within 3 points of the Victory Score, ready me and gain 3 XP.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/ef8a8434e1a4c4262dd97213741a4b126cb1449b-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "UNL-116"
    ]
   },
   {
@@ -18625,30 +18625,6 @@
    ]
   },
   {
-   "id": "renata-glasc-mastermind",
-   "name": "Renata Glasc, Mastermind",
-   "baseName": "Renata Glasc",
-   "subtitle": "Mastermind",
-   "code": "SFD-088/221",
-   "collectorNumber": 88,
-   "energy": 5,
-   "power": {},
-   "domain": "mind",
-   "domains": [
-    "mind"
-   ],
-   "type": "unit",
-   "might": 4,
-   "text": "<p>:rb_energy_1::rb_rune_mind:: Draw 1.<br />:rb_energy_4::rb_rune_mind::rb_rune_mind::rb_rune_mind::rb_rune_mind:, :rb_exhaust:: Score 1 point.<br />Use my abilities only while I'm at a battlefield.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/be8f7e08562c076e8947aafc3ecd202051d17c02-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "SFD-088"
-   ]
-  },
-  {
    "id": "renata-glasc-industrialist",
    "name": "Renata Glasc, Industrialist",
    "baseName": "Renata Glasc",
@@ -18672,6 +18648,30 @@
    "source": "gallery",
    "printings": [
     "SFD-171"
+   ]
+  },
+  {
+   "id": "renata-glasc-mastermind",
+   "name": "Renata Glasc, Mastermind",
+   "baseName": "Renata Glasc",
+   "subtitle": "Mastermind",
+   "code": "SFD-088/221",
+   "collectorNumber": 88,
+   "energy": 5,
+   "power": {},
+   "domain": "mind",
+   "domains": [
+    "mind"
+   ],
+   "type": "unit",
+   "might": 4,
+   "text": "<p>:rb_energy_1::rb_rune_mind:: Draw 1.<br />:rb_energy_4::rb_rune_mind::rb_rune_mind::rb_rune_mind::rb_rune_mind:, :rb_exhaust:: Score 1 point.<br />Use my abilities only while I'm at a battlefield.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/be8f7e08562c076e8947aafc3ecd202051d17c02-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "SFD-088"
    ]
   },
   {
@@ -18724,6 +18724,32 @@
    ]
   },
   {
+   "id": "rengar-unseen",
+   "name": "Rengar, Unseen",
+   "baseName": "Rengar",
+   "subtitle": "Unseen",
+   "code": "UNL-024/219",
+   "collectorNumber": 24,
+   "energy": 4,
+   "power": {
+    "fury": 1
+   },
+   "domain": "fury",
+   "domains": [
+    "fury"
+   ],
+   "type": "unit",
+   "might": 4,
+   "text": "<p>[Accelerate] (You may pay :rb_energy_1::rb_rune_fury: as an additional cost to have me enter ready.)<br />[Assault 2] (+2 :rb_might: while I'm an attacker.)<br />[Deflect] (Opponents must pay :rb_rune_rainbow: to choose me with a spell or ability.)<br />[Ganking] (I can move from battlefield to battlefield.)</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/80c7d1c62301dd6e3ced910156f3fdeb8d34a621-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "UNL-024"
+   ]
+  },
+  {
    "id": "rengar-trophy-hunter",
    "name": "Rengar, Trophy Hunter",
    "baseName": "Rengar",
@@ -18748,32 +18774,6 @@
    "printings": [
     "UNL-120",
     "VEN-179"
-   ]
-  },
-  {
-   "id": "rengar-unseen",
-   "name": "Rengar, Unseen",
-   "baseName": "Rengar",
-   "subtitle": "Unseen",
-   "code": "UNL-024/219",
-   "collectorNumber": 24,
-   "energy": 4,
-   "power": {
-    "fury": 1
-   },
-   "domain": "fury",
-   "domains": [
-    "fury"
-   ],
-   "type": "unit",
-   "might": 4,
-   "text": "<p>[Accelerate] (You may pay :rb_energy_1::rb_rune_fury: as an additional cost to have me enter ready.)<br />[Assault 2] (+2 :rb_might: while I'm an attacker.)<br />[Deflect] (Opponents must pay :rb_rune_rainbow: to choose me with a spell or ability.)<br />[Ganking] (I can move from battlefield to battlefield.)</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/80c7d1c62301dd6e3ced910156f3fdeb8d34a621-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "UNL-024"
    ]
   },
   {
@@ -19525,6 +19525,30 @@
    ]
   },
   {
+   "id": "rumble-hotheaded",
+   "name": "Rumble, Hotheaded",
+   "baseName": "Rumble",
+   "subtitle": "Hotheaded",
+   "code": "SFD-026/221",
+   "collectorNumber": 26,
+   "energy": 4,
+   "power": {},
+   "domain": "fury",
+   "domains": [
+    "fury"
+   ],
+   "type": "unit",
+   "might": 4,
+   "text": "<p>Your Mechs each have [Assault]. (+1 :rb_might: while we're attackers.)<br />When I conquer, you may recycle another friendly unit to play a Mech from your trash. Reduce its Energy cost by the Might of the unit you recycled.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/e211311ecb1475e87d3d94eba4a6774b4e900091-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "SFD-026"
+   ]
+  },
+  {
    "id": "rumble-scrapper",
    "name": "Rumble, Scrapper",
    "baseName": "Rumble",
@@ -19548,30 +19572,6 @@
    "source": "gallery",
    "printings": [
     "SFD-089"
-   ]
-  },
-  {
-   "id": "rumble-hotheaded",
-   "name": "Rumble, Hotheaded",
-   "baseName": "Rumble",
-   "subtitle": "Hotheaded",
-   "code": "SFD-026/221",
-   "collectorNumber": 26,
-   "energy": 4,
-   "power": {},
-   "domain": "fury",
-   "domains": [
-    "fury"
-   ],
-   "type": "unit",
-   "might": 4,
-   "text": "<p>Your Mechs each have [Assault]. (+1 :rb_might: while we're attackers.)<br />When I conquer, you may recycle another friendly unit to play a Mech from your trash. Reduce its Energy cost by the Might of the unit you recycled.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/e211311ecb1475e87d3d94eba4a6774b4e900091-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "SFD-026"
    ]
   },
   {
@@ -20554,33 +20554,6 @@
    ]
   },
   {
-   "id": "sett-kingpin",
-   "name": "Sett, Kingpin",
-   "baseName": "Sett",
-   "subtitle": "Kingpin",
-   "code": "RAD-183/167",
-   "collectorNumber": 183,
-   "energy": 4,
-   "power": {
-    "order": 1
-   },
-   "domain": "order",
-   "domains": [
-    "order"
-   ],
-   "type": "unit",
-   "might": 5,
-   "text": "<p>[Tank]<br />I get +1 :rb_might: for each buffed friendly unit at my battlefield.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/fbc2c6a0a0ea33b58c9cfbdc91c6c229b02a90da-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "OGN-240",
-    "RAD-183"
-   ]
-  },
-  {
    "id": "sett-brawler",
    "name": "Sett, Brawler",
    "baseName": "Sett",
@@ -20606,6 +20579,33 @@
     "OGN-164",
     "SFD-232",
     "VEN-SP4"
+   ]
+  },
+  {
+   "id": "sett-kingpin",
+   "name": "Sett, Kingpin",
+   "baseName": "Sett",
+   "subtitle": "Kingpin",
+   "code": "RAD-183/167",
+   "collectorNumber": 183,
+   "energy": 4,
+   "power": {
+    "order": 1
+   },
+   "domain": "order",
+   "domains": [
+    "order"
+   ],
+   "type": "unit",
+   "might": 5,
+   "text": "<p>[Tank]<br />I get +1 :rb_might: for each buffed friendly unit at my battlefield.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/fbc2c6a0a0ea33b58c9cfbdc91c6c229b02a90da-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "OGN-240",
+    "RAD-183"
    ]
   },
   {
@@ -23536,6 +23536,30 @@
    ]
   },
   {
+   "id": "teemo-scout",
+   "name": "Teemo, Scout",
+   "baseName": "Teemo",
+   "subtitle": "Scout",
+   "code": "OGN-197/298",
+   "collectorNumber": 197,
+   "energy": 2,
+   "power": {},
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "unit",
+   "might": 1,
+   "text": "<p>[Hidden] (Hide now for :rb_rune_rainbow: to react with later for :rb_energy_0:.)<br />When you play me, give me +3 :rb_might: this turn.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/ca8a2e11dd78dd09ad1c9ad3a23e5699254b947e-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "OGN-197"
+   ]
+  },
+  {
    "id": "teemo-strategist",
    "name": "Teemo, Strategist",
    "baseName": "Teemo",
@@ -23560,30 +23584,6 @@
    "printings": [
     "OGN-121",
     "SFD-230"
-   ]
-  },
-  {
-   "id": "teemo-scout",
-   "name": "Teemo, Scout",
-   "baseName": "Teemo",
-   "subtitle": "Scout",
-   "code": "OGN-197/298",
-   "collectorNumber": 197,
-   "energy": 2,
-   "power": {},
-   "domain": "chaos",
-   "domains": [
-    "chaos"
-   ],
-   "type": "unit",
-   "might": 1,
-   "text": "<p>[Hidden] (Hide now for :rb_rune_rainbow: to react with later for :rb_energy_0:.)<br />When you play me, give me +3 :rb_might: this turn.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/ca8a2e11dd78dd09ad1c9ad3a23e5699254b947e-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "OGN-197"
    ]
   },
   {
@@ -25667,30 +25667,6 @@
    ]
   },
   {
-   "id": "vi-hotheaded",
-   "name": "Vi, Hotheaded",
-   "baseName": "Vi",
-   "subtitle": "Hotheaded",
-   "code": "UNL-030/219",
-   "collectorNumber": 30,
-   "energy": 4,
-   "power": {},
-   "domain": "fury",
-   "domains": [
-    "fury"
-   ],
-   "type": "unit",
-   "might": 3,
-   "text": "<p>[Deflect] (Opponents must pay :rb_rune_rainbow: to choose me with a spell or ability.)<br />:rb_energy_2::rb_rune_fury:: Double my Might this turn.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/03a55e8d494d7efe20da792365161f5c43c20779-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "UNL-030"
-   ]
-  },
-  {
    "id": "vi-peacekeeper",
    "name": "Vi, Peacekeeper",
    "baseName": "Vi",
@@ -25714,6 +25690,30 @@
    "source": "gallery",
    "printings": [
     "UNL-176"
+   ]
+  },
+  {
+   "id": "vi-hotheaded",
+   "name": "Vi, Hotheaded",
+   "baseName": "Vi",
+   "subtitle": "Hotheaded",
+   "code": "UNL-030/219",
+   "collectorNumber": 30,
+   "energy": 4,
+   "power": {},
+   "domain": "fury",
+   "domains": [
+    "fury"
+   ],
+   "type": "unit",
+   "might": 3,
+   "text": "<p>[Deflect] (Opponents must pay :rb_rune_rainbow: to choose me with a spell or ability.)<br />:rb_energy_2::rb_rune_fury:: Double my Might this turn.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/03a55e8d494d7efe20da792365161f5c43c20779-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "UNL-030"
    ]
   },
   {
@@ -27080,30 +27080,6 @@
    ]
   },
   {
-   "id": "zed-without-a-sound",
-   "name": "Zed, Without a Sound",
-   "baseName": "Zed",
-   "subtitle": "Without a Sound",
-   "code": "VEN-112/166",
-   "collectorNumber": 112,
-   "energy": 5,
-   "power": {},
-   "domain": "chaos",
-   "domains": [
-    "chaos"
-   ],
-   "type": "unit",
-   "might": 5,
-   "text": "<p>When I conquer, play a 0 :rb_might: Shadow Clone unit token to your base. (It has &quot;When I attack, you may banish a unit from your trash. If you do, give me [Assault 4] this turn.&quot;)<br />[Action][&gt;] :rb_energy_1::rb_rune_chaos:: Move me and a Shadow Clone you control to each other's locations.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/be97ca6a33e25b85a04ec1b3a163b31f141776cf-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "VEN-112"
-   ]
-  },
-  {
    "id": "zed-from-the-shadows",
    "name": "Zed, From the Shadows",
    "baseName": "Zed",
@@ -27128,6 +27104,30 @@
    "printings": [
     "VEN-023",
     "VEN-169"
+   ]
+  },
+  {
+   "id": "zed-without-a-sound",
+   "name": "Zed, Without a Sound",
+   "baseName": "Zed",
+   "subtitle": "Without a Sound",
+   "code": "VEN-112/166",
+   "collectorNumber": 112,
+   "energy": 5,
+   "power": {},
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "unit",
+   "might": 5,
+   "text": "<p>When I conquer, play a 0 :rb_might: Shadow Clone unit token to your base. (It has &quot;When I attack, you may banish a unit from your trash. If you do, give me [Assault 4] this turn.&quot;)<br />[Action][&gt;] :rb_energy_1::rb_rune_chaos:: Move me and a Shadow Clone you control to each other's locations.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/be97ca6a33e25b85a04ec1b3a163b31f141776cf-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "VEN-112"
    ]
   },
   {
