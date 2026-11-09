@@ -5,7 +5,7 @@
  */
 const HUES = [45, 280, 200, 340, 140];   // oro, violeta, celeste, rosa, verde
 // Fuegos artificiales: centros de estallido (en % de la pantalla), lejos del cartel y de la mano.
-const BURSTS = [[18, 30], [82, 26], [30, 70], [72, 66], [50, 18]];
+const BURSTS = [[18, 30], [82, 26], [30, 70], [72, 66], [88, 50]];
 const SPARKS = 12;                       // chispas por estallido, en circulo
 
 export function mountCelebration(root, { reducedMotion = false } = {}) {
@@ -35,7 +35,9 @@ export function mountCelebration(root, { reducedMotion = false } = {}) {
   function spark(b, j) {
     const [x, y] = BURSTS[b];
     const angle = (2 * Math.PI * j) / SPARKS + b * 0.3;
-    const reach = 70 + (j % 3) * 28;
+    // En pantallas angostas el estallido se achica: en 320 px no se corta contra el borde.
+    const scale = Math.min(1, (globalThis.innerWidth || 1280) / 900);
+    const reach = Math.round((70 + (j % 3) * 28) * Math.max(scale, 0.45));
     const item = document.createElement('span');
     item.className = 'celebration__piece';
     item.style.setProperty('--x', `${x}%`);

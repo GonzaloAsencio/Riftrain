@@ -288,10 +288,15 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
   restart.addEventListener('click', () => {
     if (disposed || !['complete', 'omitted'].includes(state?.status)) return;
     // Otra mesa desde el nivel 1, con el mismo maximo; el recorrido anterior se reemplaza.
-    runSeed = newSeed();
+    // La semilla nueva se adopta solo si la mesa se puede crear: si no, sigue todo como estaba.
+    const seedNext = newSeed();
+    const created = createRecallScenario(deck, normalized.index, seedNext, 1);
+    if (!created.ok) { message.textContent = created.reason; return; }
+    runSeed = seedNext;
     prepare(1);
     save();
-    composer?.focus();
+    // Un nivel 1 sin pagables no tiene input activo: el foco va a Saltar, no al <body>.
+    if (state.status === 'empty') skip.focus(); else composer?.focus();
   });
 
   /** Arranca (o avanza a) un nivel: todo es sincrono, no hay objetivo que calcular aparte. */

@@ -1134,7 +1134,7 @@ deskFrame.remove();
     act('next').hidden === false && act('finish').hidden === true && document.activeElement === act('next') &&
     /Nivel terminado/.test(celMount.querySelector('.recall__message').textContent));
   const layer = celMount.querySelector('.celebration');
-  check('AC-CEL-12: el confetti son 20+ piezas que no reciben clics ni hacen scroll horizontal',
+  check('AC-CEL-12: los fuegos artificiales son 20+ chispas que no reciben clics ni hacen scroll horizontal',
     pieces().length >= 20 && getComputedStyle(layer).pointerEvents === 'none' &&
     [...pieces()].every((piece) => getComputedStyle(piece).pointerEvents === 'none') &&
     document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
