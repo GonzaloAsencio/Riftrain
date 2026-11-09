@@ -161,6 +161,7 @@ button { font: inherit; color: inherit; }
 }
 .pip--energy { background: #14171c; }             /* Energia: negra, incolora */
 .pip--power  { background: var(--pip, #797f8b); border-radius: 4px; }
+.pip--any    { background: linear-gradient(135deg, var(--pip) 0 50%, var(--pip-b) 50% 100%); }   /* dos dominios: cualquiera */
 
 .card__art {
   flex: 0 0 47%;                                  /* ~47% superior */

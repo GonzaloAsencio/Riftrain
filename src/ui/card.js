@@ -37,7 +37,8 @@ function costPips(card) {
   const wrap = el('div', 'card__costs');
 
   const energy = card.energy ?? 0;
-  const powerTotal = DOMAINS.reduce((a, d) => a + (card.power?.[d] ?? 0), 0);
+  const any = card.powerAny;
+  const powerTotal = DOMAINS.reduce((a, d) => a + (card.power?.[d] ?? 0), 0) + (any?.amount ?? 0);
 
   // Mostramos el pip de energia siempre que haya energia, o si la carta no cuesta nada.
   if (energy > 0 || powerTotal === 0) {
@@ -49,6 +50,14 @@ function costPips(card) {
     const pip = el('span', 'pip pip--power num', String(n));
     pip.style.setProperty('--pip', DOMAIN_COLOR[d]);
     pip.title = `${n} de Poder ${DOMAIN_LABEL[d]}`;
+    wrap.appendChild(pip);
+  }
+  // Dos dominios: un solo pip partido en los colores de los dos (se paga con cualquiera).
+  if (any?.amount > 0) {
+    const pip = el('span', 'pip pip--power pip--any num', String(any.amount));
+    pip.style.setProperty('--pip', DOMAIN_COLOR[any.domains[0]]);
+    pip.style.setProperty('--pip-b', DOMAIN_COLOR[any.domains[1]]);
+    pip.title = `${any.amount} de Poder ${any.domains.map((d) => DOMAIN_LABEL[d]).join(' o ')}`;
     wrap.appendChild(pip);
   }
   return wrap;
@@ -137,6 +146,9 @@ function describeCard(card) {
   for (const d of DOMAINS) {
     const n = card.power?.[d] ?? 0;
     if (n > 0) cost.push(`${n} de poder ${DOMAIN_LABEL[d]}`);
+  }
+  if (card.powerAny?.amount > 0) {
+    cost.push(`${card.powerAny.amount} de poder ${card.powerAny.domains.map((d) => DOMAIN_LABEL[d]).join(' o ')}`);
   }
   if (cost.length) parts.push(`cuesta ${cost.join(' y ')}`);
   return parts.join(', ');

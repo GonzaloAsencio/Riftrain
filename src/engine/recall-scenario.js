@@ -22,8 +22,10 @@ function runeDeck(deck) {
 /** Versioned, canonical data+resource identity, not the legacy PRNG/queue ID. */
 export function recallIdentity(deck, index, seed, level, runes) {
   const main = (index.policy === 'positive-energy' ? index.fullCards : index.cards)
-    .map(({ id, qty, energy, power }) => [id, qty, energy,
-    Object.entries(power).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)]);
+    .map(({ id, qty, energy, power, powerAny }) => [id, qty, energy,
+    Object.entries(power).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0),
+    // Solo cuando existe: las mesas de los mazos sin cartas de dos dominios no cambian de identidad.
+    ...(powerAny ? [[powerAny.amount, powerAny.domains]] : [])]);
   return JSON.stringify(['recall', RECALL_VERSION, 'rng-v1', 'floating-v1', seed, level,
     main, ...(index.policy === 'positive-energy' ? ['positive-energy-v1'] : []),
     DOMAINS.map((d) => [d, deck.runes[d] ?? 0]), runes.map(({ domain, ready }) => [domain, ready])]);

@@ -76,12 +76,14 @@ test('AC-IMP-06: el camino del código sigue igual que antes (códigos rotos con
 
 // ---- Bordes que encontró la revisión
 test('AC-IMP-08: una carta sin costo publicado se avisa al leer, por nombre, en los dos caminos', () => {
-  const sinCosto = CATALOG.find((c) => c.needsCost && c.type === 'spell');
-  const result = run(LIST.replace('3 Traveling Merchant', `3 Traveling Merchant
-2 ${sinCosto.name}`));
+  // Una carta conocida marcada sin costo en una copia del catálogo: no depende de qué publique Riot hoy.
+  const sinCosto = { ...CATALOG.find((c) => c.id === 'traveling-merchant'), needsCost: true, energy: null,
+    reason: 'pide 1 de Poder pero no declara dominio' };
+  const catalog = CATALOG.map((c) => (c.id === sinCosto.id ? sinCosto : c));
+  const result = run(LIST, catalog);
   assert.equal(result.ok, false);
   assert.match(result.reason, /costo/i);
-  assert.deepEqual(result.missing.map((m) => [m.label, m.qty]), [[sinCosto.name, 2]]);
+  assert.deepEqual(result.missing.map((m) => [m.label, m.qty]), [[sinCosto.name, 3]]);
   const viaCode = importDeck(prepareDeckInput(code), CATALOG.map((c) => (c.id === 'traveling-merchant' ? { ...c, needsCost: true, energy: null } : c)));
   assert.equal(viaCode.ok, false);
   assert.ok(viaCode.missing.some((m) => m.label === 'Traveling Merchant'));

@@ -6,9 +6,13 @@ const fail = (reason) => ({ ok: false, reason });
 const quantity = (n) => Number.isSafeInteger(n) && n > 0;
 const plainPower = (power) => power && typeof power === 'object' &&
   [Object.prototype, null].includes(Object.getPrototypeOf(power));
+// Poder de dos dominios: cada punto se paga con una runa de cualquiera de ellos (ver cost.js).
+const validPowerAny = (any) => any === undefined || (any !== null && typeof any === 'object' &&
+  Number.isSafeInteger(any.amount) && any.amount > 0 && Array.isArray(any.domains) && any.domains.length >= 2 &&
+  new Set(any.domains).size === any.domains.length && any.domains.every((d) => DOMAINS.includes(d)));
 const validCost = (card) => Number.isSafeInteger(card?.energy) && card.energy >= 0 &&
   plainPower(card.power) && Object.entries(card.power).every(([d, n]) =>
-    DOMAINS.includes(d) && Number.isSafeInteger(n) && n >= 0);
+    DOMAINS.includes(d) && Number.isSafeInteger(n) && n >= 0) && validPowerAny(card.powerAny);
 const validIndex = (index) => Array.isArray(index?.cards) && index.byId instanceof Map &&
   (index.cards.length > 0 || (index.policy === 'positive-energy' && index.fullCards?.length > 0)) &&
   index.byId.size === index.cards.length &&
@@ -47,9 +51,11 @@ export function normalizeDeck(deck, cards, { policy = 'all' } = {}) {
         return fail(`Poder o dominio inválido para ${id}: ${domain}`);
       }
     }
+    if (!validPowerAny(card.powerAny)) return fail(`Poder de dos dominios inválido para ${id}`);
     const qty = (byId.get(id)?.qty ?? 0) + entry.qty;
     if (!Number.isSafeInteger(qty)) return fail(`Cantidad inválida para ${id}: desborde`);
-    byId.set(id, { id, qty, energy: card.energy, power: { ...card.power } });
+    byId.set(id, { id, qty, energy: card.energy, power: { ...card.power },
+      ...(card.powerAny ? { powerAny: { amount: card.powerAny.amount, domains: [...card.powerAny.domains].sort() } } : {}) });
   }
   const normalized = [...byId.values()].sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
   if (policy === 'positive-energy') {
