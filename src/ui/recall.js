@@ -28,7 +28,7 @@ const MESSAGES = {
   omitted: 'Recorrido terminado con nivel omitido',
 };
 
-export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
+export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLevel = 12,
   storage = defaultStore, feedbackOptions,
   // Inyectable para testear: el navegador headless no deja emular prefers-reduced-motion.
   reducedMotion = !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches }) {
@@ -267,7 +267,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     const created = createRecallScenario(deck, normalized.index, runSeed, level);
     if (!created.ok) { message.textContent = created.reason; return; }
     const started = previous ? advanceRecall(previous, created.scenario, normalized.index) :
-      startRecall(created.scenario, normalized.index);
+      startRecall(created.scenario, normalized.index, { maxLevel });
     if (!started.ok) { message.textContent = started.reason; return; }
     state = started.state;
     mountHand();
@@ -279,7 +279,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     message.textContent = normalized.reason;
   } else {
     let restored;
-    try { restored = storage.loadRecallSnapshot(deck, normalized.index); } catch { restored = { ok: false }; }
+    try { restored = storage.loadRecallSnapshot(deck, normalized.index, { maxLevel }); } catch { restored = { ok: false }; }
     if (restored?.ok) {
       state = restored.state;
       runSeed = state.scenario.seed;

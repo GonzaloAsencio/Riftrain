@@ -1182,6 +1182,17 @@ deskFrame.remove();
   celMount.remove();
 }
 
+// ---- Nivel máximo en la pantalla (AC-CFG-10)
+{
+  const maxMount = document.createElement('div');
+  document.querySelector('#stage main').appendChild(maxMount);
+  const run = mountRecall(maxMount, { deck: terminalDeck, cards: [terminalCard], seed: 17, initialLevel: 3, maxLevel: 3, storage: stub });
+  press(type(maxMount, 'costo uno'), 'Enter');
+  check('AC-CFG-10: con máximo 3, completar el nivel 3 termina el entrenamiento, sin Siguiente nivel',
+    maxMount.textContent.includes('Entrenamiento completado') && maxMount.querySelector('[data-action="next"]').hidden === true);
+  run.destroy(); maxMount.remove();
+}
+
 // ---- Sin restos del modo legacy (AC-SHL-07/08)
 {
   const handJs = await fetch('../src/ui/hand.js', { cache: 'no-store' });
