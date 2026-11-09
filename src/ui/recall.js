@@ -236,7 +236,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     draw();
     // Las que faltaron las marca el motor (missed); un falso positivo solo no es "faltar".
     if (outcomes.some((card) => card.outcome === 'missed')) feedback.notify('Te faltaron cartas. Revisá las que están en gris');
-    // Terminé tambien completa: tras Repetir con todo hallado no queda nada por nombrar.
+    // Terminé completa sólo un nivel abierto con todo hallado: el de un snapshot de la version anterior.
     if (answer.kind === 'finished') celebrate();
     else focusNextAction();
     save();
@@ -250,8 +250,10 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     celebration.hide();
     fan.setFound(cardsOf(state.found));
     draw();
+    // Si sólo fallaron falsos positivos no queda nada por nombrar: el motor ya cerró completo.
+    if (answer.closed) celebrate();
+    else composer.focus();
     save();
-    composer.focus();
   });
   next.addEventListener('click', () => {
     if (disposed || state?.status !== 'next') return;

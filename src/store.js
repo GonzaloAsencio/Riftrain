@@ -119,8 +119,8 @@ function replay(deck, index, seed, level, identity, runes, found, status) {
   }
   if (['next', 'complete'].includes(state.status)) {
     // La ultima pagable ya cerro el nivel al repetirla, pero el snapshot manda: los falsos positivos
-    // eran de la sesion y no se guardaron (revision), y tras Repetir con todo hallado el nivel sigue
-    // abierto hasta Terminé (activo).
+    // eran de la sesion y no se guardaron (revision). Un 'active' con todo hallado sólo lo guardaba la
+    // version anterior (sin auto-cierre): se restaura abierto y Terminé lo completa.
     if (['review', 'active'].includes(status)) {
       const { nextLevel, ...open } = state;
       state = { ...open, status };

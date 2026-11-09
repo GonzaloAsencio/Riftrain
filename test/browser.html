@@ -820,17 +820,16 @@ check('AC-FAN-15: reabrir una revisión conserva lo hallado en orden, sin falsos
   fstates() === 'found:alpha,found:gamma' && fextras() === '' && action('repeat').hidden === false && !stampShown() &&
   !flowMount.querySelector('.fan__tag') && saves === 2);
 action('repeat').click();
-check('AC-FAN-14: Repetir nivel conserva lo hallado en los primeros slots y devuelve el foco al input',
-  fstates() === 'found:alpha,found:gamma' && !stampShown() && !flowInput().disabled &&
-  document.activeElement === flowInput() && flowMount.textContent.includes('Nivel 3') && saves === 3);
+check('AC-FAN-14 + AC-CEL-19: Repetir con todo hallado conserva lo hallado y cierra solo, con el foco en Siguiente nivel',
+  fstates() === 'found:alpha,found:gamma' && !stampShown() && flowInput().disabled &&
+  document.activeElement === action('next') && flowMount.textContent.includes('Nivel 3') && saves === 3);
 check('AC-FAN-14: tras repetir no quedan extras, motivos ni etiquetas',
   !flowMount.querySelector('.fan__extra, .fan__tag, [data-reason]'));
 
-// Tras Repetir con todo hallado no queda nada por nombrar: Terminé completa el nivel y se avanza.
-action('finish').click();
+// Repetir con todo hallado ya completó el nivel: se avanza sin Terminé.
 check('AC-FAN-12: lo pagable completo y cero falsos positivos ofrece avanzar, sin Repetir ni grises',
   action('next').hidden === false && action('repeat').hidden === true && fextras() === '' &&
-  fstates() === 'found:alpha,found:gamma' && flowMount.querySelectorAll('[data-state="missed"]').length === 0 && saves === 4);
+  fstates() === 'found:alpha,found:gamma' && flowMount.querySelectorAll('[data-state="missed"]').length === 0 && saves === 3);
 check('AC-ARC-60: completo, el foco pasa a Siguiente nivel y no hay toast de faltantes',
   document.activeElement === action('next') && toastText() === null);
 action('next').click();
@@ -838,7 +837,7 @@ check('AC-ARC-60: en el nivel nuevo el foco vuelve al input', document.activeEle
 const level4Size = payableCards(flowIndex, scenarioAt(4)).cardIds.length;
 check('AC-FAN-16: avanzar genera el nivel 4 con otra mesa y una mano nueva de tantos dorsos como pagables',
   flowMount.textContent.includes('Nivel 4') && flowMount.querySelectorAll('.rune:not(.rune--spent)').length === 4 &&
-  level4Size > 0 && fstates() === Array(level4Size).fill('down').join() && saves === 5 && actualStore.load({}).recall.schema === 2,
+  level4Size > 0 && fstates() === Array(level4Size).fill('down').join() && saves === 4 && actualStore.load({}).recall.schema === 2,
   `${fstates()} / ${level4Size}`);
 check('AC-ARC-52: el nivel siguiente arranca limpio, sin restos de la UI combinatoria', removedUi(flowMount));
 press(type(flowMount, 'alp'), 'Enter');
@@ -1300,9 +1299,17 @@ deskFrame.remove();
   check('AC-CEL-15: cerrar en revisión (hubo un falso positivo) no festeja',
     act('repeat').hidden === false && !banner() && pieces().length === 0);
   act('repeat').click();
+  check('AC-CEL-19: Repetir con todo hallado cierra solo y festeja, con el foco en Siguiente nivel',
+    act('next').hidden === false && act('finish').hidden === true && banner()?.textContent === 'Nivel terminado' &&
+    document.activeElement === act('next'));
+  run.destroy();
+
+  run = cel();
+  press(type(celMount, 'alp'), 'Enter');
   act('finish').click();
-  check('AC-CEL-15: tras Repetir con todo hallado, Terminé completa y sí festeja',
-    act('next').hidden === false && banner()?.textContent === 'Nivel terminado' && document.activeElement === act('next'));
+  act('repeat').click();
+  check('AC-FAN-14: Repetir con pagables pendientes reabre el nivel, sin festejo, con el foco en el input',
+    act('finish').hidden === false && !banner() && document.activeElement === celMount.querySelector('input[role="combobox"]'));
   run.destroy();
 
   const emptyDeck = { cards: [{ cardId: 'hard', qty: 1 }], runes: { order: 12 } };
