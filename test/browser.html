@@ -226,6 +226,10 @@ check('AC-FAN-01: la mano tiene exactamente N cartas boca abajo con el dorso rea
   dealt.reveal({ id: 'r1', name: 'Uno', energy: 1, power: {}, domain: 'fury' }, { fresh: true });
   check('AC-DEAL-02: la carta recién revelada sube en curva mientras se da vuelta',
     getComputedStyle(dealSlots[0]).animationName === 'fan-arc');
+  dealt.reveal({ id: 'r2', name: 'Dos', energy: 1, power: {}, domain: 'calm' }, { fresh: true });
+  check('AC-DEAL-02: revelar otra carta no vuelve a repartir la anterior (el reparto ya terminó)',
+    getComputedStyle(dealSlots[0]).animationName !== 'fan-deal' && getComputedStyle(dealSlots[1]).animationName === 'fan-arc' &&
+    !dealHost.querySelector('.fan--deal'), getComputedStyle(dealSlots[0]).animationName);
   dealt.destroy(); dealHost.remove();
 }
 check('AC-FAN-03: cada carta lleva su ángulo de fanAngles en --a',

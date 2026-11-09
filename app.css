@@ -361,14 +361,14 @@ button { font: inherit; color: inherit; }
 @keyframes fan-deal {
   from { transform: translate(42cqw, -46cqh) rotate(32deg) scale(.8); opacity: 0; }
   20% { opacity: 1; }
-  to { transform: rotate(calc(var(--a) * var(--k, 1))) translateY(var(--lift)); opacity: 1; }
+  to { transform: rotate(calc(var(--a) * var(--k, 1))) translateY(var(--lift)) scale(1); opacity: 1; }
 }
 /* Revelado en curva: la carta recien dada vuelta sube en arco y vuelve a su lugar. */
 .fan__card[data-fresh] { animation: fan-arc 620ms var(--ease); }
 @keyframes fan-arc {
-  0% { transform: rotate(calc(var(--a) * var(--k, 1))) translateY(0); }
+  0% { transform: rotate(calc(var(--a) * var(--k, 1))) translateY(0) scale(1); }
   45% { transform: rotate(calc(var(--a) * var(--k, 1) * .5)) translateY(calc(var(--w) * -.75)) scale(1.12); }
-  100% { transform: rotate(calc(var(--a) * var(--k, 1))) translateY(var(--lift)); }
+  100% { transform: rotate(calc(var(--a) * var(--k, 1))) translateY(var(--lift)) scale(1); }
 }
 /* Fin del nivel: se dan vuelta (el giro de la carta) y despues vuelven al mazo, de a una. */
 .fan--collect .fan__card { animation: fan-collect 480ms ease-in forwards; animation-delay: calc(280ms + var(--i, 0) * 60ms); }

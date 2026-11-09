@@ -301,12 +301,14 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
     const seedNext = newSeed();
     const created = createRecallScenario(deck, normalized.index, seedNext, initialLevel);
     if (!created.ok) { message.textContent = created.reason; return; }
+    const seedBefore = runSeed;
     runSeed = seedNext;
     transition(() => {
-      prepare(initialLevel);
+      if (!prepare(initialLevel)) { runSeed = seedBefore; return false; }
       save();
       // Un nivel sin pagables no tiene input activo: el foco va a Saltar, no al <body>.
       if (state.status === 'empty') skip.focus(); else composer?.focus();
+      return true;
     });
   });
 
@@ -320,28 +322,33 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
     if (busy) return;
     busy = true;
     celebration.hide();
+    // El boton tocado se deshabilita: el foco espera en el mensaje en vez de caer al <body>.
+    message.focus();
     for (const item of [next, restart]) item.disabled = true;
     pending = fan.collect(transitionMs).then(() => {
       busy = false;
       for (const item of [next, restart]) item.disabled = false;
-      if (!disposed) then();
+      if (disposed) return;
+      // Si el nivel siguiente no se pudo armar, la mano vuelve del mazo y se sigue como estaba.
+      if (then() === false) { fan.uncollect(); focusNextAction(); }
     });
   }
 
   /** Arranca (o avanza a) un nivel: todo es sincrono, no hay objetivo que calcular aparte. */
   function prepare(level, previous = null) {
-    if (disposed) return;
+    if (disposed) return false;
     clearRejection();
     celebration.hide();
     const created = createRecallScenario(deck, normalized.index, runSeed, level);
-    if (!created.ok) { message.textContent = created.reason; return; }
+    if (!created.ok) { message.textContent = created.reason; return false; }
     const started = previous ? advanceRecall(previous, created.scenario, normalized.index) :
       startRecall(created.scenario, normalized.index, { maxLevel });
-    if (!started.ok) { message.textContent = started.reason; return; }
+    if (!started.ok) { message.textContent = started.reason; return false; }
     state = started.state;
     mountHand();
     draw();
     if (previous) { save(); composer?.focus(); }
+    return true;
   }
 
   if (!normalized.ok) {
