@@ -1278,7 +1278,15 @@ deskFrame.remove();
   const again = mountRecall(maxMount, { deck: terminalDeck, cards: [terminalCard], seed: 17, initialLevel: 3, maxLevel: 3, storage: stub,
     newSeed: () => seeds.shift() });
   press(type(maxMount, 'costo uno'), 'Enter');
-  maxMount.querySelector('[data-action="restart"]').click();
+  const restartBtn = maxMount.querySelector('[data-action="restart"]');
+  const rb = restartBtn.getBoundingClientRect();
+  const nextBtn = maxMount.querySelector('[data-action="next"]');
+  check('AC-CFG-28: Empezar de nuevo es un botón de ícono cuadrado con nombre accesible, y Siguiente nivel no parte su texto',
+    restartBtn.textContent.trim() === '' && restartBtn.getAttribute('aria-label') === 'Empezar de nuevo' && restartBtn.title === 'Empezar de nuevo' &&
+    !!restartBtn.querySelector('svg[aria-hidden="true"]') && rb.width >= 44 && rb.height >= 44 && Math.abs(rb.width - rb.height) <= 2 &&
+    nextBtn.getBoundingClientRect().height <= 52 && getComputedStyle(nextBtn).whiteSpace === 'nowrap',
+    `${Math.round(rb.width)}x${Math.round(rb.height)} next ${Math.round(nextBtn.getBoundingClientRect().height)}`);
+  restartBtn.click();
   check('AC-CFG-23 + AC-CFG-27: Empezar de nuevo vuelve al nivel de inicio (3) con otra mesa, el mismo máximo y el foco en el input',
     seeds.length === 0 && maxMount.querySelector('.table__level').textContent === 'Nivel 3' &&
     maxMount.querySelector('.table__max').textContent === 'de 3' && maxMount.querySelectorAll('.fan__card[data-state="found"]').length === 0 &&
