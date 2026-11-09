@@ -30,7 +30,7 @@ function base32(text) {
   let bits = 0;
   for (const char of text) {
     const value = ALPHABET.indexOf(char);
-    if (value === -1) throw new Malformed(`El código tiene un carácter que no es base32: '${char}'`);
+    if (value === -1) throw new Malformed(`Eso no parece un código de mazo: tiene un carácter que no va ('${char}')`);
     buffer = ((buffer << 5) | value) & 0xffff;
     bits += 5;
     if (bits >= 8) { bits -= 8; bytes.push((buffer >> bits) & 0xff); }

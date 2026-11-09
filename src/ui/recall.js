@@ -29,7 +29,7 @@ const MESSAGES = {
 };
 
 export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLevel = 12,
-  storage = defaultStore, feedbackOptions,
+  storage = defaultStore, feedbackOptions, onOpenSettings = null,
   // Inyectable para testear: el navegador headless no deja emular prefers-reduced-motion.
   reducedMotion = !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches }) {
   let disposed = false;
@@ -48,7 +48,15 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
   const table = node('section', 'table recall__table recall-band');
   table.setAttribute('aria-label', 'Mesa del rival');
   const tableHead = node('div', 'table__head');
-  tableHead.append(node('span', 'table__deck', deck?.name ?? 'Mazo'), levelText);
+  tableHead.append(node('span', 'table__deck', deck?.name ?? 'Mazo'), levelText, node('span', 'table__max', `de ${maxLevel}`));
+  if (onOpenSettings) {
+    const gear = node('button', 'table__settings');
+    gear.type = 'button';
+    gear.setAttribute('aria-label', 'Configuración');
+    gear.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
+    gear.addEventListener('click', () => onOpenSettings(gear));
+    tableHead.appendChild(gear);
+  }
   const board = node('div', 'board');
   const publicCards = node('div', 'legend');
   publicCards.setAttribute('aria-label', 'Leyenda y campeón');
