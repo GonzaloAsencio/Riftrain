@@ -137,9 +137,8 @@ test('AC-ARC-17: el nivel se completa sólo con todas las pagables y cero falsos
   const partial = reduceRecall(state, { type: 'finish' }, wallIdx);
   assert.equal(partial.kind, 'review');
   assert.equal(partial.state.status, 'review');
-  state = named(state, 'fury2').state;
-  const done = reduceRecall(state, { type: 'finish' }, wallIdx);
-  assert.equal(done.kind, 'finished');
+  const done = named(state, 'fury2');
+  assert.equal(done.closed, true);
   assert.equal(done.state.status, 'next');
   assert.equal(done.state.nextLevel, 4);
   assert.equal(reduceRecall(begin(), { type: 'finish' }, wallIdx).kind, 'review');
@@ -147,19 +146,17 @@ test('AC-ARC-17: el nivel se completa sólo con todas las pagables y cero falsos
 
 test('AC-ARC-18: todas las pagables nombradas más un falso positivo no completa: revisión', () => {
   let state = named(begin(), 'cheap').state;
-  state = named(state, 'fury2').state;
   state = named(state, 'huge').state;
-  const closed = reduceRecall(state, { type: 'finish' }, wallIdx);
-  assert.equal(closed.kind, 'review');
+  const closed = named(state, 'fury2');
+  assert.equal(closed.closed, true);
   assert.equal(closed.state.status, 'review');
   assert.deepEqual(closed.state.found, ['cheap', 'fury2']);
 });
 
 test('AC-ARC-18: un nivel cerrado no acepta nombres, cierres ni saltos, y una revisión nunca avanza', () => {
   const review = reduceRecall(begin(), { type: 'finish' }, wallIdx).state;
-  let done = named(named(begin(), 'cheap').state, 'fury2').state;
-  done = reduceRecall(done, { type: 'finish' }, wallIdx).state;
-  const last = reduceRecall(named(named(begin(lvl(12)), 'cheap').state, 'fury2').state, { type: 'finish' }, wallIdx).state;
+  const done = named(named(begin(), 'cheap').state, 'fury2').state;
+  const last = named(named(begin(lvl(12)), 'cheap').state, 'fury2').state;
   assert.deepEqual([review.status, done.status, last.status], ['review', 'next', 'complete']);
   for (const closed of [review, done, last]) {
     for (const event of [{ type: 'name', cardId: 'cheap' }, { type: 'name', cardId: 'order1' }, { type: 'finish' }, { type: 'skip' }]) {
@@ -187,8 +184,7 @@ test('AC-ARC-21: repetir conserva found, borra los falsos positivos y mantiene l
 });
 
 test('AC-ARC-21: sólo avanza un nivel completo o saltado; la revisión nunca avanza', () => {
-  const state = named(named(begin(), 'cheap').state, 'fury2').state;
-  const done = reduceRecall(state, { type: 'finish' }, wallIdx).state;
+  const done = named(named(begin(), 'cheap').state, 'fury2').state;
   const next = advanceRecall(done, lvl(4, [...furyBoard.runes, { domain: 'fury', ready: true }]), wallIdx);
   assert.equal(next.ok, true);
   assert.equal(next.state.scenario.level, 4);
@@ -219,10 +215,58 @@ test('AC-ARC-21: el nivel 12 cierra sin nivel 13 y rechaza escenarios inválidos
   const board = Array.from({ length: 12 }, () => ({ domain: 'fury', ready: true }));
   let state = startRecall({ level: 12, runes: board, identity: 'wall-12' }, wallIdx).state;
   for (const id of state.payable) state = named(state, id).state;
-  const last = reduceRecall(state, { type: 'finish' }, wallIdx);
-  assert.equal(last.state.status, 'complete');
-  assert.equal(last.state.nextLevel, undefined);
+  assert.equal(state.status, 'complete');
+  assert.equal(state.nextLevel, undefined);
   assert.equal(startRecall({ ...lvl(), level: 13 }, wallIdx).ok, false);
   assert.equal(startRecall({ ...lvl(), identity: '' }, wallIdx).ok, false);
   assert.equal(startRecall(lvl(), undefined).ok, false);
+});
+
+// ---- Cierre automático al nombrar la última pagable (AC-CEL-01..06) ----
+test('AC-CEL-01: nombrar la última pagable sin falsos positivos cierra el nivel y ofrece el siguiente', () => {
+  const last = named(named(begin(), 'cheap').state, 'fury2');
+  assert.equal(last.kind, 'accepted');
+  assert.equal(last.closed, true);
+  assert.equal(last.state.status, 'next');
+  assert.equal(last.state.nextLevel, 4);
+  assert.deepEqual(last.state.found, ['cheap', 'fury2']);
+});
+
+test('AC-CEL-02: en el nivel 12 la última pagable completa el entrenamiento', () => {
+  const last = named(named(begin(lvl(12)), 'cheap').state, 'fury2');
+  assert.equal(last.closed, true);
+  assert.equal(last.state.status, 'complete');
+  assert.equal(last.state.nextLevel, undefined);
+});
+
+test('AC-CEL-03: con un falso positivo en la ronda, la última pagable cierra en revisión', () => {
+  const state = named(named(begin(), 'cheap').state, 'huge').state;
+  const last = named(state, 'fury2');
+  assert.equal(last.kind, 'accepted');
+  assert.equal(last.closed, true);
+  assert.equal(last.state.status, 'review');
+  assert.equal(last.state.nextLevel, undefined);
+  assert.deepEqual(last.state.misses, ['huge']);
+});
+
+test('AC-CEL-04: una pagable que no es la última no cierra nada', () => {
+  const first = named(begin(), 'cheap');
+  assert.equal(first.kind, 'accepted');
+  assert.equal(first.closed, false);
+  assert.equal(first.state.status, 'active');
+});
+
+test('AC-CEL-05: un nivel cerrado solo no acepta otro nombre ni Terminé', () => {
+  const closed = named(named(begin(), 'cheap').state, 'fury2').state;
+  for (const event of [{ type: 'finish' }, { type: 'name', cardId: 'order1' }, { type: 'name', cardId: 'cheap' }]) {
+    const result = reduceRecall(closed, event, wallIdx);
+    assert.equal(result.kind, 'invalid', event.type);
+    assert.equal(result.state, closed);
+  }
+});
+
+test('AC-CEL-06: Terminé con pagables pendientes sigue siendo rendirse: revisión', () => {
+  const partial = reduceRecall(named(begin(), 'cheap').state, { type: 'finish' }, wallIdx);
+  assert.equal(partial.kind, 'review');
+  assert.equal(partial.state.status, 'review');
 });

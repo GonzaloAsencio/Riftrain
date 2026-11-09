@@ -20,17 +20,17 @@ export function startRecall(scenario, index) {
 }
 
 export function reduceRecall(state, event, index) {
-  const closeLevel = (finalStatus) => state.scenario.level === 12 ? { ...state, status: finalStatus } :
-    { ...state, status: 'next', nextLevel: state.scenario.level + 1 };
+  const closeLevel = (current, finalStatus) => current.scenario.level === 12 ? { ...current, status: finalStatus } :
+    { ...current, status: 'next', nextLevel: current.scenario.level + 1 };
   if (event?.type === 'skip') {
     if (state?.status !== 'empty') return { kind: 'invalid', state, reason: 'Sólo se puede saltar un nivel sin cartas pagables' };
-    return { kind: 'skipped', state: closeLevel('omitted') };
+    return { kind: 'skipped', state: closeLevel(state, 'omitted') };
   }
   if (event?.type === 'finish') {
     if (state?.status !== 'active') return { kind: 'invalid', state, reason: 'Sólo podés terminar un nivel con cartas por nombrar' };
     const complete = state.misses.length === 0 && state.payable.every((id) => state.found.includes(id));
     if (!complete) return { kind: 'review', state: { ...state, status: 'review' } };
-    return { kind: 'finished', state: closeLevel('complete') };
+    return { kind: 'finished', state: closeLevel(state, 'complete') };
   }
   if (event?.type === 'repeat') {
     if (state?.status !== 'review') return { kind: 'invalid', state, reason: 'No hay revisión para continuar' };
@@ -43,7 +43,13 @@ export function reduceRecall(state, event, index) {
     return { kind: 'duplicate', state, reason: 'Carta ya nombrada' };
   }
   const check = checkCard(cardId, state.scenario, index);
-  if (check.ok) return { kind: 'accepted', state: { ...state, found: [...state.found, cardId] } };
+  if (check.ok) {
+    const next = { ...state, found: [...state.found, cardId] };
+    // La ultima pagable no deja nada por nombrar: cierra con la misma regla que Terminé.
+    if (!next.payable.every((id) => next.found.includes(id))) return { kind: 'accepted', state: next, closed: false };
+    const closed = next.misses.length ? { ...next, status: 'review' } : closeLevel(next, 'complete');
+    return { kind: 'accepted', state: closed, closed: true };
+  }
   if (check.detail === null) return { kind: 'invalid', state, reason: check.reason };
   return { kind: 'false-positive', reason: check.reason, detail: check.detail,
     state: { ...state, misses: [...state.misses, cardId] } };
