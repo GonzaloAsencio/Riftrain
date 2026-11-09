@@ -371,7 +371,13 @@ button { font: inherit; color: inherit; }
 /* Falsos positivos: debajo del arco en el telefono, a su derecha cuando hay ancho. */
 .fan__extras { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; padding: 6px 4px; }
 .fan__extras:empty { display: none; }
-.fan__extra { position: relative; width: clamp(56px, 16vw, 104px); transform: rotate(6deg); }
+.fan__extra { position: relative; width: clamp(56px, 16vw, 104px); transform: rotate(6deg);
+  /* Las que no entraban llegan de a una, deslizándose desde el costado. */
+  animation: fan-extra-in 460ms var(--ease) both; animation-delay: calc(var(--i, 0) * 220ms); }
+@keyframes fan-extra-in {
+  from { opacity: 0; transform: translateX(48px) rotate(24deg) scale(.7); }
+  to { opacity: 1; transform: rotate(6deg); }
+}
 .fan__extra:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .fan__extra .card { box-shadow: 0 0 0 3px var(--bad), -3px 4px 10px rgba(0,0,0,.55); }
 .fan__tag {
@@ -379,7 +385,15 @@ button { font: inherit; color: inherit; }
   width: max-content; max-width: calc(100% - 6px); text-align: center; line-height: 1.15;
   padding: 2px 5px; border-radius: 3px; background: var(--bad); color: #fff; font-size: 11px; font-weight: 700;
 }
-.fan__why { margin: 6px 0 0; min-height: 1.5em; text-align: center; font-size: 13px; color: var(--ink-soft); }
+/* El motivo de una carta es un cartel claro que resalta sobre la mesa oscura. Sin texto, no se ve.
+   (Sin webfonts: la letra redondeada del sistema si la hay; si no, la del sistema en semibold.) */
+.fan__why {
+  justify-self: center; width: fit-content; max-width: min(92%, 560px); margin: 8px auto 0; min-height: 1.5em;
+  padding: 8px 16px; border-radius: 12px; text-align: center;
+  background: #f6f1e4; color: #1d2026; box-shadow: 0 6px 18px rgba(0,0,0,.35);
+  font: 600 15px/1.35 ui-rounded, "SF Pro Rounded", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+}
+.fan__why:empty { background: transparent; box-shadow: none; padding: 0; }
 @media (min-width: 640px) {
   .fan-wrap { grid-template-columns: minmax(0, 1fr) auto; }
   .fan__extras { flex-direction: column; flex-wrap: nowrap; justify-content: center; }
@@ -489,10 +503,10 @@ button { font: inherit; color: inherit; }
 
 /* ---------- MOTION ---------- */
 /* La clase la pone recall.js con la misma preferencia: cambia el movimiento, nunca el estado visible. */
-.recall--reduced .card, .recall--reduced .fan__card { transition: none !important; animation: none !important; }
+.recall--reduced .card, .recall--reduced .fan__card, .recall--reduced .fan__extra { transition: none !important; animation: none !important; }
 .celebration--reduced .celebration__banner { animation: celebration-fade 2.6s linear both; }
 @media (prefers-reduced-motion: reduce) {
-  .card, .fan__card { transition: none !important; animation: none !important; }
+  .card, .fan__card, .fan__extra { transition: none !important; animation: none !important; }
   .celebration__banner { animation: celebration-fade 2.6s linear both; }
   .celebration__piece { display: none; }
 }
