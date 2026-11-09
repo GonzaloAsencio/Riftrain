@@ -33,7 +33,9 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
   // Al seguir despues del maximo se guarda el maximo nuevo; empezar de nuevo pide otra mesa.
   onMaxLevelChange = () => {}, newSeed = () => globalThis.crypto.getRandomValues(new Uint32Array(1))[0],
   // Inyectable para testear: el navegador headless no deja emular prefers-reduced-motion.
-  reducedMotion = !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches }) {
+  reducedMotion = !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
+  // Cuanto dura la vuelta de las cartas al mazo entre niveles. Sin movimiento, nada: se reparte al toque.
+  transitionMs = reducedMotion ? 0 : 1000 }) {
   let disposed = false;
   let state = null;
   let runSeed = seed;
@@ -171,7 +173,8 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
   /** Mano nueva para el nivel: tantos dorsos como pagables (lo dice el motor); lo hallado, a la vista. */
   function mountHand() {
     fan?.destroy();
-    fan = mountRivalFan(fanHost, { size: state.payable.length });
+    // Cada mano nueva se reparte desde el mazo (sin movimiento, aparece quieta).
+    fan = mountRivalFan(fanHost, { size: state.payable.length, deal: !reducedMotion });
     fan.setFound(cardsOf(state.found));
   }
 
@@ -288,7 +291,8 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
       onMaxLevelChange(maxLevel);
     }
     if (state.status !== 'next') return;
-    prepare(state.nextLevel, state);
+    const previous = state;
+    transition(() => prepare(previous.nextLevel, previous));
   });
   restart.addEventListener('click', () => {
     if (disposed || !['complete', 'omitted'].includes(state?.status)) return;
@@ -298,11 +302,31 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
     const created = createRecallScenario(deck, normalized.index, seedNext, initialLevel);
     if (!created.ok) { message.textContent = created.reason; return; }
     runSeed = seedNext;
-    prepare(initialLevel);
-    save();
-    // Un nivel 1 sin pagables no tiene input activo: el foco va a Saltar, no al <body>.
-    if (state.status === 'empty') skip.focus(); else composer?.focus();
+    transition(() => {
+      prepare(initialLevel);
+      save();
+      // Un nivel sin pagables no tiene input activo: el foco va a Saltar, no al <body>.
+      if (state.status === 'empty') skip.focus(); else composer?.focus();
+    });
   });
+
+  /**
+   * Entre niveles las cartas se dan vuelta y vuelven al mazo; recien despues se reparte la mano
+   * nueva. Un segundo clic durante la vuelta no hace nada.
+   */
+  let pending = Promise.resolve();
+  let busy = false;
+  function transition(then) {
+    if (busy) return;
+    busy = true;
+    celebration.hide();
+    for (const item of [next, restart]) item.disabled = true;
+    pending = fan.collect(transitionMs).then(() => {
+      busy = false;
+      for (const item of [next, restart]) item.disabled = false;
+      if (!disposed) then();
+    });
+  }
 
   /** Arranca (o avanza a) un nivel: todo es sincrono, no hay objetivo que calcular aparte. */
   function prepare(level, previous = null) {
@@ -341,6 +365,8 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
   }
   return {
     ready: Promise.resolve(),
+    /** Termina cuando termina la vuelta al mazo en curso (o enseguida si no hay ninguna). */
+    idle: () => pending,
     destroy() { disposed = true; celebration.destroy(); feedback.destroy(); composer?.destroy(); fan?.destroy(); root.replaceChildren(); },
   };
 }
