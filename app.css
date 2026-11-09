@@ -381,6 +381,70 @@ button { font: inherit; color: inherit; }
   .fan__why { grid-column: 1 / -1; }
 }
 
+/* ---------- CONFIGURACION ---------- */
+.table__max { color: #98a0ad; }
+.table__settings {
+  margin-left: auto; width: 44px; height: 44px; flex: 0 0 auto; display: grid; place-items: center;
+  border: 1px solid #333842; border-radius: 10px; background: #22262d; color: #e8eaee; cursor: pointer;
+}
+.table__settings:hover { border-color: #4a5160; }
+.table__settings:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* Dialog nativo: centrado en pantalla ancha, hoja inferior en el telefono. */
+.settings {
+  width: min(600px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); box-sizing: border-box; overflow: auto;
+  padding: 22px 24px 20px; border: 1px solid var(--line); border-radius: 16px;
+  background: var(--surface); color: var(--ink); box-shadow: 0 24px 64px rgba(0,0,0,.45);
+}
+.settings::backdrop { background: rgba(10,12,16,.62); }
+.settings[open] { display: flex; flex-direction: column; gap: 20px; }
+.settings__group + .settings__group { padding-top: 20px; border-top: 1px solid var(--line); }
+.settings__head { display: flex; align-items: center; gap: 12px; }
+.settings__title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -.01em; }
+.settings__close {
+  margin-left: auto; width: 44px; height: 44px; display: grid; place-items: center;
+  border: 0; border-radius: 10px; background: transparent; color: var(--muted); cursor: pointer;
+}
+.settings__group { margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.settings__label { padding: 0; font-size: 14px; font-weight: 650; }
+.settings__muted { font-weight: 400; color: var(--muted); font-size: 12.5px; }
+.settings__levels { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 6px; }
+.settings__level {
+  min-height: 44px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg);
+  color: var(--ink-soft); font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.settings__level[aria-pressed="true"] { border: 2px solid var(--accent); background: var(--accent); color: var(--accent-ink); font-weight: 750; }
+.settings__level--out { border-style: dashed; background: transparent; color: var(--muted); }
+.settings__hint { margin: 0; font-size: 12.5px; color: var(--muted); }
+.settings__row { display: flex; gap: 8px; min-width: 0; }
+.settings__code {
+  flex: 1 1 auto; min-width: 0; min-height: 46px; box-sizing: border-box; padding: 0 14px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink);
+  font-family: ui-monospace, "Cascadia Code", Menlo, monospace; font-size: 13px;
+}
+.settings__code[aria-invalid="true"] { border: 2px solid var(--bad); }
+.settings__read { flex: 0 0 auto; min-height: 46px; }
+.settings__preview:empty { display: none; }
+.settings__deck, .settings__error { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 12px; font-size: 13px; }
+.settings__deck { border: 1px solid var(--ok); }
+.settings__deck strong { font-size: 15px; }
+.settings__error { border: 1px solid var(--bad); }
+.settings__error strong { color: var(--bad); font-size: 14px; }
+.settings__error ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }
+.settings__restart { margin: 0; font-size: 12.5px; color: var(--warn); }
+.settings__foot { display: flex; justify-content: flex-end; gap: 8px; }
+.settings__foot .btn { flex: 0 0 auto; min-height: 46px; padding: 0 22px; }
+.settings .btn[disabled] { opacity: .45; cursor: default; }
+@media (max-width: 639px) {
+  .settings {
+    width: 100%; max-width: 100%; margin: auto 0 0; padding: 14px 16px 20px;
+    border-radius: 18px 18px 0 0; border-bottom: 0; max-height: 92dvh;
+  }
+  .settings__levels { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .settings__row { flex-direction: column; }
+  .settings__foot .btn { flex: 1 1 0; }
+}
+
 /* ---------- FESTEJO DE FIN DE NIVEL ---------- */
 /* Capa fija: fuera de la grilla, sin clics; recorta el confetti para que nunca haya scroll.
    El cartel va en el tercio superior y se desvanece: la mano dada vuelta es el feedback, no se tapa. */
