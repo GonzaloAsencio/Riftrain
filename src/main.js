@@ -50,10 +50,13 @@ async function start() {
     onOpenSettings: (gear) => openSettings(document.body, {
       maxLevel, deck: imported ?? null, deckName: deck.name, loadCatalog,
       onSave: (value) => {
+        // Sin cambios no se remonta: la mano en juego sigue.
+        if (value.maxLevel === maxLevel && value.deck === (imported ?? null)) return true;
         const saved = store.saveSettings(value);
-        if (!saved.ok) { warn(`No se pudo guardar la configuración: ${saved.reason}`); return; }
+        if (!saved.ok) { warn(`No se pudo guardar la configuración: ${saved.reason}`); return false; }
         // Remontar con los ajustes nuevos; el foco vuelve al engranaje de la pantalla nueva.
         window.__riftrainReady = boot().then(() => root.querySelector('.table__settings')?.focus());
+        return true;
       },
       onClose: () => { if (gear.isConnected) gear.focus(); },
     }),

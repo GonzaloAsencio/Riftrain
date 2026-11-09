@@ -32,6 +32,7 @@ export function openSettings(host, { maxLevel, deck, deckName, loadCatalog, onSa
   let level = maxLevel;
   let pending = null;          // mazo leido y resuelto, todavia sin guardar
   let catalog = null;          // promesa: el catalogo se pide una sola vez por apertura
+  let readSeq = 0;             // turno de lectura: una lectura vieja no pisa a una nueva
 
   const dialog = el('dialog', 'settings');
   dialog.setAttribute('aria-labelledby', `${id}-title`);
@@ -129,17 +130,22 @@ export function openSettings(host, { maxLevel, deck, deckName, loadCatalog, onSa
   }
 
   async function readCode() {
+    if (read.disabled) return;
+    const run = ++readSeq;
     const decoded = decodeDeckCode(input.value);
     if (!decoded.ok) { showError(decoded.reason); return; }
     read.disabled = true;
     preview.replaceChildren(el('span', 'settings__muted', 'Leyendo el catálogo…'));
     try {
       catalog ??= loadCatalog();
-      const resolved = resolveDeckCode(decoded, await catalog);
+      const cards = await catalog;
+      // Mientras bajaba el catalogo se edito el codigo, se leyo otro o se cerro: este resultado ya no vale.
+      if (run !== readSeq) return;
+      const resolved = resolveDeckCode(decoded, cards);
       if (resolved.ok) showDeck(resolved); else showError(resolved.reason, resolved.missing);
     } catch {
       catalog = null;          // un fallo de red no queda cacheado: se puede reintentar
-      showError('No se pudo descargar el catálogo de cartas. Revisá la conexión y probá de nuevo.');
+      if (run === readSeq) showError('No se pudo descargar el catálogo de cartas. Revisá la conexión y probá de nuevo.');
     } finally {
       read.disabled = false;
     }
@@ -149,12 +155,14 @@ export function openSettings(host, { maxLevel, deck, deckName, loadCatalog, onSa
   function finish() {
     if (done) return;
     done = true;
+    readSeq++;
     if (dialog.open) dialog.close();
     dialog.remove();
     onClose();
   }
 
   input.addEventListener('input', () => {
+    readSeq++;
     pending = null;
     input.removeAttribute('aria-invalid');
     preview.replaceChildren();
@@ -169,7 +177,8 @@ export function openSettings(host, { maxLevel, deck, deckName, loadCatalog, onSa
   cancel.addEventListener('click', finish);
   save.addEventListener('click', () => {
     if (save.disabled) return;
-    onSave({ maxLevel: level, deck: pending ? { deck: pending.deck, cards: pending.cards } : deck });
+    // onSave devuelve false si no pudo guardar: el modal queda abierto con lo elegido.
+    if (onSave({ maxLevel: level, deck: pending ? { deck: pending.deck, cards: pending.cards } : deck }) === false) return;
     finish();
   });
   // Escape cierra el dialog nativo; esto deja todo como Cancelar.

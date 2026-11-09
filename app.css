@@ -7,7 +7,7 @@
   --panel: #16181d;          /* la mesa: oscura, para que las cartas destaquen */
   --ink: #14171c;
   --ink-soft: #4a515c;
-  --muted: #797f8b;
+  --muted: #656b77;          /* >= 4.5:1 sobre --surface y --bg */
   --line: #dcdfe5;
   --line-soft: #eaecf0;
   --accent: #2f6fdb;         /* UN solo acento */
@@ -435,12 +435,15 @@ button { font: inherit; color: inherit; }
 .settings__foot { display: flex; justify-content: flex-end; gap: 8px; }
 .settings__foot .btn { flex: 0 0 auto; min-height: 46px; padding: 0 22px; }
 .settings .btn[disabled] { opacity: .45; cursor: default; }
+/* Entre 640 y 760 px, 12 columnas dejan las pastillas por debajo de 44 px: van en dos filas. */
+@media (max-width: 759px) {
+  .settings__levels { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
 @media (max-width: 639px) {
   .settings {
     width: 100%; max-width: 100%; margin: auto 0 0; padding: 14px 16px 20px;
     border-radius: 18px 18px 0 0; border-bottom: 0; max-height: 92dvh;
   }
-  .settings__levels { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .settings__row { flex-direction: column; }
   .settings__foot .btn { flex: 1 1 0; }
 }

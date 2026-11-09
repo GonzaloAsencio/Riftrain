@@ -1297,6 +1297,28 @@ deskFrame.remove();
     /OGN-185/.test(dlg().querySelector('.settings__preview').textContent));
   act('cancel').click();
   check('AC-CFG-21: Cancelar cierra sin guardar nada', !dlg() && saved === null);
+
+  // Carrera: se lee A, se edita a B mientras baja el catálogo -> A no se muestra ni se guarda.
+  let release;
+  open({ loadCatalog: () => new Promise((resolve) => { release = () => resolve(catalog); }) });
+  const race = dlg().querySelector('input');
+  race.value = kkCode; race.dispatchEvent(new Event('input', { bubbles: true }));
+  race.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  race.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  race.value = codes.find((c) => c.name === 'variantes').code; race.dispatchEvent(new Event('input', { bubbles: true }));
+  release();
+  await new Promise((r) => setTimeout(r, 60));
+  check('AC-CFG-19: una lectura vieja no pisa el código editado ni habilita Guardar',
+    !dlg().querySelector('.settings__preview strong') && act('save').disabled === true, dlg().querySelector('.settings__preview').textContent);
+  act('close').click();
+
+  // Si guardar falla, el modal queda abierto con lo elegido.
+  open({ onSave: () => false });
+  level(4).click();
+  act('save').click();
+  check('AC-CFG-17: si guardar falla, el modal sigue abierto con el nivel elegido',
+    !!dlg() && level(4).getAttribute('aria-pressed') === 'true');
+  act('close').click();
   opener.remove();
 }
 
