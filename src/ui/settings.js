@@ -1,10 +1,11 @@
 /**
- * La configuracion: hasta que nivel se juega y el mazo del rival por codigo de Piltover Archive.
+ * La configuracion: hasta que nivel se juega y el mazo del rival, pegado como codigo o como lista de
+ * texto de Piltover Archive (el mismo campo acepta las dos: lo distingue el motor).
  * Un <dialog> nativo: showModal() atrapa el foco, Escape lo cierra, el fondo no se toca.
- * No decide nada: el codigo lo lee el motor (deck-code.js) y lo cruza contra el catalogo, que se
+ * No decide nada: lo pegado lo lee el motor (deck-import.js) y lo cruza contra el catalogo, que se
  * descarga recien la primera vez que hace falta (loadCatalog), una sola vez.
  */
-import { decodeDeckCode, resolveDeckCode } from '../engine/deck-code.js';
+import { prepareDeckInput, importDeck } from '../engine/deck-import.js';
 import { DOMAIN_LABEL } from '../engine/runes.js';
 
 const el = (tag, cls, text) => {
@@ -60,16 +61,16 @@ export function openSettings(host, { maxLevel, deck, deckName, loadCatalog, onSa
   const deckGroup = el('div', 'settings__group');
   const label = el('label', 'settings__label', 'Mazo del rival ');
   label.htmlFor = `${id}-code`;
-  label.appendChild(el('span', 'settings__muted', '· código de Piltover Archive'));
+  label.appendChild(el('span', 'settings__muted', '· código o lista de texto de Piltover Archive'));
   const row = el('div', 'settings__row');
-  const input = el('input', 'settings__code');
+  const input = el('textarea', 'settings__code');
   input.id = `${id}-code`;
-  input.type = 'text';
+  input.rows = 3;
   input.autocomplete = 'off';
   input.spellcheck = false;
-  input.placeholder = `Hoy: ${deckName}`;
+  input.placeholder = `Hoy: ${deckName}. Pegá el código o la lista (Export → Text). Ctrl+Enter lee.`;
   input.setAttribute('aria-describedby', `${id}-preview`);
-  const read = button('Leer código', 'read', 'btn btn--ghost settings__read');
+  const read = button('Leer mazo', 'read', 'btn btn--ghost settings__read');
   row.append(input, read);
   const preview = el('div', 'settings__preview');
   preview.id = `${id}-preview`;
@@ -104,7 +105,7 @@ export function openSettings(host, { maxLevel, deck, deckName, loadCatalog, onSa
     box.appendChild(el('strong', null, reason));
     if (missing.length) {
       const list = el('ul');
-      for (const item of missing) list.appendChild(el('li', null, `${item.code} ×${item.qty}: ${item.reason}`));
+      for (const item of missing) list.appendChild(el('li', null, `${item.label}${item.qty ? ` ×${item.qty}` : ''}: ${item.reason}`));
       box.appendChild(list);
       box.appendChild(el('span', 'settings__muted', 'Un mazo al que le faltan cartas entrena una mano que no existe.'));
     }
@@ -132,8 +133,8 @@ export function openSettings(host, { maxLevel, deck, deckName, loadCatalog, onSa
   async function readCode() {
     if (read.disabled) return;
     const run = ++readSeq;
-    const decoded = decodeDeckCode(input.value);
-    if (!decoded.ok) { showError(decoded.reason); return; }
+    const prepared = prepareDeckInput(input.value);
+    if (!prepared.ok) { showError(prepared.reason); return; }
     read.disabled = true;
     preview.replaceChildren(el('span', 'settings__muted', 'Leyendo el catálogo…'));
     try {
@@ -141,7 +142,7 @@ export function openSettings(host, { maxLevel, deck, deckName, loadCatalog, onSa
       const cards = await catalog;
       // Mientras bajaba el catalogo se edito el codigo, se leyo otro o se cerro: este resultado ya no vale.
       if (run !== readSeq) return;
-      const resolved = resolveDeckCode(decoded, cards);
+      const resolved = importDeck(prepared, cards);
       if (resolved.ok) showDeck(resolved); else showError(resolved.reason, resolved.missing);
     } catch {
       catalog = null;          // un fallo de red no queda cacheado: se puede reintentar
@@ -169,8 +170,9 @@ export function openSettings(host, { maxLevel, deck, deckName, loadCatalog, onSa
     restart.hidden = true;
     paintSave();
   });
+  // En una lista Enter es un salto de linea: leer es Ctrl/Cmd+Enter (o el boton).
   input.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') { event.preventDefault(); readCode(); }
+    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); readCode(); }
   });
   read.addEventListener('click', readCode);
   close.addEventListener('click', finish);
