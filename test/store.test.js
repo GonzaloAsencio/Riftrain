@@ -229,7 +229,7 @@ const imported = { deck: { id: 'code-otro', name: 'Otro', domains: ['order'], le
 
 test('AC-CFG-12: sin ajustes guardados, el máximo es 12 y el mazo es el de siempre', () => {
   database.clear();
-  assert.deepEqual(loadSettings(), { ok: true, settings: { maxLevel: 12, deck: null } });
+  assert.deepEqual(loadSettings(), { ok: true, settings: { startLevel: 1, maxLevel: 12, deck: null } });
 });
 
 test('AC-CFG-12: los ajustes se guardan y vuelven, sin tocar el progreso ni lo legacy', () => {
@@ -237,11 +237,11 @@ test('AC-CFG-12: los ajustes se guardan y vuelven, sin tocar el progreso ni lo l
   assert.equal(save({ legacy: { streak: 3 } }), true);
   assert.equal(saveRecallSnapshot(name(begin(), 'a')).ok, true);
   assert.equal(saveSettings({ maxLevel: 8, deck: null }).ok, true);
-  assert.deepEqual(loadSettings().settings, { maxLevel: 8, deck: null });
+  assert.deepEqual(loadSettings().settings, { startLevel: 1, maxLevel: 8, deck: null });
   assert.deepEqual(load({}).legacy, { streak: 3 });
   assert.equal(loadRecallSnapshot(deck, index).ok, true, 'el progreso sigue');
   assert.equal(saveSettings({ maxLevel: 8, deck: imported }).ok, true);
-  assert.deepEqual(loadSettings().settings, { maxLevel: 8, deck: imported });
+  assert.deepEqual(loadSettings().settings, { startLevel: 1, maxLevel: 8, deck: imported });
 });
 
 test('AC-CFG-12: ajustes inválidos no se guardan, y los guardados rotos vuelven a los de siempre con aviso', () => {
@@ -254,7 +254,7 @@ test('AC-CFG-12: ajustes inválidos no se guardan, y los guardados rotos vuelven
   const loaded = loadSettings();
   assert.equal(loaded.ok, false);
   assert.ok(loaded.reason);
-  assert.deepEqual(loaded.settings, { maxLevel: 12, deck: null });
+  assert.deepEqual(loaded.settings, { startLevel: 1, maxLevel: 12, deck: null });
 });
 
 test('AC-CFG-13: guardar un mazo distinto empieza de nuevo; el mismo mazo conserva el progreso', () => {
@@ -300,6 +300,49 @@ test('AC-CFG-13: el mismo mazo con las claves en otro orden conserva el progreso
     domains: d.domains, name: d.name, id: d.id } };
   assert.equal(saveSettings({ deck: reordered, maxLevel: 7 }).ok, true);
   assert.ok(load({}).recall, 'es el mismo mazo: el progreso queda');
+});
+
+// ---- Desde qué nivel se empieza (AC-CFG-24..26)
+test('AC-CFG-24: el nivel de inicio se guarda y vuelve; los ajustes viejos sin él empiezan en 1', () => {
+  database.clear();
+  assert.equal(saveSettings({ startLevel: 5, maxLevel: 9, deck: null }).ok, true);
+  assert.deepEqual(loadSettings().settings, { startLevel: 5, maxLevel: 9, deck: null });
+  database.set('riftrain.v1', JSON.stringify({ settings: { maxLevel: 7, deck: null } }));
+  assert.deepEqual(loadSettings(), { ok: true, settings: { startLevel: 1, maxLevel: 7, deck: null } });
+  for (const bad of [{ startLevel: 0, maxLevel: 5, deck: null }, { startLevel: 6, maxLevel: 5, deck: null }, { startLevel: '2', maxLevel: 5, deck: null }]) {
+    assert.equal(saveSettings(bad).ok, false, JSON.stringify(bad));
+  }
+});
+
+test('AC-CFG-25: cambiar el nivel de inicio empieza de nuevo; cambiar sólo el máximo conserva el progreso', () => {
+  database.clear();
+  assert.equal(saveSettings({ startLevel: 1, maxLevel: 12, deck: null }).ok, true);
+  assert.equal(saveRecallSnapshot(name(begin(), 'a')).ok, true);
+  assert.equal(saveSettings({ startLevel: 1, maxLevel: 6, deck: null }).ok, true);
+  assert.ok(load({}).recall, 'sólo el máximo: el progreso queda');
+  assert.equal(saveSettings({ startLevel: 3, maxLevel: 6, deck: null }).ok, true);
+  assert.equal(load({}).recall, undefined, 'otro inicio: se empieza de nuevo');
+});
+
+test('AC-CFG-26: un recorrido que empezó en el nivel 2 se restaura con su historial desde el 2', () => {
+  database.clear();
+  const at = (level) => createRecallScenario(deck, index, 13, level).scenario;
+  let state = startRecall(at(2), index).state;
+  for (const id of state.payable) state = name(state, id);
+  if (state.status === 'empty') state = reduceRecall(state, { type: 'skip' }, index).state;
+  state = advanceRecall(state, at(3), index).state;
+  assert.deepEqual(state.history.map((h) => h.level), [2]);
+  assert.equal(saveRecallSnapshot(state).ok, true);
+  const restored = loadRecallSnapshot(deck, index, { startLevel: 2 });
+  assert.equal(restored.ok, true, restored.reason);
+  assert.equal(restored.state.scenario.level, 3);
+  assert.deepEqual(restored.state.history.map((h) => h.level), [2]);
+  // Con el inicio configurado en 1, ese mismo guardado es un historial al que le falta el nivel 1.
+  assert.equal(loadRecallSnapshot(deck, index).ok, false);
+  // Un hueco en el historial (2 y después 4 para un nivel 5) no es un recorrido válido.
+  const saved = load({}).recall;
+  database.set('riftrain.v1', JSON.stringify({ recall: { ...saved, level: 5, history: [saved.history[0], { ...saved.history[0], level: 4 }] } }));
+  assert.equal(loadRecallSnapshot(deck, index, { startLevel: 2 }).ok, false);
 });
 
 test('AC-CMB-22: fallo de lectura usa copia en memoria sin perder último guardado', () => {
