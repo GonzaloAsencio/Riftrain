@@ -245,7 +245,10 @@ button { font: inherit; color: inherit; }
 .recall__message:focus { outline: none; }   /* recibe el foco por codigo, no es un control */
 /* Siempre renderizado (region live), pero vacio no ocupa lugar: sin display:none, que la sacaria del arbol. */
 .recall__notice:empty { position: absolute; width: 1px; height: 1px; margin: 0; padding: 0; overflow: hidden; clip-path: inset(50%); }
-.recall__controls { display: flex; margin-top: 12px; }
+.recall__controls { display: flex; gap: 8px; margin-top: 12px; }
+/* Los botones del dock no se encogen hasta partir su texto. */
+.recall__controls .btn { white-space: nowrap; }
+.btn--icon { flex: 0 0 44px; width: 44px; padding: 0; display: inline-grid; place-items: center; }
 .recall__controls button[hidden] { display: none; }
 .recall-composer { min-width: 0; }
 .recall-composer__input {

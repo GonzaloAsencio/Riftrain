@@ -95,7 +95,12 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
   const finish = button('Terminé', 'finish', true);
   const repeat = button('Repetir nivel', 'repeat');
   const next = button('Siguiente nivel', 'next');
-  const restart = button('Empezar de nuevo', 'restart', true);
+  // Empezar de nuevo: un icono de reinicio (como el engranaje), con su nombre para el lector.
+  const restart = button('', 'restart', true);
+  restart.classList.add('btn--icon');
+  restart.setAttribute('aria-label', 'Empezar de nuevo');
+  restart.title = 'Empezar de nuevo';
+  restart.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>';
   controls.append(skip, finish, repeat, restart, next);
   // Tres zonas: banda, mano, dock. El dock junta lo que se contesta y lo que avisa.
   const info = node('div', 'recall__info');
