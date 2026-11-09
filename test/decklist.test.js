@@ -148,7 +148,7 @@ test('AC-DCK-10: los dominios del mazo salen de los costos, no de una lista apar
   assert.deepEqual([...r.deck.domains].sort(), ['chaos', 'fury']);
 });
 
-test('AC-DCK-11: el resultado entra tal cual en el motor de escenarios', () => {
+test('AC-DCK-11: el resultado entra tal cual en el motor (contrato de normalizeDeck)', () => {
   const r = parseDecklist('3 Chispa | 1\n2 Descarga | 2 + 1 fury');
   // El contrato que exige el motor (normalizeDeck): deck.cards con { cardId, qty }.
   for (const entry of r.deck.cards) {
