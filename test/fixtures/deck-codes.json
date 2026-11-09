@@ -1,6 +1,6 @@
 {
  "_source": "@piltoverarchive/riftbound-deck-codes 1.5.0 (Apache-2.0), corrida fuera del repo como oráculo",
- "_generated": "2026-11-09T19:33:00.529Z",
+ "_generated": "2026-11-09T19:37:25.979Z",
  "_note": "Generado una vez con la librería de referencia: cada código con su decodificación esperada. No editar a mano.",
  "cases": [
   {
@@ -434,7 +434,7 @@
   {
    "name": "especial-sp",
    "note": "Carta SP: obliga a la versión 5 con bit de prefijo",
-   "code": "CUAQGDABAECQAAIFAMBAGAAAAC4QCAGDAEAMYAIBAUAAAXYBAEBAKAAATMAQEAYAAECQAADR",
+   "code": "CUAQGDABAECQAAIFAMBAGAAAAC4QCAGDAEAMYAIBAUAAAXYBAEBQKAAAOEAJWAICAMAACBIAABYQ",
    "format": 1,
    "version": 5,
    "expected": {
@@ -458,6 +458,10 @@
      {
       "cardCode": "VEN-095",
       "count": 3
+     },
+     {
+      "cardCode": "VEN-113",
+      "count": 1
      },
      {
       "cardCode": "VEN-155",
@@ -511,7 +515,7 @@
   {
    "name": "leyendas-adicionales",
    "note": "Versión 6: leyendas además de la inicial, en orden",
-   "code": "CYAAGDABAEAABVQBAMBAGAAAXEA4GAOMAEBAKAC7NAAQCAIFACNQCAABAUAHCAQAAD6QCAAA7MAQ",
+   "code": "CYAAGDABAEAABVQBAMBAGAAAXEA4GAOMAEBAKAC7NAAQCAQFABYZWAIAAECQA4ICAAAP2AIAAD5QC",
    "format": 1,
    "version": 6,
    "expected": {
@@ -539,6 +543,10 @@
      {
       "cardCode": "VEN-104",
       "count": 3
+     },
+     {
+      "cardCode": "VEN-113",
+      "count": 1
      },
      {
       "cardCode": "VEN-155",

@@ -138,3 +138,37 @@ test('AC-CFG-09: el mazo resuelto entra en el motor (normalizeDeck) y sus runas 
   assert.equal(bad.ok, false);
   assert.match(bad.reason, /12/);
 });
+
+// ---- Bordes que encontró la revisión (contra la referencia, 300k entradas al azar)
+const decodedOf = (main, champion = null) => ({ ok: true, version: 3, main, sideboard: [], champion, legends: null });
+const runas12 = [{ code: 'OGN-007', count: 12 }];
+
+test('AC-CFG-03: una cantidad 0 o un carácter no ASCII no pasan como válidos', () => {
+  // v5 disperso: 1 cantidad distinta, cantidad 0, 1 grupo de 1 carta OGN-010.
+  assert.equal(decodeDeckCode(encode([0x15, 0, 1, 0, 1, 1, 0, 0, 10, 0, 0])).ok, false);
+  const { code } = fixture('variantes');
+  assert.equal(decodeDeckCode(`${code.slice(0, 10)}ß${code.slice(10)}`).ok, false);
+});
+
+test('AC-CFG-08: una runa sin dominio en el catálogo es un motivo, no un dominio "undefined"', () => {
+  const catalog = CATALOG.map((c) => (c.id === 'calm-rune' ? { ...c, domain: null } : c));
+  const result = resolveDeckCode(decodedOf([{ code: 'OGN-007', count: 6 }, { code: 'OGN-042', count: 6 }, { code: 'OGN-185', count: 3 }, { code: 'VEN-155', count: 1 }]), catalog);
+  assert.equal(result.ok, false);
+  assert.match(result.reason, /dominio/);
+});
+
+test('AC-CFG-06: dos leyendas en el mazo principal son ambiguas y se rechazan; las de v6 no se entrenan', () => {
+  const dos = resolveDeckCode(decodedOf([...runas12, { code: 'VEN-155', count: 1 }, { code: 'OGN-253', count: 1 }, { code: 'OGN-185', count: 3 }]), CATALOG);
+  assert.equal(dos.ok, false);
+  assert.match(dos.reason, /leyenda/i);
+  const v6 = resolveDeckCode(decodeDeckCode(fixture('leyendas-adicionales').code), CATALOG);
+  assert.equal(v6.ok, true, v6.reason);
+  assert.equal(v6.deck.legend, kk.legend, 'la inicial es la del mazo principal');
+});
+
+test('AC-CFG-06: el campeón tiene que ser una carta del mazo principal que no sea leyenda', () => {
+  const base = [...runas12, { code: 'VEN-155', count: 1 }, { code: 'OGN-185', count: 3 }];
+  assert.match(resolveDeckCode(decodedOf(base, 'OGN-119'), CATALOG).reason, /campe[oó]n/i);
+  assert.match(resolveDeckCode(decodedOf(base, 'VEN-155'), CATALOG).reason, /campe[oó]n/i);
+  assert.equal(resolveDeckCode(decodedOf(base, 'OGN-185'), CATALOG).ok, true);
+});

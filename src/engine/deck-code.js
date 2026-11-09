@@ -78,6 +78,7 @@ function cardNumber(read, flagged) {
 }
 
 function group(read, count, flagged, out) {
+  if (count < 1) throw new Malformed('El código trae una carta con 0 copias');
   const cards = read.varint();
   const set = setOf(read.byte());
   const variant = variantOf(read.byte());
@@ -118,7 +119,8 @@ function cardRef(read, flagged) {
  */
 export function decodeDeckCode(input) {
   if (typeof input !== 'string') return { ok: false, reason: 'El código de mazo tiene que ser texto' };
-  const text = input.replace(/\s+/g, '').replace(/=+$/, '').toUpperCase();
+  // Solo letras ASCII a mayúsculas: toUpperCase() convierte 'ß' en 'SS', que es base32 valido.
+  const text = input.replace(/\s+/g, '').replace(/=+$/, '').replace(/[a-z]/g, (c) => c.toUpperCase());
   if (!text) return { ok: false, reason: 'Pegá un código de mazo para leerlo' };
   try {
     const read = reader(base32(text));
@@ -179,17 +181,30 @@ export function resolveDeckCode(decoded, catalogCards) {
   }
   if (missing.length) return { ok: false, reason: `Faltan ${missing.length} cartas en el catálogo`, missing };
 
-  let legend = null;
+  // La leyenda inicial va en el mazo principal. Las adicionales (v6, decoded.legends) viajan
+  // aparte y NO se entrenan: el rival muestra una sola leyenda en la mesa.
+  const legends = [];
   const runes = {};
   const qty = new Map();
   for (const { code, count } of decoded.main) {
     const card = find(code);
-    if (card.type === 'legend') { legend ??= card; continue; }
-    if (card.type === 'rune') { runes[card.domain] = (runes[card.domain] ?? 0) + count; continue; }
+    if (card.type === 'legend') { if (!legends.includes(card)) legends.push(card); continue; }
+    if (card.type === 'rune') {
+      if (!card.domain) return { ok: false, reason: `La runa ${code} no tiene dominio en el catálogo` };
+      runes[card.domain] = (runes[card.domain] ?? 0) + count;
+      continue;
+    }
     if (card.type === 'battlefield') continue;
     qty.set(card.id, (qty.get(card.id) ?? 0) + count);
   }
-  if (championCard && qty.has(championCard.id)) {
+  if (legends.length > 1) {
+    return { ok: false, reason: `El mazo principal trae ${legends.length} leyendas y no se sabe cuál es la inicial` };
+  }
+  const legend = legends[0] ?? null;
+  if (championCard) {
+    if (championCard.type === 'legend' || !qty.has(championCard.id)) {
+      return { ok: false, reason: `El campeón ${decoded.champion} tiene que ser una carta del mazo principal` };
+    }
     const left = qty.get(championCard.id) - 1;
     if (left > 0) qty.set(championCard.id, left); else qty.delete(championCard.id);
   }
