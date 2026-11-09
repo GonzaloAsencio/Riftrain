@@ -34,7 +34,10 @@ export function reduceRecall(state, event, index) {
   }
   if (event?.type === 'repeat') {
     if (state?.status !== 'review') return { kind: 'invalid', state, reason: 'No hay revisión para continuar' };
-    return { kind: 'repeated', state: { ...state, status: 'active', misses: [] } };
+    const reopened = { ...state, status: 'active', misses: [] };
+    // Si lo unico que fallo fueron falsos positivos, no queda nada por nombrar: cierra completo.
+    if (!reopened.payable.every((id) => reopened.found.includes(id))) return { kind: 'repeated', state: reopened, closed: false };
+    return { kind: 'repeated', state: closeLevel(reopened, 'complete'), closed: true };
   }
   if (event?.type !== 'name') return { kind: 'invalid', state, reason: 'Acción desconocida' };
   if (!['active', 'empty'].includes(state?.status)) return { kind: 'invalid', state, reason: 'El nivel ya está cerrado' };

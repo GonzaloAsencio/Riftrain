@@ -270,3 +270,23 @@ test('AC-CEL-06: TerminÃ© con pagables pendientes sigue siendo rendirse: revisiÃ
   assert.equal(partial.kind, 'review');
   assert.equal(partial.state.status, 'review');
 });
+
+test('AC-CEL-18: Repetir con todas las pagables halladas no deja nada que nombrar: cierra solo', () => {
+  const review = named(named(named(begin(), 'cheap').state, 'huge').state, 'fury2').state;
+  assert.equal(review.status, 'review');
+  const again = reduceRecall(review, { type: 'repeat' }, wallIdx);
+  assert.equal(again.kind, 'repeated');
+  assert.equal(again.closed, true);
+  assert.equal(again.state.status, 'next');
+  assert.equal(again.state.nextLevel, 4);
+  assert.deepEqual(again.state.misses, []);
+  const last = named(named(named(begin(lvl(12)), 'cheap').state, 'huge').state, 'fury2').state;
+  assert.equal(reduceRecall(last, { type: 'repeat' }, wallIdx).state.status, 'complete');
+});
+
+test('AC-CEL-18: Repetir con pagables pendientes reabre el nivel, sin cerrar', () => {
+  const review = reduceRecall(named(begin(), 'cheap').state, { type: 'finish' }, wallIdx).state;
+  const again = reduceRecall(review, { type: 'repeat' }, wallIdx);
+  assert.equal(again.closed, false);
+  assert.equal(again.state.status, 'active');
+});

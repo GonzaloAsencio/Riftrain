@@ -143,9 +143,10 @@ test('AC-ARC-50: todas las pagables más un falso positivo se restauran en revis
   assert.equal(restored.state.status, 'review');
   assert.deepEqual(restored.state.found, ['a', 'b']);
   assert.deepEqual(restored.state.misses, []);
+  // Repetir con todo hallado cierra solo (AC-CEL-18): se restaura cerrado.
   const again = reduceRecall(restored.state, { type: 'repeat' }, index).state;
   assert.equal(saveRecallSnapshot(again).ok, true);
-  assert.equal(loadRecallSnapshot(deck, index).state.status, 'active');
+  assert.equal(loadRecallSnapshot(deck, index).state.status, 'next');
   assert.deepEqual(loadRecallSnapshot(deck, index).state.found, ['a', 'b']);
   assert.deepEqual(load({}).legacy, { streak: 9 });
 });
