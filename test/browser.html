@@ -997,6 +997,14 @@ liveDialog?.querySelector('[data-action="save"]')?.click();
 await liveFrame.contentWindow.__riftrainReady;
 check('AC-CFG-17: en la app real, guardar el máximo 5 actualiza la banda a "de 5"',
   liveDoc.querySelector('#recall-root .table__max')?.textContent === 'de 5' && !liveDoc.querySelector('dialog.settings'));
+liveDoc.querySelector('#recall-root .table__head button[aria-label="Configuración"]')?.click();
+liveDoc.querySelector('dialog.settings [data-start="4"]')?.click();
+liveDoc.querySelector('dialog.settings [data-action="save"]')?.click();
+await liveFrame.contentWindow.__riftrainReady;
+check('AC-CFG-27: en la app real, guardar desde 4 arranca la partida en el nivel 4 (con 4 runas abiertas)',
+  liveDoc.querySelector('#recall-root .table__level')?.textContent === 'Nivel 4' &&
+  liveDoc.querySelector('#recall-root .table__max')?.textContent === 'de 5' &&
+  liveDoc.querySelectorAll('#recall-root .rune:not(.rune--spent)').length === 4);
 check('AC-CMB-21: la app completa no desborda el documento a 320px',
   liveDoc.documentElement.scrollWidth <= liveDoc.documentElement.clientWidth + 1,
   `${liveDoc.documentElement.scrollWidth} / ${liveDoc.documentElement.clientWidth}`);
@@ -1263,8 +1271,8 @@ deskFrame.remove();
     newSeed: () => seeds.shift() });
   press(type(maxMount, 'costo uno'), 'Enter');
   maxMount.querySelector('[data-action="restart"]').click();
-  check('AC-CFG-23: Empezar de nuevo arranca el nivel 1 con otra mesa, el mismo máximo y el foco en el input',
-    seeds.length === 0 && maxMount.querySelector('.table__level').textContent === 'Nivel 1' &&
+  check('AC-CFG-23 + AC-CFG-27: Empezar de nuevo vuelve al nivel de inicio (3) con otra mesa, el mismo máximo y el foco en el input',
+    seeds.length === 0 && maxMount.querySelector('.table__level').textContent === 'Nivel 3' &&
     maxMount.querySelector('.table__max').textContent === 'de 3' && maxMount.querySelectorAll('.fan__card[data-state="found"]').length === 0 &&
     document.activeElement === maxMount.querySelector('input[role="combobox"]'));
   again.destroy(); maxMount.remove();
@@ -1319,6 +1327,22 @@ deskFrame.remove();
     [...dlg().querySelectorAll('[data-level]')].every((b) => b.getBoundingClientRect().height >= 44));
   act('save').click();
   check('AC-CFG-17: Guardar entrega el máximo elegido sin tocar el mazo y cierra', saved?.maxLevel === 8 && saved.deck === null && !dlg());
+
+  // Desde y hasta enlazados (AC-CFG-27).
+  saved = null;
+  open({ maxLevel: 3 });
+  const start = (n) => dlg().querySelector(`[data-start="${n}"]`);
+  start(5).click();
+  check('AC-CFG-27: elegir desde 5 con hasta 3 sube el hasta a 5; las de antes del inicio quedan fuera del recorrido',
+    start(5).getAttribute('aria-pressed') === 'true' && level(5).getAttribute('aria-pressed') === 'true' &&
+    level(4).classList.contains('settings__level--out') && !level(5).classList.contains('settings__level--out') &&
+    /Empezás en el nivel 5/.test(dlg().querySelector('.settings__hint').textContent) &&
+    [...dlg().querySelectorAll('[data-start]')].every((b) => b.getBoundingClientRect().height >= 44));
+  level(2).click();
+  check('AC-CFG-27: bajar el hasta a 2 baja el desde a 2', start(2).getAttribute('aria-pressed') === 'true');
+  start(2).click(); level(7).click();
+  act('save').click();
+  check('AC-CFG-27: Guardar entrega desde y hasta', saved?.startLevel === 2 && saved.maxLevel === 7 && saved.deck === null);
 
   saved = null;
   open();

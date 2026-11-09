@@ -29,6 +29,7 @@ async function start() {
   const loaded = store.loadSettings();
   if (!loaded.ok) warn(loaded.reason);
   const { deck: imported } = loaded.settings;
+  const { startLevel } = loaded.settings;
   let { maxLevel } = loaded.settings;
   let deck = imported?.deck;
   let cards = imported?.cards;
@@ -47,18 +48,18 @@ async function start() {
   const seed = crypto.getRandomValues(new Uint32Array(1))[0];
   controller?.destroy();
   controller = mountRecall(root, {
-    deck, cards, seed, maxLevel, storage: store,
+    deck, cards, seed, maxLevel, initialLevel: startLevel, storage: store,
     // Seguir despues del maximo lo sube: se guarda sin remontar (la partida sigue en pantalla).
     onMaxLevelChange: (next) => {
       maxLevel = next;
-      const saved = store.saveSettings({ maxLevel: next, deck: imported ?? null });
+      const saved = store.saveSettings({ startLevel, maxLevel: next, deck: imported ?? null });
       if (!saved.ok) warn(`No se pudo guardar el nivel máximo: ${saved.reason}`);
     },
     onOpenSettings: (gear) => openSettings(document.body, {
-      maxLevel, deck: imported ?? null, deckName: deck.name, loadCatalog,
+      startLevel, maxLevel, deck: imported ?? null, deckName: deck.name, loadCatalog,
       onSave: (value) => {
         // Sin cambios no se remonta: la mano en juego sigue.
-        if (value.maxLevel === maxLevel && value.deck === (imported ?? null)) return true;
+        if (value.startLevel === startLevel && value.maxLevel === maxLevel && value.deck === (imported ?? null)) return true;
         const saved = store.saveSettings(value);
         if (!saved.ok) { warn(`No se pudo guardar la configuración: ${saved.reason}`); return false; }
         // Remontar con los ajustes nuevos; el foco vuelve al engranaje de la pantalla nueva.

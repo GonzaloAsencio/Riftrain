@@ -28,8 +28,9 @@ let sequence = 0;
  * @param {{maxLevel: number, deck: object|null, deckName: string, loadCatalog: () => Promise<object[]>,
  *          onSave: (settings: {maxLevel: number, deck: object|null}) => void, onClose?: () => void}} options
  */
-export function openSettings(host, { maxLevel, deck, deckName, loadCatalog, onSave, onClose = () => {} }) {
+export function openSettings(host, { startLevel = 1, maxLevel, deck, deckName, loadCatalog, onSave, onClose = () => {} }) {
   const id = `settings-${++sequence}`;
+  let start = startLevel;
   let level = maxLevel;
   let pending = null;          // mazo leido y resuelto, todavia sin guardar
   let catalog = null;          // promesa: el catalogo se pide una sola vez por apertura
@@ -45,18 +46,28 @@ export function openSettings(host, { maxLevel, deck, deckName, loadCatalog, onSa
   close.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
   head.append(title, close);
 
-  const levels = el('fieldset', 'settings__group');
-  levels.appendChild(el('legend', 'settings__label', 'Hasta qué nivel se juega'));
-  const grid = el('div', 'settings__levels');
-  const pills = Array.from({ length: 12 }, (_, i) => {
-    const pill = button(String(i + 1), 'level', 'settings__level');
-    pill.dataset.level = String(i + 1);
-    pill.addEventListener('click', () => { level = i + 1; paintLevels(); });
-    return pill;
-  });
-  grid.append(...pills);
+  // Desde y hasta: dos filas enlazadas. Nunca queda un rango imposible: si el inicio pasa al
+  // maximo, el maximo lo acompaña, y al reves.
+  const levels = el('div', 'settings__group');
+  const row12 = (legend, key, pick) => {
+    const set = el('fieldset', 'settings__range');
+    set.appendChild(el('legend', 'settings__label', legend));
+    const grid = el('div', 'settings__levels');
+    const list = Array.from({ length: 12 }, (_, i) => {
+      const pill = button(String(i + 1), key, 'settings__level');
+      pill.dataset[key] = String(i + 1);
+      pill.addEventListener('click', () => { pick(i + 1); paintLevels(); });
+      return pill;
+    });
+    grid.append(...list);
+    set.appendChild(grid);
+    levels.appendChild(set);
+    return list;
+  };
+  const startPills = row12('Desde qué nivel', 'start', (n) => { start = n; if (level < n) level = n; });
+  const pills = row12('Hasta qué nivel se juega', 'level', (n) => { level = n; if (start > n) start = n; });
   const levelHint = el('p', 'settings__hint');
-  levels.append(grid, levelHint);
+  levels.appendChild(levelHint);
 
   const deckGroup = el('div', 'settings__group');
   const label = el('label', 'settings__label', 'Mazo del rival ');
@@ -76,7 +87,7 @@ export function openSettings(host, { maxLevel, deck, deckName, loadCatalog, onSa
   preview.id = `${id}-preview`;
   preview.setAttribute('role', 'status');
   preview.setAttribute('aria-live', 'polite');
-  const restart = el('p', 'settings__restart', 'Cambiar de mazo empieza el recorrido de nuevo desde el nivel 1.');
+  const restart = el('p', 'settings__restart', 'Cambiar de mazo empieza el recorrido de nuevo desde el nivel de inicio.');
   restart.hidden = true;
   deckGroup.append(label, row, preview, restart);
 
@@ -87,11 +98,19 @@ export function openSettings(host, { maxLevel, deck, deckName, loadCatalog, onSa
   dialog.append(head, levels, deckGroup, foot);
 
   function paintLevels() {
+    // Fuera del recorrido: en "hasta", lo que queda antes del inicio o despues del maximo;
+    // en "desde", lo que queda despues del maximo.
     pills.forEach((pill, i) => {
       pill.setAttribute('aria-pressed', String(i + 1 === level));
+      pill.classList.toggle('settings__level--out', i + 1 > level || i + 1 < start);
+    });
+    startPills.forEach((pill, i) => {
+      pill.setAttribute('aria-pressed', String(i + 1 === start));
       pill.classList.toggle('settings__level--out', i + 1 > level);
     });
-    levelHint.textContent = `El recorrido termina al completar el nivel ${level}. Cada nivel es una runa abierta más en la mesa del rival.`;
+    levelHint.textContent = start === 1
+      ? `El recorrido termina al completar el nivel ${level}. Cada nivel es una runa abierta más en la mesa del rival.`
+      : `Empezás en el nivel ${start} y el recorrido termina al completar el ${level}. Cada nivel es una runa abierta más en la mesa del rival.`;
   }
 
   /** Guardar se puede si no hay codigo a medio leer: o el input esta vacio, o el mazo ya se leyo bien. */
@@ -180,7 +199,7 @@ export function openSettings(host, { maxLevel, deck, deckName, loadCatalog, onSa
   save.addEventListener('click', () => {
     if (save.disabled) return;
     // onSave devuelve false si no pudo guardar: el modal queda abierto con lo elegido.
-    if (onSave({ maxLevel: level, deck: pending ? { deck: pending.deck, cards: pending.cards } : deck }) === false) return;
+    if (onSave({ startLevel: start, maxLevel: level, deck: pending ? { deck: pending.deck, cards: pending.cards } : deck }) === false) return;
     finish();
   });
   // Escape cierra el dialog nativo; esto deja todo como Cancelar.
