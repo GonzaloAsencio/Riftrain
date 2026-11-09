@@ -10,6 +10,7 @@
 const KEY = 'riftrain.v1';
 import { createRecallScenario } from './engine/recall-scenario.js';
 import { startRecall, reduceRecall } from './engine/recall-progress.js';
+import { normalizeDeck } from './engine/deck-combos.js';
 
 let memory = null;          // fallback
 let usingMemory = false;
@@ -104,12 +105,12 @@ export function saveRecallSnapshot(state) {
   return { ok: true, persisted, ...(persisted ? {} : { warning: 'Sólo en memoria: no se garantiza continuidad' }) };
 }
 
-function replay(deck, index, seed, level, identity, runes, found, status) {
+function replay(deck, index, seed, level, identity, runes, found, status, maxLevel = 12) {
   const generated = createRecallScenario(deck, index, seed, level);
   if (!generated.ok || generated.scenario.identity !== identity ||
       JSON.stringify(generated.scenario.runes) !== JSON.stringify(runes)) return problem('Identidad o runas incompatibles');
   if (!Array.isArray(found) || found.some((cardId) => typeof cardId !== 'string')) return problem('Cartas guardadas inválidas');
-  const started = startRecall(generated.scenario, index);
+  const started = startRecall(generated.scenario, index, { maxLevel });
   if (!started.ok) return problem(started.reason);
   let state = started.state;
   for (const cardId of found) {
@@ -136,17 +137,19 @@ function replay(deck, index, seed, level, identity, runes, found, status) {
     // el cierre se recalcula como completo, pero el snapshot dice que quedó en revisión.
     state = status === 'review' ? { ...result.state, status: 'review' } : result.state;
   }
+  // El maximo se bajo despues de guardar: el nivel que quedo "con siguiente" ahora es el ultimo.
+  if (status === 'next' && ['complete', 'omitted'].includes(state.status)) status = state.status;
   if (state.status !== status) return problem('Terminalidad del snapshot incompatible');
   return { ok: true, state };
 }
 
 /** Regenera el escenario y repite cada carta; nunca confía en totales ni en semillas ajenas. */
-function restoreSnapshot(deck, index, saved) {
+function restoreSnapshot(deck, index, saved, maxLevel) {
   if (!saved || saved.schema !== SCHEMA || !Number.isSafeInteger(saved.seed) ||
       !Number.isSafeInteger(saved.level) || !Array.isArray(saved.history) ||
       saved.history.length !== saved.level - 1) return problem('Snapshot ausente o versión incompatible');
   const result = replay(deck, index, saved.seed, saved.level, saved.identity,
-    saved.runes, saved.found, saved.status);
+    saved.runes, saved.found, saved.status, maxLevel);
   if (!result.ok) return result;
   const history = [];
   for (const item of saved.history) {
@@ -163,6 +166,41 @@ function restoreSnapshot(deck, index, saved) {
   return result;
 }
 
-export function loadRecallSnapshot(deck, index) {
-  return restoreSnapshot(deck, index, load({}).recall);
+export function loadRecallSnapshot(deck, index, { maxLevel = 12 } = {}) {
+  return restoreSnapshot(deck, index, load({}).recall, maxLevel);
+}
+
+// ---- Ajustes: hasta que nivel se juega y el mazo importado (con sus cartas, para arrancar
+// sin el catalogo). Viven en la misma raiz que el progreso y lo legacy, sin pisarlos.
+const DEFAULT_SETTINGS = Object.freeze({ maxLevel: 12, deck: null });
+
+function checkSettings(value) {
+  if (!value || typeof value !== 'object') return problem('Ajustes inválidos');
+  const { maxLevel, deck } = value;
+  if (!Number.isSafeInteger(maxLevel) || maxLevel < 1 || maxLevel > 12) return problem('El nivel máximo tiene que ser de 1 a 12');
+  if (deck !== null) {
+    if (!deck || typeof deck !== 'object' || !Array.isArray(deck.cards) || !deck.deck) return problem('Mazo guardado inválido');
+    const normalized = normalizeDeck(deck.deck, deck.cards, { policy: 'positive-energy' });
+    if (!normalized.ok) return problem(`Mazo guardado inválido: ${normalized.reason}`);
+  }
+  return { ok: true, settings: { maxLevel, deck } };
+}
+
+export function loadSettings() {
+  const root = load({});
+  if (!Object.hasOwn(root, 'settings')) return { ok: true, settings: { ...DEFAULT_SETTINGS } };
+  const checked = checkSettings(root.settings);
+  if (checked.ok) return checked;
+  return { ok: false, reason: `No pudimos leer la configuración guardada (${checked.reason}): se usa la de siempre`,
+    settings: { ...DEFAULT_SETTINGS } };
+}
+
+/** Un mazo distinto empieza de nuevo: el progreso del anterior no se aplica a este. */
+export function saveSettings(value) {
+  const checked = checkSettings(value);
+  if (!checked.ok) return checked;
+  const { recall, ...current } = load({});
+  const sameDeck = JSON.stringify(current.settings?.deck ?? null) === JSON.stringify(checked.settings.deck);
+  const persisted = writeRoot({ ...current, ...(sameDeck && recall ? { recall } : {}), settings: checked.settings });
+  return { ok: true, persisted };
 }
