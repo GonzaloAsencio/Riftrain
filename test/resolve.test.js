@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { buildCatalog, resolveDeck } from '../src/engine/catalog.js';
 import { parseDecklist } from '../src/engine/decklist.js';
-import { expandDeck } from '../src/engine/scenario.js';
+import { normalizeDeck } from '../src/engine/deck-combos.js';
 import { canPlayCard } from '../src/engine/cost.js';
 
 /**
@@ -72,12 +72,13 @@ test('AC-BLD-04: lo que no esta en el catalogo se reporta, no se inventa', () =>
   assert.ok(!r.deck.cards.some((e) => e.cardId.includes('no-existe')), 'la que falta NO va al mazo');
 });
 
-test('AC-BLD-05: el mazo resuelto entra en el motor y se puede evaluar pagabilidad', () => {
+test('AC-BLD-05 + AC-SHL-11: el mazo resuelto entra en el motor (normalizeDeck) y se puede evaluar pagabilidad', () => {
   const r = resolveDeck(parseDecklist(LISTA), CATALOGO);
   const porId = new Map(r.cards.map((c) => [c.id, c]));
 
-  const mano = expandDeck(r.deck, porId);
-  assert.equal(mano.length, 7, '3 + 2 + 2');
+  const normalizado = normalizeDeck(r.deck, r.cards);
+  assert.equal(normalizado.ok, true, normalizado.reason);
+  assert.equal(normalizado.index.cards.reduce((n, c) => n + c.qty, 0), 7, '3 + 2 + 2');
 
   // Star-Crossed pide 3 de Energia + 1 de Poder Chaos. Con floating, TRES runas
   // Chaos alcanzan: se agotan las tres y una de esas mismas se recicla.

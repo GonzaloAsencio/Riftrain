@@ -39,18 +39,25 @@ Prioridad absoluta: **velocidad de carga y ejecucion**.
 ### Arquitectura
 
 ```
-src/engine/     modulos PUROS, sin DOM: se testean en Node
-  rng.js          PRNG determinista (mulberry32)
-  runes.js        proyeccion de runas y la ecuacion nucleo
-  cost.js         validacion de pagabilidad con dominios
-  combos.js       combinaciones jugables en un turno
-  scenario.js     generacion determinista desde seed
-  match.js        coincidencia de nombres (autocompletado y evocacion en frio)
-  progression.js  nivel adaptativo, cola de repaso, estadisticas
-src/ui/         DOM. Nunca calcula reglas: se las pide al motor
-  card.js         componente de carta dibujado con CSS
-  hand.js         el abanico y la mecanica de revelado
-src/main.js     el loop
+src/engine/          modulos PUROS, sin DOM: se testean en Node
+  rng.js               PRNG determinista (mulberry32)
+  runes.js             proyeccion de runas y la ecuacion nucleo
+  cost.js              validacion de pagabilidad con dominios
+  deck-combos.js       indice del mazo principal y cartas pagables con una mesa
+  recall-scenario.js   mesa determinista por seed y nivel (1-12)
+  recall-progress.js   reducer de la ronda: nombrar, cerrar, repetir, avanzar
+  match.js             coincidencia de nombres (autocompletado y evocacion en frio)
+  decklist.js          parser de decklists pegadas
+  catalog.js           catalogo oficial y cruce de un mazo contra el
+src/ui/              DOM. Nunca calcula reglas: se las pide al motor
+  recall.js            la pantalla: banda, mano, dock
+  rival-fan.js         la mano del rival en abanico y la mecanica de revelado
+  composer.js          el input para nombrar cartas
+  recall-feedback.js   sello NO ENTRA y avisos
+  celebration.js       el festejo de fin de nivel
+  card.js, rune.js     carta y runa dibujadas
+src/store.js         persistencia (localStorage con fallback en memoria)
+src/main.js          el arranque: una sola pantalla
 ```
 
 **Regla de dependencia: `ui/` puede importar de `engine/`, nunca al reves.** El motor no sabe que
@@ -104,7 +111,7 @@ Estan fijadas por el usuario. **No se infieren las reglas de Riftbound por cuent
 - **El motor primero, siempre.** Si la aritmetica tiene un bug, se entrena mal y no se nota. Toda
   regla nueva se prueba en `src/engine/` sin DOM antes de que la toque una pantalla.
 - **Nada de tests que dependan del reloj real**: la fecha/hora y el azar se inyectan como parametro
-  (`nextSeed(state, rand)`).
+  (`createRecallScenario(deck, index, seed, level)`; el seed lo saca `main.js`, nunca el motor).
 - **Un test que nunca se vio rojo no vale nada.** Al agregar una regla al motor, mutar el fuente y
   confirmar que la suite se pone roja antes de darla por buena.
 - **Los tests de Node no ven la UI.** Un `grayscale` que no se aplica, un abanico que parte la pagina
