@@ -4,8 +4,11 @@
  * Capa fija sobre la ventana: no toca la grilla, no recibe clics y recorta lo que cae (sin scroll).
  */
 const HUES = [45, 280, 200, 340, 140];   // oro, violeta, celeste, rosa, verde
+// Fuegos artificiales: centros de estallido (en % de la pantalla), lejos del cartel y de la mano.
+const BURSTS = [[18, 30], [82, 26], [30, 70], [72, 66], [50, 18]];
+const SPARKS = 12;                       // chispas por estallido, en circulo
 
-export function mountCelebration(root, { reducedMotion = false, pieces = 36 } = {}) {
+export function mountCelebration(root, { reducedMotion = false } = {}) {
   const layer = document.createElement('div');
   layer.className = reducedMotion ? 'celebration celebration--reduced' : 'celebration';
   layer.hidden = true;
@@ -25,15 +28,22 @@ export function mountCelebration(root, { reducedMotion = false, pieces = 36 } = 
     confetti.replaceChildren();
   }
 
-  /** Posicion, color y giro salen del indice: mismo festejo siempre, sin azar ni reloj. */
-  function piece(i) {
+  /**
+   * Una chispa del estallido b: sale del centro y se abre en circulo, a distancias alternadas.
+   * Todo sale del indice: mismo festejo siempre, sin azar ni reloj.
+   */
+  function spark(b, j) {
+    const [x, y] = BURSTS[b];
+    const angle = (2 * Math.PI * j) / SPARKS + b * 0.3;
+    const reach = 70 + (j % 3) * 28;
     const item = document.createElement('span');
     item.className = 'celebration__piece';
-    item.style.setProperty('--x', `${((i * 37) % 100)}%`);
-    item.style.setProperty('--delay', `${(i % 9) * 70}ms`);
-    item.style.setProperty('--hue', String(HUES[i % HUES.length]));
-    item.style.setProperty('--spin', `${(i % 2 ? 1 : -1) * (360 + (i * 53) % 540)}deg`);
-    item.style.setProperty('--drift', `${((i * 29) % 80) - 40}px`);
+    item.style.setProperty('--x', `${x}%`);
+    item.style.setProperty('--y', `${y}%`);
+    item.style.setProperty('--dx', `${Math.round(Math.cos(angle) * reach)}px`);
+    item.style.setProperty('--dy', `${Math.round(Math.sin(angle) * reach)}px`);
+    item.style.setProperty('--delay', `${b * 220}ms`);
+    item.style.setProperty('--hue', String(HUES[b % HUES.length]));
     return item;
   }
 
@@ -44,7 +54,7 @@ export function mountCelebration(root, { reducedMotion = false, pieces = 36 } = 
       banner.hidden = false;
       layer.hidden = false;
       if (reducedMotion) return;
-      const items = Array.from({ length: pieces }, (_, i) => piece(i));
+      const items = BURSTS.flatMap((_, b) => Array.from({ length: SPARKS }, (__, j) => spark(b, j)));
       confetti.append(...items);
       // Cuando cae la ultima, el confetti se va solo. El cartel se desvanece por CSS a los 2.6s;
       // lo que queda fijo es el mensaje de estado de la pantalla.
