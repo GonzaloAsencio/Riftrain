@@ -197,10 +197,10 @@ const wallCards = [
 // ---- LA MANO DEL RIVAL EN ABANICO (AC-FAN): tantos dorsos como cartas pagables, sin identidad.
 const { mountRivalFan, fanAngles } = await import('../src/ui/rival-fan.js');
 const near = (a, b) => Math.abs(a - b) < 0.51;
-check('AC-FAN-03: fanAngles abre un arco simétrico y creciente de min(96, 4.4*N) grados',
+check('AC-FAN-03: fanAngles abre un arco simétrico y creciente de min(110, 6*N) grados',
   [3, 6, 21, 30].every((n) => {
     const angles = fanAngles(n);
-    const spread = Math.min(96, 4.4 * n);
+    const spread = Math.min(110, 6 * n);
     return angles.length === n && near(angles[0], -spread / 2) && near(angles.at(-1), spread / 2) &&
       angles.every((a, i) => i === 0 || a > angles[i - 1]) && near(angles[0], -angles.at(-1));
   }) && fanAngles(1).join() === '0' && fanAngles(0).length === 0, fanAngles(3).join());
@@ -214,6 +214,24 @@ check('AC-FAN-01: la mano tiene exactamente N cartas boca abajo con el dorso rea
   fanSlots().every((slot) => slot.querySelector('.card[data-face="down"] .card__face--back') &&
     getComputedStyle(slot.querySelector('.card__face--back')).backgroundImage.includes('card-back')) &&
   !/desconocid|\d/i.test(fanHost.textContent));
+{
+  const dealHost = document.createElement('div');
+  document.querySelector('#stage main').appendChild(dealHost);
+  const dealt = mountRivalFan(dealHost, { size: 4, deal: true });
+  const dealSlots = [...dealHost.querySelectorAll('.fan__card')];
+  const delays = dealSlots.map((slot) => parseFloat(getComputedStyle(slot).animationDelay));
+  check('AC-DEAL-01: la mano nueva se reparte desde el mazo, una carta por vez',
+    dealSlots.every((slot) => getComputedStyle(slot).animationName === 'fan-deal') &&
+    delays.every((d, i) => i === 0 || d > delays[i - 1]), delays.join());
+  dealt.reveal({ id: 'r1', name: 'Uno', energy: 1, power: {}, domain: 'fury' }, { fresh: true });
+  check('AC-DEAL-02: la carta recién revelada sube en curva mientras se da vuelta',
+    getComputedStyle(dealSlots[0]).animationName === 'fan-arc');
+  dealt.reveal({ id: 'r2', name: 'Dos', energy: 1, power: {}, domain: 'calm' }, { fresh: true });
+  check('AC-DEAL-02: revelar otra carta no vuelve a repartir la anterior (el reparto ya terminó)',
+    getComputedStyle(dealSlots[0]).animationName !== 'fan-deal' && getComputedStyle(dealSlots[1]).animationName === 'fan-arc' &&
+    !dealHost.querySelector('.fan--deal'), getComputedStyle(dealSlots[0]).animationName);
+  dealt.destroy(); dealHost.remove();
+}
 check('AC-FAN-03: cada carta lleva su ángulo de fanAngles en --a',
   fanSlots().map((slot) => parseFloat(slot.style.getPropertyValue('--a'))).every((a, i) => near(a, fanAngles(3)[i])));
 check('AC-FAN-21: la mano es un grupo "Mano del rival"; los dorsos no tienen identidad ni foco',
@@ -517,7 +535,7 @@ const memoryStore = {
 };
 const flowMount = document.createElement('div');
 document.querySelector('#stage main').appendChild(flowMount);
-const mountFlow = () => mountRecall(flowMount, { deck: flowDeck, cards: flowCards, seed: 7, storage: memoryStore, feedbackOptions });
+const mountFlow = () => mountRecall(flowMount, { deck: flowDeck, cards: flowCards, seed: 7, storage: memoryStore, feedbackOptions, transitionMs: 0 });
 // La mano: slots en orden, "estado" o "estado:carta" (los dorsos no tienen carta). Las extras, aparte.
 const fslot = (id) => flowMount.querySelector(`.fan__card[data-card-id="${id}"], .fan__extra[data-card-id="${id}"]`);
 const fstates = () => [...flowMount.querySelectorAll('.fan__card')]
@@ -719,6 +737,12 @@ check('AC-FAN-12: lo pagable completo y cero falsos positivos ofrece avanzar, si
 check('AC-ARC-60: completo, el foco pasa a Siguiente nivel y no hay toast de faltantes',
   document.activeElement === action('next') && toastText() === null);
 action('next').click();
+check('AC-DEAL-03: al tocar Siguiente, las cartas se dan vuelta y vuelven al mazo antes del nivel nuevo',
+  !!flowMount.querySelector('.fan.fan--collect') &&
+  [...flowMount.querySelectorAll('.fan__card .card')].every((c) => c.dataset.face === 'down') &&
+  !flowMount.querySelector('.fan__card[data-glow]') &&
+  action('next').disabled === true && flowMount.textContent.includes('Nivel 3'));
+await flow.idle();
 check('AC-ARC-60: en el nivel nuevo el foco vuelve al input', document.activeElement === flowInput());
 const level4Size = payableCards(flowIndex, scenarioAt(4)).cardIds.length;
 check('AC-FAN-16: avanzar genera el nivel 4 con otra mesa y una mano nueva de tantos dorsos como pagables',
@@ -981,6 +1005,7 @@ const liveRect = (selector) => liveDoc.querySelector(selector).getBoundingClient
 check('AC-ARC-55: a 320 todo va en una columna: banda, muro y dock uno debajo del otro, sin grilla de escritorio',
   getComputedStyle(liveDoc.querySelector('.recall')).display !== 'grid' &&
   liveRect('.recall-band').bottom <= liveRect('.fan-wrap').top + 1 && liveRect('.fan-wrap').bottom <= liveRect('.recall-dock').top + 1);
+liveDoc.getAnimations().forEach((animation) => animation.finish());   // el reparto ya terminó: se mide la mano quieta
 check('AC-FAN-19: a 320 todas las cartas de la mano quedan dentro del ancho y dentro de su área',
   [...liveDoc.querySelectorAll('#recall-root .fan__card')].every((slot) => { const box = slot.getBoundingClientRect(); const zone = liveRect('.fan-zone');
     return box.left >= -1 && box.right <= liveDoc.documentElement.clientWidth + 1 && box.top >= zone.top - 1 && box.bottom <= zone.bottom + 1; }));
@@ -1156,7 +1181,7 @@ deskFrame.remove();
   const celLevel = [1, 2, 3, 4, 5, 6].find((level) =>
     payableCards(celIndex, createRecallScenario(celDeck, celIndex, 7, level).scenario).cardIds.length === 2);
   const cel = (options = {}) => mountRecall(celMount, { deck: celDeck, cards: flowCards, seed: 7, initialLevel: celLevel,
-    storage: stub, ...options });
+    storage: stub, transitionMs: 0, ...options });
   const banner = () => celMount.querySelector('.celebration__banner:not([hidden])');
   const pieces = () => celMount.querySelectorAll('.celebration__piece');
   const act = (name) => celMount.querySelector(`[data-action="${name}"]`);
@@ -1192,6 +1217,7 @@ deskFrame.remove();
     sparks.some((sp) => sp.dx > 0) && sparks.some((sp) => sp.dx < 0) && sparks.some((sp) => sp.dy > 0) && sparks.some((sp) => sp.dy < 0),
     `${origins.size} orígenes, anim ${sparks[0]?.anim}`);
   act('next').click();
+  await run.idle();
   check('AC-CEL-16: Siguiente nivel retira cartel y confetti y arranca con todos los dorsos',
     !banner() && pieces().length === 0 && [...celMount.querySelectorAll('.fan__card')].every((slot) => slot.dataset.state === 'down'));
   run.destroy();
@@ -1292,9 +1318,10 @@ deskFrame.remove();
   // Siguiente después del máximo: lo sube en uno, lo avisa para guardarlo y sigue jugando.
   const raised = [];
   const cont = mountRecall(maxMount, { deck: terminalDeck, cards: [terminalCard], seed: 17, initialLevel: 3, maxLevel: 3, storage: stub,
-    onMaxLevelChange: (m) => raised.push(m) });
+    onMaxLevelChange: (m) => raised.push(m), transitionMs: 0 });
   press(type(maxMount, 'costo uno'), 'Enter');
   maxMount.querySelector('[data-action="next"]').click();
+  await cont.idle();
   check('AC-CFG-22: Siguiente nivel después del máximo sube el máximo a 4, lo guarda y arranca el nivel 4',
     raised.join() === '4' && maxMount.querySelector('.table__level').textContent === 'Nivel 4' &&
     maxMount.querySelector('.table__max').textContent === 'de 4' && maxMount.querySelector('[data-action="finish"]').hidden === false);
@@ -1303,7 +1330,7 @@ deskFrame.remove();
   // Empezar de nuevo: otra mesa desde el nivel 1, mismo máximo, el foco en el input.
   const seeds = [99];
   const again = mountRecall(maxMount, { deck: terminalDeck, cards: [terminalCard], seed: 17, initialLevel: 3, maxLevel: 3, storage: stub,
-    newSeed: () => seeds.shift() });
+    newSeed: () => seeds.shift(), transitionMs: 0 });
   press(type(maxMount, 'costo uno'), 'Enter');
   const restartBtn = maxMount.querySelector('[data-action="restart"]');
   const rb = restartBtn.getBoundingClientRect();
@@ -1314,6 +1341,7 @@ deskFrame.remove();
     nextBtn.getBoundingClientRect().height <= 52 && getComputedStyle(nextBtn).whiteSpace === 'nowrap',
     `${Math.round(rb.width)}x${Math.round(rb.height)} next ${Math.round(nextBtn.getBoundingClientRect().height)}`);
   restartBtn.click();
+  await again.idle();
   check('AC-CFG-23 + AC-CFG-27: Empezar de nuevo vuelve al nivel de inicio (3) con otra mesa, el mismo máximo y el foco en el input',
     seeds.length === 0 && maxMount.querySelector('.table__level').textContent === 'Nivel 3' &&
     maxMount.querySelector('.table__max').textContent === 'de 3' && maxMount.querySelectorAll('.fan__card[data-state="found"]').length === 0 &&

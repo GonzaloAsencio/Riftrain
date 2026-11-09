@@ -342,18 +342,39 @@ button { font: inherit; color: inherit; }
    y el tamaño maximo de carta. Arco, extras y motivo son tres zonas que no se pisan. */
 @property --lift { syntax: '<length>'; inherits: false; initial-value: 0px; }
 .fan-wrap { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); }
-.fan-zone { position: relative; min-width: 0; height: clamp(250px, 46vw, 470px); container-type: size; }
+/* overflow-x: clip: una carta en vuelo (del mazo o al mazo) no puede ensanchar la página. */
+.fan-zone { position: relative; min-width: 0; height: clamp(250px, 46vw, 470px); container-type: size; overflow-x: clip; }
 .fan { position: absolute; inset: 0; isolation: isolate; }   /* los z-index del arco no salen de aca */
 .fan__card {
   --w: clamp(40px, min(34cqh, 15.5cqw), 150px);
   position: absolute; left: 50%; bottom: calc(var(--w) * 1.08);
   width: var(--w); margin-left: calc(var(--w) / -2);
-  transform-origin: 50% 260%;
+  transform-origin: 50% 200%;   /* el centro del giro mas cerca: el abanico se curva mas */
   transform: rotate(calc(var(--a) * var(--k, 1))) translateY(var(--lift));
   z-index: var(--z);
   transition: transform var(--flip) var(--ease), --lift var(--flip) var(--ease);
 }
 .fan__card .card { box-shadow: -3px 4px 10px rgba(0,0,0,.55); transition: transform var(--flip) var(--ease), translate var(--flip) var(--ease); }
+/* Reparto: cada dorso llega desde el mazo (arriba a la derecha), de a uno. `backwards`: antes de
+   arrancar ya esta en el mazo, y al terminar manda el transform normal (el revelado sigue andando). */
+.fan--deal .fan__card { animation: fan-deal 560ms var(--ease) backwards; animation-delay: calc(var(--i, 0) * 110ms); }
+@keyframes fan-deal {
+  from { transform: translate(42cqw, -46cqh) rotate(32deg) scale(.8); opacity: 0; }
+  20% { opacity: 1; }
+  to { transform: rotate(calc(var(--a) * var(--k, 1))) translateY(var(--lift)) scale(1); opacity: 1; }
+}
+/* Revelado en curva: la carta recien dada vuelta sube en arco y vuelve a su lugar. */
+.fan__card[data-fresh] { animation: fan-arc 620ms var(--ease); }
+@keyframes fan-arc {
+  0% { transform: rotate(calc(var(--a) * var(--k, 1))) translateY(0) scale(1); }
+  45% { transform: rotate(calc(var(--a) * var(--k, 1) * .5)) translateY(calc(var(--w) * -.75)) scale(1.12); }
+  100% { transform: rotate(calc(var(--a) * var(--k, 1))) translateY(var(--lift)) scale(1); }
+}
+/* Fin del nivel: se dan vuelta (el giro de la carta) y despues vuelven al mazo, de a una. */
+.fan--collect .fan__card { animation: fan-collect 480ms ease-in forwards; animation-delay: calc(280ms + var(--i, 0) * 60ms); }
+@keyframes fan-collect {
+  to { transform: translate(42cqw, -46cqh) rotate(32deg) scale(.8); opacity: 0; }
+}
 /* Lo que se da vuelta sube y pasa al frente: tapado por sus vecinas no se leeria. */
 .fan__card[data-state="found"], .fan__card[data-state="missed"] { --lift: calc(var(--w) * -.3); z-index: calc(var(--z) + 100); }
 .fan__card[data-glow] .card { box-shadow: 0 0 0 2px var(--glow), 0 0 22px 3px var(--glow); }
@@ -503,7 +524,7 @@ button { font: inherit; color: inherit; }
 
 /* ---------- MOTION ---------- */
 /* La clase la pone recall.js con la misma preferencia: cambia el movimiento, nunca el estado visible. */
-.recall--reduced .card, .recall--reduced .fan__card, .recall--reduced .fan__extra { transition: none !important; animation: none !important; }
+.recall--reduced .card, .recall--reduced .fan__card, .recall--reduced .fan__extra, .recall--reduced .fan--collect .fan__card { transition: none !important; animation: none !important; }
 .celebration--reduced .celebration__banner { animation: celebration-fade 2.6s linear both; }
 @media (prefers-reduced-motion: reduce) {
   .card, .fan__card, .fan__extra { transition: none !important; animation: none !important; }

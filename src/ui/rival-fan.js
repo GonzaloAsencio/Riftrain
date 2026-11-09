@@ -15,8 +15,8 @@ const el = (tag, cls, text) => {
   return node;
 };
 
-const MAX_SPREAD = 96;     // grados: mas abierto deja de leerse como una mano
-const STEP = 4.4;          // grados por carta hasta llegar al maximo
+const MAX_SPREAD = 110;    // grados: mas abierto deja de leerse como una mano
+const STEP = 6;            // grados por carta hasta llegar al maximo (mas arco: se ve como una mano real)
 
 /** Angulos del abanico, simetricos y crecientes. Puro: sin DOM. */
 export function fanAngles(n) {
@@ -36,21 +36,28 @@ function back() {
   return node;
 }
 
-export function mountRivalFan(root, { size }) {
+export function mountRivalFan(root, { size, deal = false }) {
   const zone = el('section', 'fan-zone');
   const fan = el('div', 'fan');
+  // Reparto: los dorsos llegan desde el mazo, de a uno (la animacion la hace el CSS). La clase se
+  // saca cuando termina (o con el primer revelado): si quedara, sacarle `data-fresh` a una carta
+  // le devolveria la animacion de reparto y volveria a volar desde el mazo.
+  fan.classList.toggle('fan--deal', deal);
+  const endDeal = () => fan.classList.remove('fan--deal');
   fan.setAttribute('role', 'group');
   fan.setAttribute('aria-label', 'Mano del rival');
   const slots = fanAngles(size).map((angle, i) => {
     const slot = el('div', 'fan__card');
     slot.style.setProperty('--a', `${angle.toFixed(2)}deg`);
     slot.style.setProperty('--z', String(i + 1));
+    slot.style.setProperty('--i', String(i));
     slot.dataset.slot = String(i);
     slot.dataset.state = 'down';
     slot.appendChild(back());
     fan.appendChild(slot);
     return slot;
   });
+  if (deal) slots.at(-1)?.addEventListener('animationend', endDeal, { once: true });
   // Tres zonas que no se pisan: el arco, las extras (falsos positivos, al costado) y el motivo.
   const wrap = el('div', 'fan-wrap');
   const extras = el('div', 'fan__extras');
@@ -111,6 +118,7 @@ export function mountRivalFan(root, { size }) {
   const nextDown = () => slots.find((slot) => slot.dataset.state === 'down');
 
   function reveal(card, { fresh = false } = {}) {
+    endDeal();
     const slot = nextDown();
     if (!slot || !card) return;
     if (fresh) for (const other of slots) glow(other, false);
@@ -163,6 +171,21 @@ export function mountRivalFan(root, { size }) {
     },
     showOutcomes,
     reset,
+    /**
+     * Fin del nivel: las cartas se dan vuelta, vuelven al mazo y se van las extras. Resuelve
+     * cuando termino (ms); con 0 resuelve en la proxima vuelta, sin animar nada.
+     */
+    collect(ms = 0) {
+      for (const node of fan.querySelectorAll('.card')) node.dataset.face = 'down';
+      for (const slot of slots) glow(slot, false);   // boca abajo no hay brillo de dominio que mostrar
+      extras.replaceChildren();
+      why.textContent = '';
+      fan.classList.remove('fan--deal');
+      fan.classList.add('fan--collect');
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    },
+    /** Si el nivel siguiente no se pudo armar, las cartas vuelven del mazo a la mano. */
+    uncollect() { fan.classList.remove('fan--collect'); },
     destroy() { root.replaceChildren(); },
   };
 }
