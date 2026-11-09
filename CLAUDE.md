@@ -48,13 +48,15 @@ src/engine/          modulos PUROS, sin DOM: se testean en Node
   recall-progress.js   reducer de la ronda: nombrar, cerrar, repetir, avanzar
   match.js             coincidencia de nombres (autocompletado y evocacion en frio)
   decklist.js          parser de decklists pegadas
-  catalog.js           catalogo oficial y cruce de un mazo contra el
+  catalog.js           catalogo oficial (con todas las impresiones) y cruce de un mazo contra el
+  deck-code.js         codigos de mazo de Piltover Archive: decodificar y cruzar con el catalogo
 src/ui/              DOM. Nunca calcula reglas: se las pide al motor
   recall.js            la pantalla: banda, mano, dock
   rival-fan.js         la mano del rival en abanico y la mecanica de revelado
   composer.js          el input para nombrar cartas
   recall-feedback.js   sello NO ENTRA y avisos
   celebration.js       el festejo de fin de nivel
+  settings.js          la configuracion: nivel maximo y mazo por codigo
   card.js, rune.js     carta y runa dibujadas
 src/store.js         persistencia (localStorage con fallback en memoria)
 src/main.js          el arranque: una sola pantalla
