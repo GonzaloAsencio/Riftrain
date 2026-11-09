@@ -10,6 +10,7 @@ import { renderRune } from './rune.js';
 import { mountComposer } from './composer.js';
 import { mountRivalFan } from './rival-fan.js';
 import { mountRecallFeedback } from './recall-feedback.js';
+import { mountCelebration } from './celebration.js';
 
 const node = (tag, cls, text) => {
   const item = document.createElement(tag);
@@ -92,6 +93,8 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
   dock.append(prompt, inputHost, controls, info);
   panel.append(head, table, fanHost, dock);
   root.replaceChildren(panel);
+  // Fuera del panel: la grilla de la pantalla son cuatro zonas y el festejo no es una de ellas.
+  const celebration = mountCelebration(root, { reducedMotion });
   const searchCards = normalized.ok ? normalized.index.fullCards.map(({ id }) => cardsById.get(id)) : [];
 
   function showBoard(scenario) {
@@ -182,6 +185,14 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     ([repeat, next].find((item) => !item.hidden) ?? message).focus();
   }
 
+  /** Cierre completo: el unico festejo de la ronda. El anuncio accesible es el mensaje de estado. */
+  function celebrate() {
+    const text = state.status === 'complete' ? MESSAGES.complete : 'Nivel terminado';
+    celebration.show(text);
+    if (state.status === 'next') message.textContent = `${text}: ${MESSAGES.next.toLowerCase()}`;
+    focusNextAction();
+  }
+
   function name(cardId) {
     if (disposed || !state || !['active', 'empty'].includes(state.status)) return;
     clearRejection();
@@ -192,7 +203,12 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
       fan.reveal(cardsById.get(cardId), { fresh: true });
       composer.clear();
       draw();
-      save();
+      // La ultima pagable cierra sola (lo decide el motor): completo festeja, con falsos positivos revisa.
+      if (answer.closed) {
+        if (['next', 'complete'].includes(state.status)) celebrate();
+        else focusNextAction();
+      }
+      save();   // despues del festejo: un aviso de guardado pisa al mensaje, nunca al reves
     } else if (answer.kind === 'false-positive') {
       state = answer.state;
       feedback.reject(answer.reason);
@@ -218,10 +234,12 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     clearRejection();
     composer.clear();
     draw();
-    save();
     // Las que faltaron las marca el motor (missed); un falso positivo solo no es "faltar".
     if (outcomes.some((card) => card.outcome === 'missed')) feedback.notify('Te faltaron cartas. Revisá las que están en gris');
-    focusNextAction();
+    // Terminé completa sólo un nivel abierto con todo hallado: el de un snapshot de la version anterior.
+    if (answer.kind === 'finished') celebrate();
+    else focusNextAction();
+    save();
   });
   repeat.addEventListener('click', () => {
     if (disposed || state?.status !== 'review') return;
@@ -229,10 +247,13 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
     if (answer.kind !== 'repeated') { message.textContent = answer.reason; return; }
     state = answer.state;
     clearRejection();
+    celebration.hide();
     fan.setFound(cardsOf(state.found));
     draw();
+    // Si sólo fallaron falsos positivos no queda nada por nombrar: el motor ya cerró completo.
+    if (answer.closed) celebrate();
+    else composer.focus();
     save();
-    composer.focus();
   });
   next.addEventListener('click', () => {
     if (disposed || state?.status !== 'next') return;
@@ -243,6 +264,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
   function prepare(level, previous = null) {
     if (disposed) return;
     clearRejection();
+    celebration.hide();
     const created = createRecallScenario(deck, normalized.index, runSeed, level);
     if (!created.ok) { message.textContent = created.reason; return; }
     const started = previous ? advanceRecall(previous, created.scenario, normalized.index) :
@@ -275,6 +297,6 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
   }
   return {
     ready: Promise.resolve(),
-    destroy() { disposed = true; feedback.destroy(); composer?.destroy(); fan?.destroy(); root.replaceChildren(); },
+    destroy() { disposed = true; celebration.destroy(); feedback.destroy(); composer?.destroy(); fan?.destroy(); root.replaceChildren(); },
   };
 }

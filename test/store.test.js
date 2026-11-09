@@ -143,9 +143,10 @@ test('AC-ARC-50: todas las pagables más un falso positivo se restauran en revis
   assert.equal(restored.state.status, 'review');
   assert.deepEqual(restored.state.found, ['a', 'b']);
   assert.deepEqual(restored.state.misses, []);
+  // Repetir con todo hallado cierra solo (AC-CEL-18): se restaura cerrado.
   const again = reduceRecall(restored.state, { type: 'repeat' }, index).state;
   assert.equal(saveRecallSnapshot(again).ok, true);
-  assert.equal(loadRecallSnapshot(deck, index).state.status, 'active');
+  assert.equal(loadRecallSnapshot(deck, index).state.status, 'next');
   assert.deepEqual(loadRecallSnapshot(deck, index).state.found, ['a', 'b']);
   assert.deepEqual(load({}).legacy, { streak: 9 });
 });
@@ -159,13 +160,52 @@ test('AC-CMB-40: la revisión parcial se restaura con lo hallado y repetir vuelv
   assert.deepEqual(restored.state.found, ['a']);
 });
 
-test('AC-CMB-36/40: el snapshot activo con todas las pagables no se auto-cierra; el cerrado sí se restaura', () => {
+test('AC-CEL-07: el nivel cerrado al nombrar la última pagable se restaura cerrado, con el nivel siguiente', () => {
   const state = name(name(begin(), 'a'), 'b');
-  assert.equal(state.status, 'active');
+  assert.equal(state.status, 'next');
   assert.equal(saveRecallSnapshot(state).ok, true);
-  assert.equal(loadRecallSnapshot(deck, index).state.status, 'active');
-  assert.equal(saveRecallSnapshot(finish(state)).ok, true);
-  assert.equal(loadRecallSnapshot(deck, index).state.status, 'next');
+  const restored = loadRecallSnapshot(deck, index);
+  assert.equal(restored.ok, true);
+  assert.equal(restored.state.status, 'next');
+  assert.equal(restored.state.nextLevel, 2);
+  assert.deepEqual(restored.state.found, ['a', 'b']);
+});
+
+test('AC-CMB-36/40: el snapshot activo con todas las pagables (tras Repetir) se restaura activo, sin nivel siguiente', () => {
+  const opened = { ...load({}).recall, status: 'active', found: ['a', 'b'] };
+  database.set('riftrain.v1', JSON.stringify({ recall: opened }));
+  const restored = loadRecallSnapshot(deck, index);
+  assert.equal(restored.ok, true);
+  assert.equal(restored.state.status, 'active');
+  assert.equal(restored.state.nextLevel, undefined);
+  assert.equal(reduceRecall(restored.state, { type: 'finish' }, index).state.status, 'next');
+});
+
+test('AC-CEL-08: una revisión con todas las pagables halladas se restaura en revisión, sin nivel siguiente', () => {
+  const review = name(name(name(begin(), 'a'), 'c'), 'b');
+  assert.equal(review.status, 'review');
+  assert.equal(saveRecallSnapshot(review).ok, true);
+  const restored = loadRecallSnapshot(deck, index);
+  assert.equal(restored.ok, true);
+  assert.equal(restored.state.status, 'review');
+  assert.equal(restored.state.nextLevel, undefined);
+  assert.equal(reduceRecall(restored.state, { type: 'repeat' }, index).kind, 'repeated');
+});
+
+test('AC-CEL-09/10: el nivel 12 completo se restaura completo y su historial se revalida', () => {
+  let state = begin();
+  for (let level = 1; level <= 12; level++) {
+    for (const id of state.payable) state = name(state, id);
+    if (state.status === 'empty') state = reduceRecall(state, { type: 'skip' }, index).state;
+    if (level < 12) state = advanceRecall(state, createRecallScenario(deck, index, 13, level + 1).scenario, index).state;
+  }
+  assert.equal(state.status, 'complete');
+  assert.equal(saveRecallSnapshot(state).ok, true);
+  const restored = loadRecallSnapshot(deck, index);
+  assert.equal(restored.ok, true, restored.reason);
+  assert.equal(restored.state.status, 'complete');
+  assert.equal(restored.state.history.length, 11);
+  assert.deepEqual(restored.state.history, state.history);
 });
 
 test('AC-ARC-21: un nivel sin pagables saltado se restaura como siguiente nivel', () => {
