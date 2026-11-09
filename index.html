@@ -15,63 +15,8 @@
 <div class="shell">
 <div class="app">
 
-  <header class="topbar">
-    <div class="streak" id="streak">
-      <span class="streak__n num">0</span>
-      <span class="streak__l">racha</span>
-    </div>
-    <span class="level" id="level">Nivel 1</span>
-    <button class="iconbtn" id="btn-stats" title="Estadisticas" aria-label="Estadisticas">%</button>
-    <button class="iconbtn" id="btn-mode" title="Ir al modo cartas" aria-label="Ir al modo cartas">Cartas</button>
-    <span class="timer num" id="timer">0.0s</span>
-  </header>
-
   <main>
     <div id="recall-root"></div>
-    <div id="legacy-mode" class="hidden">
-    <!-- LA MESA: panel oscuro, para que las cartas destaquen -->
-    <section class="table" aria-label="Mesa del rival">
-      <div class="table__head">
-        <span class="table__turn" id="turn">Turno —</span>
-        <span class="table__deck" id="deck">—</span>
-        <span class="chip hidden" id="chip-review">repaso</span>
-        <span class="chip hidden" id="chip-seed"></span>
-      </div>
-
-      <div class="board">
-        <!-- Leyenda y campeon del rival: publicos en la mesa real, dicen que mazo es -->
-        <div class="legend" id="legend" aria-label="Leyenda y campeon del rival"></div>
-        <div class="runes" id="runes" aria-label="Runas en mesa"></div>
-      </div>
-
-      <!-- La mano esta boca abajo desde el primer segundo -->
-      <div class="hand" id="hand"></div>
-    </section>
-
-    <p class="ask" id="ask">Cargando…</p>
-
-    <!-- Zonas de input: solo una visible a la vez -->
-    <div id="input-picks" class="picks hidden"></div>
-
-    <div id="input-type" class="typebox hidden">
-      <input id="type-field" type="text" autocomplete="off" autocapitalize="off"
-             autocorrect="off" spellcheck="false" placeholder="Nombra una carta…"
-             aria-label="Nombra una carta" aria-autocomplete="list">
-      <div id="suggest" class="suggest hidden" role="listbox"></div>
-    </div>
-
-    <div id="input-num" class="numpad hidden" role="group" aria-label="Elegi un numero"></div>
-
-    <div class="named" id="named"></div>
-
-    <div class="actions">
-      <button class="btn btn--ghost hidden" id="btn-skip">No hay mas</button>
-      <button class="btn" id="btn-primary">Confirmar</button>
-    </div>
-
-    <section class="verdict hidden" id="verdict" aria-live="polite"></section>
-    </div>
-
     <p class="ph-banner hidden" id="ph-banner"></p>
   </main>
 </div>

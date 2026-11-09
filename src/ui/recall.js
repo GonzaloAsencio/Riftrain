@@ -42,14 +42,13 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
   const cardsById = new Map(cards.map((card) => [card.id, card]));
   const panel = node('section', 'recall');
   panel.classList.toggle('recall--reduced', reducedMotion);
-  const head = node('header', 'recall__head');
-  const title = node('h1', null, 'Recordá las cartas');
-  const levelText = node('span', 'recall__level');
-  head.append(levelText, title);
+  // Sin encabezado visible: el titulo queda para el lector de pantalla y el nivel va en la banda.
+  const title = node('h1', 'sr-only', 'Recordá las cartas');
+  const levelText = node('span', 'table__level');
   const table = node('section', 'table recall__table recall-band');
   table.setAttribute('aria-label', 'Mesa del rival');
   const tableHead = node('div', 'table__head');
-  tableHead.appendChild(node('span', 'table__deck', deck?.name ?? 'Mazo'));
+  tableHead.append(node('span', 'table__deck', deck?.name ?? 'Mazo'), levelText);
   const board = node('div', 'board');
   const publicCards = node('div', 'legend');
   publicCards.setAttribute('aria-label', 'Leyenda y campeón');
@@ -59,7 +58,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
   const missing = node('span', 'runes__missing');
   missing.setAttribute('role', 'note');
   missing.hidden = true;
-  table.append(tableHead, board);
+  table.append(title, tableHead, board);
   const prompt = node('p', 'ask', '¿Qué cartas del mazo puede pagar el rival con esta mesa?');
   prompt.appendChild(node('span', 'ask__hint', 'Las cartas de Energía 0 no cuentan en este entrenamiento.'));
   const feedbackHost = node('div', 'recall__feedback');
@@ -86,14 +85,14 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1,
   const repeat = button('Repetir nivel', 'repeat');
   const next = button('Siguiente nivel', 'next');
   controls.append(skip, finish, repeat, next);
-  // Cuatro zonas: encabezado, banda, muro, dock. El dock junta lo que se contesta y lo que avisa.
+  // Tres zonas: banda, mano, dock. El dock junta lo que se contesta y lo que avisa.
   const info = node('div', 'recall__info');
   info.append(feedbackHost, notice, message);
   const dock = node('div', 'recall-dock');
   dock.append(prompt, inputHost, controls, info);
-  panel.append(head, table, fanHost, dock);
+  panel.append(table, fanHost, dock);
   root.replaceChildren(panel);
-  // Fuera del panel: la grilla de la pantalla son cuatro zonas y el festejo no es una de ellas.
+  // Fuera del panel: la grilla de la pantalla son tres zonas y el festejo no es una de ellas.
   const celebration = mountCelebration(root, { reducedMotion });
   const searchCards = normalized.ok ? normalized.index.fullCards.map(({ id }) => cardsById.get(id)) : [];
 

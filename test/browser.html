@@ -23,19 +23,13 @@
         <div class="legend" id="legend"></div>
         <div class="runes" id="runes"></div>
       </div>
-      <div class="hand" id="hand"></div>
     </section>
     <p class="ask">Pregunta de ejemplo con un texto largo para ver si fuerza el ancho de la pagina</p>
-    <div class="actions">
-      <button class="btn btn--ghost">No hay mas</button>
-      <button class="btn">Confirmar</button>
-    </div>
   </main>
 </div>
 <pre id="out"></pre>
 
 <script type="module">
-import { Hand } from '../src/ui/hand.js';
 import { renderCard } from '../src/ui/card.js';
 import { renderRune } from '../src/ui/rune.js';
 
@@ -54,116 +48,20 @@ function check(name, cond, extra = '') {
 const card = (id, name, energy = 1, power = {}, domain = 'fury') =>
   ({ id, name, energy, power, type: 'unit', might: 3, domain, text: 'Texto de reglas.' });
 
-const mano = [
-  card('a', 'Chispa'), card('b', 'Recluta'), card('c', 'Descarga'),
-  card('d', 'Artillera'), card('e', 'Detonante'), card('f', 'Motin'), card('g', 'Granada'),
-];
-
-const hand = new Hand(document.getElementById('hand'), mano);
-
-// ---- LA REGLA 1: las cartas estan boca abajo DESDE EL PRINCIPIO
-const slots = document.querySelectorAll('#hand .hand__slot');
-check('R1 hay un slot por carta desde el arranque', slots.length === mano.length, `${slots.length}`);
-check('R1 todas arrancan boca abajo',
-  [...document.querySelectorAll('#hand .card')].every((c) => c.dataset.face === 'down'));
-
-// ---- LA REGLA 2: nombrar da vuelta AHI MISMO, en su lugar
-const before = [...document.querySelectorAll('#hand .hand__slot')].indexOf(
-  document.querySelector('[data-card-id="c"]').closest('.hand__slot'));
-const r = hand.reveal('c');
-const after = [...document.querySelectorAll('#hand .hand__slot')].indexOf(
-  document.querySelector('[data-card-id="c"]').closest('.hand__slot'));
-check('R2 acertar la da vuelta', r.hit && document.querySelector('[data-card-id="c"]').dataset.face === 'up');
-check('R2 queda marcada como acierto', document.querySelector('[data-card-id="c"]').dataset.result === 'hit');
-check('R2 NO cambia de lugar en el abanico', before === after, `${before} -> ${after}`);
-
-// ---- LA REGLA 4: falso positivo entra igual, tachado
-const intruso = card('zz', 'Carta Ajena');
-hand.addFalsePositive(intruso);
-const fp = document.querySelector('[data-card-id="zz"]');
-check('R4 el falso positivo entra al abanico', !!fp);
-check('R4 va dado vuelta y marcado', fp.dataset.face === 'up' && fp.dataset.result === 'false-positive');
-const fpStyle = getComputedStyle(fp.querySelector('.card__face--front'));
-check('R4 lleva borde rojo', fpStyle.borderTopColor === 'rgb(192, 69, 60)', fpStyle.borderTopColor);
-check('R4 el nombre va tachado',
-  getComputedStyle(fp.querySelector('.card__name')).textDecorationLine.includes('line-through'));
-
-// ---- MODO PICKS (niveles 1 y 2): marcar da vuelta, desmarcar vuelve a tapar.
-// Si marcar un pick no da vuelta la carta, el cierre gris se come todo y el
-// puntaje da 0/N. Ese fue el bug: los picks solo escribian en una variable.
-const picksBox = document.createElement('div');
-picksBox.className = 'table';
-picksBox.style.cssText = 'position:absolute; left:-9999px; width:420px;';
-const picksHandEl = document.createElement('div');
-picksHandEl.className = 'hand';
-picksBox.appendChild(picksHandEl);
-document.body.appendChild(picksBox);
-
-const manoPicks = [card('p1', 'Artillera'), card('p2', 'Chispa'), card('p3', 'Descarga'), card('p3', 'Descarga')];
-const hp = new Hand(picksHandEl, manoPicks);
-const enPicks = (id) => picksHandEl.querySelector(`[data-card-id="${id}"]`);
-
-const marcada = hp.reveal('p1');
-check('P1 marcar un pick da vuelta la carta', marcada.hit && enPicks('p1').dataset.face === 'up');
-check('P1 y queda en color, marcada como acierto', enPicks('p1').dataset.result === 'hit');
-
-const destapada = hp.unreveal('p1');
-check('P2 desmarcar la vuelve a tapar', destapada && enPicks('p1').dataset.face === 'down');
-check('P2 y le saca la marca de acierto', !enPicks('p1').dataset.result);
-check('P2 el slot NO desaparece del abanico',
-  picksHandEl.querySelectorAll('.hand__slot').length === manoPicks.length);
-
-hp.reveal('p3');
-hp.reveal('p3');
-check('P3 las dos copias se dan vuelta por separado', hp.remaining('p3') === 0);
-hp.unreveal('p3');
-check('P3 destapar una deja la otra dada vuelta', hp.remaining('p3') === 1);
-
-const intrusa = card('zz2', 'Ajena Dos');
-hp.addFalsePositive(intrusa);
-check('P4 el falso positivo entra a la fila', !!enPicks('zz2'));
-const quitado = hp.removeFalsePositive('zz2');
-check('P4 desmarcarlo lo saca de la fila', quitado && !enPicks('zz2'));
-check('P4 y no queda en el resumen', hp.summary().falsePositives.length === 0);
-
-hp.reveal('p2');
-hp.revealRest({ stagger: 0 });
-check('P5 tras el cierre lo marcado sigue en color', enPicks('p2').dataset.result === 'hit');
-check('P5 y lo que no marque queda gris', enPicks('p1').dataset.result === 'missed');
-picksBox.remove();
-
-// ---- LA REGLA 3: el cierre. Las que no vi, en blanco y negro, MISMA fila.
-const filaAntes = document.querySelectorAll('#hand .hand__slot').length;
-const missed = hand.revealRest({ stagger: 0 });
-check('R3 el cierre da vuelta las que faltaban', missed.length === mano.length - 1, `${missed.length}`);
-check('R3 NO se agregan huecos nuevos al cerrar',
-  document.querySelectorAll('#hand .hand__slot').length === filaAntes, `${filaAntes}`);
-
-const unaMissed = document.querySelector('[data-card-id="a"]');
-check('R3 quedan marcadas como missed', unaMissed.dataset.result === 'missed');
-const missedStyle = getComputedStyle(unaMissed.querySelector('.card__face--front'));
-check('R3 GRIS DE VERDAD: grayscale(1)', missedStyle.filter.includes('grayscale(1)'), missedStyle.filter);
-check('R3 y opacidad baja', parseFloat(missedStyle.opacity) < 0.5, missedStyle.opacity);
-
-// La acertada sigue en COLOR: el contraste es el feedback
-const hitStyle = getComputedStyle(document.querySelector('[data-card-id="c"] .card__face--front'));
-check('R3 la acertada NO se grisea',
-  !hitStyle.filter.includes('grayscale(1)') && parseFloat(hitStyle.opacity) === 1, hitStyle.filter);
-
-// Todas en la misma fila: mismo offsetTop
-const tops = new Set([...document.querySelectorAll('#hand .hand__slot')].map((s) => Math.round(s.getBoundingClientRect().top)));
-check('R3 acertadas y grises en la MISMA fila', tops.size <= 2, `${tops.size} alturas distintas`);
-
-// ---- La proporcion real de la carta
-const cardBox = document.querySelector('#hand .card').getBoundingClientRect();
+// ---- La proporcion real de la carta (boca abajo, como en la mano del rival)
+const dorsoCard = renderCard(card('k', 'Dorso'), { faceUp: false });
+dorsoCard.style.width = '90px';
+document.querySelector('#stage main').appendChild(dorsoCard);
+const cardBox = dorsoCard.getBoundingClientRect();
 const ratio = cardBox.width / cardBox.height;
 check('Carta en proporcion 63:88', Math.abs(ratio - 63 / 88) < 0.02, ratio.toFixed(3));
 
 // ---- El dorso es el dorso real de la carta, no un dibujo
-const dorso = getComputedStyle(document.querySelector('#hand .card__face--back'));
+const dorso = getComputedStyle(dorsoCard.querySelector('.card__face--back'));
 check('Dorso: usa la imagen real', dorso.backgroundImage.includes('assets/card-back.png'),
   dorso.backgroundImage.slice(0, 60));
-check('Dorso: sin el circulo dibujado', !document.querySelector('#hand .card__back-mark'));
+check('Dorso: sin el circulo dibujado', !dorsoCard.querySelector('.card__back-mark'));
+dorsoCard.remove();
 
 // ---- Sin arte, la carta sigue siendo legible: nunca un hueco
 const sinArte = renderCard(card('x', 'Sin Arte'), { faceUp: true });
@@ -287,52 +185,6 @@ if (docSW > docW + 1) {
 }
 check('El documento no scrollea en horizontal', docSW <= docW + 1,
   `scrollWidth ${docSW} vs ${docW} — primero: ${quien || 'nadie'}`);
-
-// Abierta tampoco scrollea: las cartas se achican hasta entrar. Sin barra.
-const manoAbierta = document.getElementById('hand');
-check('La mano abierta no tiene scroll horizontal',
-  manoAbierta.scrollWidth <= manoAbierta.clientWidth + 1,
-  `hand ${manoAbierta.scrollWidth} / ${manoAbierta.clientWidth}`);
-
-// ---- ANCHO DE TELEFONO REAL.
-// Chrome headless tiene un piso de viewport (~500px), asi que un --window-size
-// chico NO prueba nada. Montamos la mano en un contenedor de ancho FIJO y
-// medimos contra el: eso si reproduce un telefono angosto.
-for (const ancho of [320, 360, 390]) {
-  const box = document.createElement('div');
-  box.style.cssText = `width:${ancho}px; padding:0 12px; box-sizing:border-box; position:absolute; left:-9999px;`;
-  const table = document.createElement('div');
-  table.className = 'table';
-  const h = document.createElement('div');
-  h.className = 'hand';
-  table.appendChild(h);
-  box.appendChild(table);
-  document.body.appendChild(box);
-
-  // Caso peor: mano de 7 + tres falsos positivos = 10 cartas en la fila.
-  const peor = new Hand(h, mano);
-  peor.addFalsePositive(card('fp1', 'Intrusa Uno'));
-  peor.addFalsePositive(card('fp2', 'Intrusa Dos'));
-  peor.addFalsePositive(card('fp3', 'Intrusa Tres'));
-
-  const limite = box.getBoundingClientRect().right;
-  const desbordan = [...h.querySelectorAll('.hand__slot')]
-    .filter((s) => s.getBoundingClientRect().right > limite + 1).length;
-
-  check(`Mano de 10 cartas entra en ${ancho}px`, desbordan === 0, `${desbordan} slots se salen`);
-  check(`Sin scroll horizontal en ${ancho}px`,
-    h.scrollWidth <= h.clientWidth + 1, `${h.scrollWidth} vs ${h.clientWidth}`);
-
-  // Y al cerrar, tampoco: la fila abierta entra entera.
-  peor.revealRest({ stagger: 0 });
-  check(`Cerrada, sin scroll horizontal en ${ancho}px`,
-    h.scrollWidth <= h.clientWidth + 1, `${h.scrollWidth} vs ${h.clientWidth}`);
-
-  // La ronda siguiente monta otra mano en el MISMO contenedor: arranca cerrada.
-  new Hand(h, mano);
-  check(`Mano nueva arranca sin abrir en ${ancho}px`, !h.classList.contains('hand--open'));
-  box.remove();
-}
 
 // Cartas de prueba del abanico (el muro de casilleros se reemplazó por la mano en abanico).
 const wallCards = [
@@ -697,16 +549,24 @@ check('AC-ARC-54: el aviso vacío no ocupa lugar (sin alto ni márgenes) aunque 
 
 // La banda superior: la mesa del rival (leyenda y runas). La mano ya no es decoración: es el abanico.
 const flowBand = flowMount.querySelector('.recall-band');
-check('AC-ARC-30: la banda es lo primero tras el encabezado y trae la mesa con sus runas',
-  !!flowBand && flowBand.previousElementSibling?.classList.contains('recall__head') &&
+check('AC-ARC-30 + AC-SHL-04: la banda es lo primero de la pantalla (no hay encabezado visible) y trae la mesa con sus runas',
+  !!flowBand && flowMount.querySelector('.recall').firstElementChild === flowBand && !flowMount.querySelector('.recall__head') &&
   flowBand.querySelectorAll('.runes .rune').length === scenarioAt(3).runes.length && flowBand.querySelectorAll('.rune:not(.rune--spent)').length === 3,
   `${flowBand?.querySelectorAll('.runes .rune').length} / ${flowBand?.previousElementSibling?.className}`);
 check('AC-FAN-17: no quedan los siete dorsos decorativos ni la grilla del muro; la mano va debajo de la banda',
   !flowMount.querySelector('.recall-hand, .recall-hand__back, .wall, .wall__grid, .wall__slot') && !!flowMount.querySelector('.fan') &&
   flowBand.compareDocumentPosition(flowMount.querySelector('.fan')) === Node.DOCUMENT_POSITION_FOLLOWING &&
   document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1);
-check('AC-ARC-53: el nivel real es lo primero del encabezado, a la izquierda',
-  flowMount.querySelector('.recall__head').firstElementChild.textContent === 'Nivel 3');
+const bandLevel = () => flowMount.querySelector('.recall-band .table__head .table__level');
+check('AC-SHL-02: el nivel va en la banda, en la misma fila y después del nombre del mazo',
+  bandLevel()?.textContent === 'Nivel 3' && bandLevel().previousElementSibling?.classList.contains('table__deck') &&
+  Math.abs(bandLevel().getBoundingClientRect().top - bandLevel().previousElementSibling.getBoundingClientRect().top) < 8 &&
+  flowMount.querySelectorAll('.table__level').length === 1);
+const pageTitle = flowMount.querySelectorAll('h1');
+check('AC-SHL-04: un solo h1 "Recordá las cartas", oculto a la vista pero presente para el lector',
+  pageTitle.length === 1 && pageTitle[0].textContent === 'Recordá las cartas' && pageTitle[0].classList.contains('sr-only') &&
+  pageTitle[0].getBoundingClientRect().width <= 1 && getComputedStyle(pageTitle[0]).display !== 'none' &&
+  getComputedStyle(pageTitle[0]).visibility !== 'hidden');
 
 // Falso positivo: el sello lleva el motivo EXACTO del motor y la celda no se da vuelta.
 press(type(flowMount, 'bet'), 'Enter');
@@ -840,6 +700,7 @@ check('AC-FAN-16: avanzar genera el nivel 4 con otra mesa y una mano nueva de ta
   level4Size > 0 && fstates() === Array(level4Size).fill('down').join() && saves === 4 && actualStore.load({}).recall.schema === 2,
   `${fstates()} / ${level4Size}`);
 check('AC-ARC-52: el nivel siguiente arranca limpio, sin restos de la UI combinatoria', removedUi(flowMount));
+check('AC-SHL-03: al avanzar, el nivel de la banda pasa a 4', bandLevel()?.textContent === 'Nivel 4');
 press(type(flowMount, 'alp'), 'Enter');
 press(type(flowMount, 'bet'), 'Enter');
 flow.destroy();
@@ -1070,19 +931,18 @@ const liveDoc = liveFrame.contentDocument;
 const liveDeck = realData.decks[0];
 const mainCards = new Set(liveDeck.cards.filter(({ cardId }) => realData.cards.find((c) => c.id === cardId).energy > 0).map(({ cardId }) => cardId));
 const liveSlot = (id) => liveDoc.querySelector(`#recall-root .fan__card[data-card-id="${id}"]`);
-check('AC-CMB-01/19: index arranca en recall nivel 1, no en el cuestionario legacy',
+check('AC-SHL-01: index es sólo el recall: sin topbar, botón Cartas, racha, %, timer ni modo legacy',
   !!liveDoc.querySelector('#recall-root input[role="combobox"]') &&
-  liveDoc.querySelector('#recall-root').textContent.includes('Nivel 1') &&
-  getComputedStyle(liveDoc.querySelector('#legacy-mode')).display === 'none');
+  !liveDoc.querySelector('.topbar, #btn-mode, #btn-stats, #streak, #timer, #level, #legacy-mode'));
+check('AC-SHL-06: el aviso general existe y sin datos de andamio ni storage bloqueado queda oculto',
+  !!liveDoc.querySelector('#ph-banner') && getComputedStyle(liveDoc.querySelector('#ph-banner')).display === 'none');
 check('AC-ARC-30: en la app real la banda muestra leyenda y campeón con sus imágenes oficiales',
   liveDoc.querySelectorAll('#recall-root .recall-band .legend .card img').length === 2 &&
   !liveDoc.querySelector('#recall-root .recall-hand'));
-check('AC-ARC-53: un solo indicador de nivel visible, "Nivel 1" arriba a la izquierda; el #level viejo no se ve', (() => {
-  const visible = [...liveDoc.querySelectorAll('.level, .recall__level, #level')]
+check('AC-SHL-02: en la app real hay un solo indicador de nivel, "Nivel 1", dentro de la banda', (() => {
+  const visible = [...liveDoc.querySelectorAll('.level, .recall__level, .table__level, #level')]
     .filter((item) => item.getClientRects().length && getComputedStyle(item).visibility !== 'hidden');
-  const box = visible[0]?.getBoundingClientRect();
-  return visible.length === 1 && visible[0].textContent === 'Nivel 1' && box.left < 40 && box.top < 140 &&
-    getComputedStyle(liveDoc.getElementById('level')).display === 'none';
+  return visible.length === 1 && visible[0].textContent === 'Nivel 1' && !!visible[0].closest('.recall-band');
 })());
 check('AC-FAN-01: la app real muestra la mano con sus dorsos, todos boca abajo y sin identidad',
   liveDoc.querySelectorAll('#recall-root .fan__card').length > 0 &&
@@ -1119,24 +979,7 @@ liveDoc.querySelector('#recall-root [role="option"]')?.click();
 check('AC-ARC-33: en la app real nombrar Gust da vuelta su celda, con su imagen oficial, y el nivel sigue en 1',
   liveSlot('gust')?.dataset.state === 'found' && !!liveSlot('gust').querySelector('.card__face--image img') &&
   liveDoc.querySelector('#recall-root').textContent.includes('Nivel 1'));
-liveDoc.querySelector('#btn-mode')?.click();
-check('AC-CMB-01: modo cartas legacy sigue disponible y recall se desmonta',
-  getComputedStyle(liveDoc.querySelector('#legacy-mode')).display !== 'none' &&
-  getComputedStyle(liveDoc.querySelector('#recall-root')).display === 'none' &&
-  !!liveDoc.querySelector('#hand .card'));
-const legacyBefore = actualStore.load({}).answered ?? 0;
-liveDoc.querySelector('#btn-primary')?.click();
-check('AC-CMB-27: cerrar ronda legacy preserva el snapshot recall y actualiza el progreso legacy',
-  (actualStore.load({}).answered ?? 0) === legacyBefore + 1 &&
-  actualStore.load({}).recall?.found?.includes('gust'));
-liveDoc.querySelector('#btn-mode')?.click();
-check('AC-CMB-01: modo runas legacy sigue disponible',
-  getComputedStyle(liveDoc.querySelector('#input-num')).display !== 'none');
-liveDoc.querySelector('#btn-mode')?.click();
-await liveFrame.contentWindow.__riftrainReady;
-check('AC-CMB-27: volver a recall restaura Gust levantada, sin reiniciar progreso ni repetir el brillo',
-  liveSlot('gust')?.dataset.state === 'found' && !liveSlot('gust').hasAttribute('data-fresh') &&
-  getComputedStyle(liveDoc.querySelector('#legacy-mode')).display === 'none');
+
 check('AC-CMB-21: la app completa no desborda el documento a 320px',
   liveDoc.documentElement.scrollWidth <= liveDoc.documentElement.clientWidth + 1,
   `${liveDoc.documentElement.scrollWidth} / ${liveDoc.documentElement.clientWidth}`);
@@ -1183,8 +1026,7 @@ const inside = (inner, outer) => inner.left >= outer.left - 1 && inner.right <= 
 const fanCardsDesk = () => [...deskDoc.querySelectorAll('.recall .fan__card')];
 deskDoc.getAnimations().forEach((animation) => animation.finish());
 check('AC-FAN-18: a 1280x800 el orden es banda, mano, dock (de arriba hacia abajo)',
-  rect('.recall-band').bottom <= rect('.fan-wrap').top + 1 && rect('.fan-wrap').bottom <= rect('.recall-dock').top + 1 &&
-  rect('.recall__head').bottom <= rect('.recall-band').top + 1);
+  rect('.recall-band').bottom <= rect('.fan-wrap').top + 1 && rect('.fan-wrap').bottom <= rect('.recall-dock').top + 1);
 check('AC-ARC-54: la página entera cabe en 1280x800 sin scroll, ni vertical ni horizontal',
   deskDoc.documentElement.scrollHeight <= deskWin.innerHeight && deskDoc.documentElement.scrollWidth <= deskDoc.documentElement.clientWidth + 1,
   `${deskDoc.documentElement.scrollHeight} / ${deskWin.innerHeight}`);
@@ -1203,8 +1045,8 @@ check('AC-FAN-18: la mano tiene tantos dorsos como pagables, todos dentro de su 
 })(), `${fanCardsDesk().length} cartas, ancho ${fanCardsDesk()[0]?.offsetWidth}, zona ${Math.round(rect('.fan-zone').width)}x${Math.round(rect('.fan-zone').height)}`);
 check('AC-ARC-54: la mesa es oscura de punta a punta y no hay un panel claro suelto',
   (getComputedStyle(deskDoc.body).backgroundColor.match(/\d+/g) ?? []).slice(0, 3).every((value) => Number(value) < 60));
-check('AC-ARC-57: en escritorio la pantalla es una grilla de cuatro filas; en una ventana baja vuelve a fluir',
-  getComputedStyle(dq('.recall')).display === 'grid' && deskDoc.querySelectorAll('.recall > *').length === 4 &&
+check('AC-ARC-57 + AC-SHL-05: en escritorio la pantalla es una grilla de tres zonas (banda, mano, dock); en una ventana baja vuelve a fluir',
+  getComputedStyle(dq('.recall')).display === 'grid' && deskDoc.querySelectorAll('.recall > *').length === 3 &&
   [...deskDoc.querySelectorAll('.recall > *')].map((item) => item.className).join('|') === phoneShape);
 const deskInput = dq('.recall input[role="combobox"]');
 deskInput.focus();
@@ -1338,6 +1180,17 @@ deskFrame.remove();
   run.destroy();
   actualStore.clear();
   celMount.remove();
+}
+
+// ---- Sin restos del modo legacy (AC-SHL-07/08)
+{
+  const handJs = await fetch('../src/ui/hand.js', { cache: 'no-store' });
+  check('AC-SHL-07: src/ui/hand.js ya no existe', handJs.status === 404, String(handJs.status));
+  const css = await (await fetch('../app.css', { cache: 'no-store' })).text();
+  const legacy = ['.topbar', '.streak', '.timer', '.iconbtn', '.picks', '.pick', '.typebox', '.suggest', '.numpad',
+    '.named', '.verdict', '.hand', '.chip', '.actions', '.zoom', '.recall__head', '.recall__level'];
+  const left = legacy.filter((sel) => new RegExp('\\' + sel + '(?![\\w-])').test(css));
+  check('AC-SHL-08: app.css no trae selectores del modo legacy ni del encabezado', left.length === 0, left.join(' '));
 }
 
 const head = document.createElement('div');
