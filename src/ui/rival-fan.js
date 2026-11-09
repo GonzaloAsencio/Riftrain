@@ -146,6 +146,8 @@ export function mountRivalFan(root, { size }) {
       item.append(node, el('span', 'fan__tag', 'NO ENTRABA'));
       item.dataset.cardId = card.id;
       item.dataset.state = 'false-positive';
+      // Entran una por una: el orden escalona la animacion (CSS).
+      item.style.setProperty('--i', String(extras.children.length));
       if (reason) explain(item, card, reason);
       listen(item);
       extras.appendChild(item);

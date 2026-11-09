@@ -251,6 +251,10 @@ fan.destroy();
 // Cierre: los dorsos que quedaron muestran en gris lo que se pasó; los falsos positivos, al costado.
 fan = mountRivalFan(fanHost, { size: 3 });
 fan.reveal(wallCards[0], { fresh: true });
+const sheetRuleEarly = (selector, pattern) => [...document.styleSheets].some((sheet) => {
+  try { return [...sheet.cssRules].some((rule) => rule.selectorText?.includes(selector) && pattern.test(rule.cssText)); }
+  catch { return false; }
+});
 const missedReason = 'Se podía pagar: 2 + 1 Chaos';
 const fpReason = 'Pide 9 de Energía y hay 3 runas abiertas';
 fan.showOutcomes({
@@ -275,6 +279,18 @@ fanSlots()[1].dispatchEvent(new Event('focusin', { bubbles: true }));
 const whyMissed = fanWhy.textContent;
 extras[0]?.dispatchEvent(new Event('pointerenter'));
 const whyFp = fanWhy.textContent;
+// El motivo es un cartel: fondo claro, bordes redondeados y texto oscuro que se lee (>= 4.5:1).
+{
+  const rgb = (v) => (v.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+  const lum = ([r, g, b]) => [r, g, b].map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; })
+    .reduce((sum, c, i) => sum + c * [0.2126, 0.7152, 0.0722][i], 0);
+  const st = getComputedStyle(fanWhy);
+  const [hi, lo] = [lum(rgb(st.backgroundColor)), lum(rgb(st.color))].sort((a, b) => b - a);
+  check('AC-FAN-23: el motivo se muestra como un cartel claro, redondeado y legible',
+    lum(rgb(st.backgroundColor)) > 0.7 && parseFloat(st.borderTopLeftRadius) >= 8 && (hi + 0.05) / (lo + 0.05) >= 4.5 &&
+    parseFloat(st.fontSize) >= 14 && parseInt(st.fontWeight, 10) >= 600,
+    `bg ${st.backgroundColor} color ${st.color} r ${st.borderTopLeftRadius} ${st.fontSize}/${st.fontWeight}`);
+}
 fanSlots()[0].dispatchEvent(new Event('pointerenter'));
 check('AC-FAN-10: focus, puntero o toque muestran el motivo de ESA carta; una carta sin motivo vacía la explicación',
   whyMissed === missedReason && whyFp === fpReason && fanWhy.textContent === '');
@@ -284,6 +300,16 @@ check('AC-FAN-11: cada falso positivo es una carta extra fuera del arco, boca ar
   extras[0].querySelector('.card').dataset.face === 'up' && getComputedStyle(extras[0]).transform !== 'none' &&
   extraTag?.textContent === 'NO ENTRABA' && parseFloat(getComputedStyle(extraTag).fontSize) >= 11 &&
   extras[0].tabIndex === 0 && extras[0].getAttribute('aria-label').includes(fpReason));
+check('AC-FAN-22: las cartas que no entraban aparecen animadas, una por una (escalonadas por su orden)',
+  extras[0]?.style.getPropertyValue('--i') === '0' && getComputedStyle(extras[0]).animationName === 'fan-extra-in' &&
+  (() => { // la tercera llega más tarde que la primera: el retardo sale del orden (se mide el estilo computado:
+    // Chrome serializa vacío el shorthand con var(), así que el texto de la regla no sirve)
+    const first = getComputedStyle(extras[0]).animationDelay;
+    extras[0].style.setProperty('--i', '2'); const third = getComputedStyle(extras[0]).animationDelay;
+    extras[0].style.setProperty('--i', '0'); return parseFloat(first) === 0 && parseFloat(third) > 0.3; })());
+check('AC-FAN-23: sin motivo que mostrar, el cartel no se ve (no queda un recuadro vacío)',
+  (() => { const saved = fanWhy.textContent; fanWhy.textContent = ''; const bg = getComputedStyle(fanWhy).backgroundColor;
+    fanWhy.textContent = saved; return /rgba\(0, 0, 0, 0\)|transparent/.test(bg); })());
 check('AC-FAN-13: el cierre no muestra porcentajes, "N de M", "N/M" ni contadores',
   !/%|\b\d+\s*(de|\/)\s*\d+\b|aciertos?:|faltan(tes)?:|errores?:/i.test(fanHost.textContent.replace(missedReason, '').replace(fpReason, '')));
 const sheetRule = (selector, pattern) => [...document.styleSheets].some((sheet) => {
