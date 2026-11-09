@@ -209,3 +209,48 @@ test('AC-ARC-08: detail nulo, ok, desconocido o runas inválidas devuelven vací
   assert.deepEqual(rejectionRunes(detail, frozen), rejectionRunes(detail, frozen));
   assert.deepEqual(frozen, tableRunes());
 });
+
+// ---- Cartas de dos dominios (AC-DUO): el Poder se paga con runas de CUALQUIERA de los dos.
+// Regla fijada por el usuario (2026-11-09): Blade of the Exile (3 + 1 de Poder, Calm y Chaos)
+// se paga reciclando una runa Calm o una Chaos.
+const blade = card('blade', 3, {}, { powerAny: { amount: 1, domains: ['chaos', 'calm'] } });
+const runes = (spec) => spec.map(([domain, ready]) => ({ domain, ready }));
+
+test('AC-DUO-01: el Poder de dos dominios se paga con una runa de cualquiera de los dos', () => {
+  assert.equal(canPlayCard(blade, runes([['chaos', true], ['chaos', true], ['chaos', true]])).ok, true);
+  assert.equal(canPlayCard(blade, runes([['calm', true], ['fury', true], ['fury', true]])).ok, true);
+  // Floating: una de las tres agotadas por Energía se recicla por Poder. Tres runas alcanzan.
+  assert.equal(cardCost(blade).runes, 3);
+  assert.equal(boardAfterPaying(cardCost(blade), 7), 6);
+});
+
+test('AC-DUO-02: sin runas de ninguno de los dos dominios se rechaza con su motivo', () => {
+  const check = canPlayCard(blade, runes([['fury', true], ['fury', true], ['order', true]]));
+  assert.equal(check.ok, false);
+  assert.equal(check.reason, 'Pide 1 de Poder Calm o Chaos y no hay runas Calm ni Chaos en mesa');
+  assert.deepEqual(check.detail, { kind: 'domain', domains: ['calm', 'chaos'], need: 1, have: 0 });
+  // Para reciclar no hace falta que esté abierta: una Calm agotada en mesa alcanza.
+  assert.equal(canPlayCard(blade, runes([['fury', true], ['fury', true], ['order', true], ['calm', false]])).ok, true);
+});
+
+test('AC-DUO-03: con otras cartas en el mismo turno, el dominio fijo se reserva primero', () => {
+  const calmOne = card('calm-one', 1, { calm: 1 });
+  const board = runes([['calm', true], ['fury', true], ['fury', true], ['fury', true]]);
+  const set = canPlaySet([calmOne, blade], board);
+  assert.equal(set.ok, false, 'la única Calm la usa la carta de Calm fijo');
+  assert.match(set.reason, /Calm o Chaos/);
+  assert.equal(canPlaySet([calmOne, blade], runes([['calm', true], ['chaos', true], ['fury', true], ['fury', true]])).ok, true);
+  // Dos cartas de dos dominios distintos que se pisan: Hall, no un reparto ciego.
+  const encore = card('encore', 1, {}, { powerAny: { amount: 1, domains: ['mind', 'order'] } });
+  const both = canPlaySet([blade, encore], runes([['chaos', true], ['order', true], ['fury', true], ['fury', true]]));
+  assert.equal(both.ok, true);
+  assert.equal(canPlaySet([blade, encore], runes([['chaos', true], ['fury', true], ['fury', true], ['fury', true]])).ok, false);
+});
+
+test('AC-DUO-04: el texto del coste nombra los dos dominios y las runas a resaltar son las de los dos', () => {
+  assert.equal(costLabel(cardCost(blade)), '3 + 1 Calm/Chaos');
+  const board = runes([['calm', true], ['fury', true], ['chaos', false]]);
+  const detail = { kind: 'domain', domains: ['calm', 'chaos'], need: 2, have: 1 };
+  assert.deepEqual(rejectionRunes(detail, board), { indices: [0, 2], missingDomain: null, missingDomains: [] });
+  assert.deepEqual(rejectionRunes(detail, runes([['fury', true]])), { indices: [], missingDomain: null, missingDomains: ['calm', 'chaos'] });
+});

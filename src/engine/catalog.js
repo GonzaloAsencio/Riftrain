@@ -87,6 +87,7 @@ export function normalizeCard(item) {
   const domains = domainsOf(item);
 
   let power = {};
+  let powerAny = null;
   let needsCost = false;
   let reason = null;
 
@@ -97,9 +98,9 @@ export function normalizeCard(item) {
       needsCost = true;
       reason = `pide ${powerTotal} de Poder pero no declara dominio`;
     } else {
-      // Dos dominios y un numero: no hay forma de saber el reparto.
-      needsCost = true;
-      reason = `pide ${powerTotal} de Poder entre ${domains.join(' y ')} y no se sabe como se reparte`;
+      // Dos dominios y un numero: cada punto se paga con una runa de CUALQUIERA de los dos
+      // (regla fijada por el usuario, 2026-11-09). No es un reparto inventado: no hay reparto.
+      powerAny = { amount: powerTotal, domains: [...domains].sort() };
     }
   }
 
@@ -119,6 +120,7 @@ export function normalizeCard(item) {
       collectorNumber: item.collectorNumber ?? null,
       energy,
       power,
+      ...(powerAny ? { powerAny } : {}),
       domain: domains[0] ?? null,
       domains,
       type: item.cardType?.type?.[0]?.id ?? null,
@@ -135,7 +137,8 @@ export function normalizeCard(item) {
 
 /** Mismo costo? Se compara lo unico que le importa al motor. */
 function sameCost(a, b) {
-  return a.energy === b.energy && JSON.stringify(a.power) === JSON.stringify(b.power);
+  return a.energy === b.energy && JSON.stringify(a.power) === JSON.stringify(b.power) &&
+    JSON.stringify(a.powerAny ?? null) === JSON.stringify(b.powerAny ?? null);
 }
 
 /**

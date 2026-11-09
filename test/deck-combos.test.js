@@ -325,3 +325,38 @@ test('AC-ARC-26: los módulos de UI de la bandeja y del arco ya no existen', asy
     await assert.rejects(import(`../src/ui/${file}.js`), { code: 'ERR_MODULE_NOT_FOUND' }, file);
   }
 });
+
+// ---- Cartas de dos dominios en el índice del mazo (AC-DUO-06..07)
+const duoCards = [
+  { id: 'blade', energy: 3, power: {}, powerAny: { amount: 1, domains: ['calm', 'chaos'] } },
+  { id: 'plain', energy: 1, power: {} },
+];
+const duoDeck = { cards: [{ cardId: 'blade', qty: 3 }, { cardId: 'plain', qty: 3 }], runes: { chaos: 6, order: 6 } };
+
+test('AC-DUO-06: el índice conserva el Poder de dos dominios y lo cobra con cualquiera de los dos', () => {
+  const normalized = normalizeDeck(duoDeck, duoCards, { policy: 'positive-energy' });
+  assert.equal(normalized.ok, true, normalized.reason);
+  assert.deepEqual(normalized.index.byId.get('blade').powerAny, { amount: 1, domains: ['calm', 'chaos'] });
+  const chaos = { runes: [0, 1, 2].map(() => ({ domain: 'chaos', ready: true })) };
+  const order = { runes: [0, 1, 2].map(() => ({ domain: 'order', ready: true })) };
+  assert.equal(checkCard('blade', chaos, normalized.index).ok, true);
+  const rejected = checkCard('blade', order, normalized.index);
+  assert.equal(rejected.ok, false);
+  assert.match(rejected.reason, /Calm o Chaos/);
+});
+
+test('AC-DUO-06: un Poder de dos dominios mal formado se rechaza con motivo', () => {
+  for (const powerAny of [{ amount: 0, domains: ['calm', 'chaos'] }, { amount: 1, domains: ['calm'] },
+    { amount: 1, domains: ['calm', 'lunar'] }, { amount: 1, domains: ['calm', 'calm'] }, { amount: 1.5, domains: ['calm', 'chaos'] }]) {
+    const bad = normalizeDeck(duoDeck, [{ ...duoCards[0], powerAny }, duoCards[1]]);
+    assert.equal(bad.ok, false, JSON.stringify(powerAny));
+    assert.ok(bad.reason);
+  }
+});
+
+test('AC-DUO-07: la identidad de la mesa cambia si cambia el Poder de dos dominios', () => {
+  const a = normalizeDeck(duoDeck, duoCards, { policy: 'positive-energy' }).index;
+  const otro = [{ ...duoCards[0], powerAny: { amount: 1, domains: ['calm', 'order'] } }, duoCards[1]];
+  const b = normalizeDeck(duoDeck, otro, { policy: 'positive-energy' }).index;
+  assert.notEqual(createRecallScenario(duoDeck, a, 7, 3).scenario.identity, createRecallScenario(duoDeck, b, 7, 3).scenario.identity);
+});

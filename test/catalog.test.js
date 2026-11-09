@@ -57,12 +57,12 @@ test('AC-CAT-04: un solo dominio reparte todo el poder a ese dominio', () => {
   assert.equal(card.needsCost, false);
 });
 
-test('AC-CAT-05: dos dominios con poder es AMBIGUO: se marca, no se adivina', () => {
+test('AC-CAT-05 + AC-DUO-05: dos dominios con poder se paga con cualquiera de los dos (regla del usuario)', () => {
   const { card } = norm('Acceleration Gate'); // mind+body, power 1
-  assert.equal(card.needsCost, true);
-  assert.match(card.reason, /mind/i);
-  assert.match(card.reason, /body/i);
-  assert.deepEqual(card.power, {}, 'no se inventa un reparto');
+  assert.equal(card.needsCost, false);
+  assert.equal(card.reason, null);
+  assert.deepEqual(card.power, {}, 'no se inventa un reparto fijo');
+  assert.deepEqual(card.powerAny, { amount: 1, domains: ['body', 'mind'] });
 });
 
 test('AC-CAT-06: dos dominios SIN poder queda completo — no hay nada que repartir', () => {
