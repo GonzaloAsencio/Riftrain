@@ -8,19 +8,22 @@ const fail = (reason) => ({ ok: false, reason });
  * Muro del mazo: la unidad de respuesta es un cardId. `payable` es el objetivo (sincrono),
  * `found` lo acertado y `misses` los falsos positivos DEL INTENTO (nunca se persisten).
  */
-export function startRecall(scenario, index) {
+export function startRecall(scenario, index, { maxLevel = 12 } = {}) {
   if (!Number.isSafeInteger(scenario?.level) || scenario.level < 1 || scenario.level > 12 ||
       !Array.isArray(scenario.runes) || typeof scenario.identity !== 'string' || !scenario.identity) {
     return fail('Escenario inválido');
   }
+  // Hasta que nivel se juega: lo elige el usuario. Si lo baja por debajo del nivel en curso,
+  // ese nivel es el ultimo (cerrarlo completa el recorrido): no se pierde lo jugado.
+  if (!Number.isSafeInteger(maxLevel) || maxLevel < 1 || maxLevel > 12) return fail('Nivel máximo inválido');
   const payable = payableCards(index, scenario);
   if (!payable.ok) return payable;
-  return { ok: true, state: { scenario, payable: payable.cardIds, found: [], misses: [], history: [],
+  return { ok: true, state: { scenario, maxLevel, payable: payable.cardIds, found: [], misses: [], history: [],
     status: payable.cardIds.length ? 'active' : 'empty' } };
 }
 
 export function reduceRecall(state, event, index) {
-  const closeLevel = (current, finalStatus) => current.scenario.level === 12 ? { ...current, status: finalStatus } :
+  const closeLevel = (current, finalStatus) => current.scenario.level >= (current.maxLevel ?? 12) ? { ...current, status: finalStatus } :
     { ...current, status: 'next', nextLevel: current.scenario.level + 1 };
   if (event?.type === 'skip') {
     if (state?.status !== 'empty') return { kind: 'invalid', state, reason: 'Sólo se puede saltar un nivel sin cartas pagables' };
@@ -61,7 +64,7 @@ export function reduceRecall(state, event, index) {
 /** Entra al nivel siguiente, generado aparte: nunca se empareja una mesa vieja con un nivel nuevo. */
 export function advanceRecall(state, scenario, index) {
   if (state?.status !== 'next' || scenario?.level !== state.nextLevel) return fail('Avance de nivel inválido');
-  const next = startRecall(scenario, index);
+  const next = startRecall(scenario, index, { maxLevel: state.maxLevel ?? 12 });
   if (!next.ok) return next;
   next.state.history = [...state.history, { identity: state.scenario.identity,
     level: state.scenario.level, found: state.found, omitted: state.payable.length === 0 }];
