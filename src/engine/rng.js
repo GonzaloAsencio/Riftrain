@@ -31,8 +31,3 @@ export function makeRng(seed) {
   const chance = (p) => next() < p;
   return { next, int, range, pick, shuffle, chance };
 }
-
-/** Seed legible y estable para mostrar/compartir (base36, 6 chars). */
-export function seedLabel(seed) {
-  return (seed >>> 0).toString(36).padStart(6, '0').slice(-6).toUpperCase();
-}

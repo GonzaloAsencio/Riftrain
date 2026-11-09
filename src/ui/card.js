@@ -107,51 +107,30 @@ function backFace() {
  * @param {object} card
  * @param {object} o
  * @param {boolean} o.faceUp   arranca dada vuelta?
- * @param {string|null} o.result  null | 'hit' | 'missed' | 'false-positive'
  * @returns {HTMLElement}
  */
-export function renderCard(card, { faceUp = false, result = null } = {}) {
+export function renderCard(card, { faceUp = false } = {}) {
   const node = el('div', 'card');
   node.dataset.face = faceUp ? 'up' : 'down';
-  if (result) node.dataset.result = result;
   node.dataset.cardId = card.id;
 
   node.appendChild(backFace());
   node.appendChild(frontFace(card));
 
-  if (result === 'false-positive') {
-    node.appendChild(el('span', 'fp-tag', 'no estaba'));
-  }
-
   // El lector de pantalla no ve un abanico: le decimos el estado en palabras.
   node.setAttribute('role', 'img');
-  node.setAttribute('aria-label', faceUp ? describeCard(card, result) : 'Carta boca abajo');
+  node.setAttribute('aria-label', faceUp ? describeCard(card) : 'Carta boca abajo');
 
   return node;
 }
 
 /** Da vuelta una carta ya montada. El CSS hace el rotateY en 280ms. */
-export function flipUp(node, card, result = null) {
-  if (result) node.dataset.result = result;
+export function flipUp(node, card) {
   node.dataset.face = 'up';
-  node.setAttribute('aria-label', describeCard(card, result));
-  if (result === 'false-positive' && !node.querySelector('.fp-tag')) {
-    node.appendChild(el('span', 'fp-tag', 'no estaba'));
-  }
+  node.setAttribute('aria-label', describeCard(card));
 }
 
-/**
- * La vuelve a tapar. Simetrico de flipUp: en modo picks el jugador desmarca, y
- * deshacer un clic tiene que devolver la carta al dorso, no dejarla a la vista.
- */
-export function flipDown(node) {
-  node.dataset.face = 'down';
-  delete node.dataset.result;
-  node.querySelector('.fp-tag')?.remove();
-  node.setAttribute('aria-label', 'Carta boca abajo');
-}
-
-export function describeCard(card, result) {
+function describeCard(card) {
   const parts = [card.name];
   const cost = [];
   if (card.energy) cost.push(`${card.energy} de energia`);
@@ -160,21 +139,5 @@ export function describeCard(card, result) {
     if (n > 0) cost.push(`${n} de poder ${DOMAIN_LABEL[d]}`);
   }
   if (cost.length) parts.push(`cuesta ${cost.join(' y ')}`);
-  if (result === 'missed') parts.push('no la nombraste');
-  if (result === 'false-positive') parts.push('no estaba en la mano');
   return parts.join(', ');
-}
-
-/** Overlay de carta ampliada: mantener pulsado. */
-export function openZoom(card) {
-  const overlay = el('div', 'zoom');
-  const holder = el('div', 'zoom__card');
-  holder.appendChild(renderCard(card, { faceUp: true }));
-  overlay.appendChild(holder);
-  const close = () => overlay.remove();
-  overlay.addEventListener('pointerup', close);
-  overlay.addEventListener('pointercancel', close);
-  overlay.addEventListener('click', close);
-  document.body.appendChild(overlay);
-  return close;
 }

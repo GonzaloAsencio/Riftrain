@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseDecklist } from '../src/engine/decklist.js';
-import { expandDeck } from '../src/engine/scenario.js';
 import { RUNE_DECK_SIZE } from '../src/engine/runes.js';
 
 /**
@@ -149,9 +148,9 @@ test('AC-DCK-10: los dominios del mazo salen de los costos, no de una lista apar
   assert.deepEqual([...r.deck.domains].sort(), ['chaos', 'fury']);
 });
 
-test('AC-DCK-11: el resultado entra tal cual en el motor de escenarios', () => {
+test('AC-DCK-11: el resultado entra tal cual en el motor (contrato de normalizeDeck)', () => {
   const r = parseDecklist('3 Chispa | 1\n2 Descarga | 2 + 1 fury');
-  // El contrato que ya exige expandDeck(): deck.cards con { cardId, qty }.
+  // El contrato que exige el motor (normalizeDeck): deck.cards con { cardId, qty }.
   for (const entry of r.deck.cards) {
     assert.ok(entry.cardId, 'cada entrada del mazo tiene cardId');
     assert.ok(entry.qty >= 1);
@@ -296,13 +295,12 @@ test('AC-SEC-13: los dominios tambien salen de las runas, no solo de los costos'
   assert.deepEqual(mix.deck.domains, ['chaos', 'fury', 'order']);
 });
 
-test('AC-SEC-14: expandDeck no reparte ni la Legend ni el Champion', () => {
+test('AC-SEC-14 + AC-SHL-10: el mazo repartible no trae ni la Legend ni el Champion', () => {
   const r = parseDecklist(PILTOVER_EXPORT);
   const cardsById = new Map(r.cards.map((c) => [c.id, c]));
-  const mazo = expandDeck(r.deck, cardsById);
 
-  assert.equal(mazo.length, 39);
-  for (const c of mazo) {
-    assert.ok(!c.name.startsWith('Kennen'), 'la Legend/Champion quedan afuera del mazo');
+  assert.equal(r.deck.cards.reduce((n, e) => n + e.qty, 0), 39);
+  for (const { cardId } of r.deck.cards) {
+    assert.ok(!cardsById.get(cardId).name.startsWith('Kennen'), 'la Legend/Champion quedan afuera del mazo');
   }
 });
