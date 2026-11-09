@@ -279,6 +279,29 @@ test('AC-CFG-14: con el máximo bajado, un nivel guardado como cerrado se restau
   assert.equal(loadRecallSnapshot(deck, index).state.status, 'next', 'sin ajuste sigue igual');
 });
 
+test('AC-CFG-14: subir el máximo después de terminar reabre el recorrido en vez de perderlo', () => {
+  database.clear();
+  const done = reduceRecall(name(startRecall(scenario, index, { maxLevel: 1 }).state, 'a'), { type: 'name', cardId: 'b' }, index).state;
+  assert.equal(done.status, 'complete');
+  assert.equal(saveRecallSnapshot(done).ok, true);
+  const raised = loadRecallSnapshot(deck, index, { maxLevel: 8 });
+  assert.equal(raised.ok, true, raised.reason);
+  assert.equal(raised.state.status, 'next');
+  assert.equal(raised.state.nextLevel, 2);
+  assert.equal(raised.state.maxLevel, 8);
+});
+
+test('AC-CFG-13: el mismo mazo con las claves en otro orden conserva el progreso', () => {
+  database.clear();
+  assert.equal(saveSettings({ maxLevel: 12, deck: imported }).ok, true);
+  assert.equal(saveRecallSnapshot(name(begin(), 'a')).ok, true);
+  const { deck: d, cards: c } = imported;
+  const reordered = { cards: c, deck: { cards: [...d.cards].reverse(), runes: d.runes, champion: d.champion, legend: d.legend,
+    domains: d.domains, name: d.name, id: d.id } };
+  assert.equal(saveSettings({ deck: reordered, maxLevel: 7 }).ok, true);
+  assert.ok(load({}).recall, 'es el mismo mazo: el progreso queda');
+});
+
 test('AC-CMB-22: fallo de lectura usa copia en memoria sin perder último guardado', () => {
   assert.equal(save({ legacy: { streak: 9 } }), true);
   window.localStorage.getItem = () => { throw new Error('blocked read'); };

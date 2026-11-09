@@ -137,8 +137,10 @@ function replay(deck, index, seed, level, identity, runes, found, status, maxLev
     // el cierre se recalcula como completo, pero el snapshot dice que quedó en revisión.
     state = status === 'review' ? { ...result.state, status: 'review' } : result.state;
   }
-  // El maximo se bajo despues de guardar: el nivel que quedo "con siguiente" ahora es el ultimo.
+  // El maximo cambio despues de guardar. Bajado: el nivel que quedo "con siguiente" ahora es el
+  // ultimo. Subido: el que habia terminado el recorrido ahora tiene siguiente. Ninguno se pierde.
   if (status === 'next' && ['complete', 'omitted'].includes(state.status)) status = state.status;
+  if (['complete', 'omitted'].includes(status) && state.status === 'next') status = 'next';
   if (state.status !== status) return problem('Terminalidad del snapshot incompatible');
   return { ok: true, state };
 }
@@ -195,12 +197,16 @@ export function loadSettings() {
     settings: { ...DEFAULT_SETTINGS } };
 }
 
+/** Identidad de un mazo para comparar: sin depender del orden de las claves ni de las cartas. */
+const deckKey = (saved) => saved && JSON.stringify([saved.deck.legend ?? null, saved.deck.champion ?? null,
+  Object.entries(saved.deck.runes ?? {}).sort(), saved.deck.cards.map(({ cardId, qty }) => [cardId, qty]).sort()]);
+
 /** Un mazo distinto empieza de nuevo: el progreso del anterior no se aplica a este. */
 export function saveSettings(value) {
   const checked = checkSettings(value);
   if (!checked.ok) return checked;
   const { recall, ...current } = load({});
-  const sameDeck = JSON.stringify(current.settings?.deck ?? null) === JSON.stringify(checked.settings.deck);
+  const sameDeck = deckKey(current.settings?.deck ?? null) === deckKey(checked.settings.deck);
   const persisted = writeRoot({ ...current, ...(sameDeck && recall ? { recall } : {}), settings: checked.settings });
   return { ok: true, persisted };
 }

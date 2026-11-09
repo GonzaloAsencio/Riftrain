@@ -180,7 +180,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
 
   /** El boton que se toco se oculta: el foco pasa a lo que sigue en vez de caer al <body>. */
   function focusNextAction() {
-    // Sin boton que siga (nivel 12 completo u omitido): el mensaje final, que es lo que hay para leer.
+    // Sin boton que siga (el ultimo nivel, completo u omitido): el mensaje final, que es lo que hay para leer.
     ([repeat, next].find((item) => !item.hidden) ?? message).focus();
   }
 
