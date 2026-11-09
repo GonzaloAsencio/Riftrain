@@ -46,7 +46,8 @@ export function mountCelebration(root, { reducedMotion = false, pieces = 36 } = 
       if (reducedMotion) return;
       const items = Array.from({ length: pieces }, (_, i) => piece(i));
       confetti.append(...items);
-      // Cuando cae la ultima, el confetti se va solo; el cartel queda hasta avanzar.
+      // Cuando cae la ultima, el confetti se va solo. El cartel se desvanece por CSS a los 2.6s;
+      // lo que queda fijo es el mensaje de estado de la pantalla.
       items.at(-1)?.addEventListener('animationend', () => confetti.replaceChildren(), { once: true });
     },
     hide,
