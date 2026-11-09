@@ -232,16 +232,23 @@ export function buildCatalog(items) {
  * nombre entero se prueba SIEMPRE primero. Recortar por la coma es el plan B,
  * nunca el plan A.
  */
-function findInCatalog(name, index) {
+function findInCatalog(name, index, byBase) {
   const exacto = index.get(slug(name));
-  if (exacto) return exacto;
+  if (exacto) return { hit: exacto };
 
   const coma = name.indexOf(',');
   if (coma > 0) {
     const atras = index.get(slug(name.slice(coma + 1)));
-    if (atras) return atras;
+    if (atras) return { hit: atras };
   }
-  return null;
+
+  // HECHIZOS FIRMA: Riot publica "Icathian Rain" con el campeon como subtitulo ("Kai'Sa") y los
+  // exports lo escriben sin el. El nombre base alcanza SOLO si una sola carta lo lleva: "Ahri"
+  // son tres cartas distintas y ahi no se adivina, se nombran las opciones.
+  const mismos = byBase.get(slug(name)) ?? [];
+  if (mismos.length === 1) return { hit: mismos[0] };
+  if (mismos.length > 1) return { ambiguous: mismos.map((c) => c.name) };
+  return {};
 }
 
 /**
@@ -265,15 +272,23 @@ export function resolveDeck(parsed, catalogCards) {
   }
 
   const index = new Map(catalogCards.map((c) => [c.id, c]));
+  const byBase = new Map();
+  for (const c of catalogCards) {
+    const key = slug(c.baseName ?? c.name);
+    if (!byBase.has(key)) byBase.set(key, []);
+    byBase.get(key).push(c);
+  }
   const missing = [];
 
   const buscar = (carta, zone) => {
-    const hit = findInCatalog(carta.name, index);
+    const { hit, ambiguous } = findInCatalog(carta.name, index, byBase);
     if (!hit) {
       missing.push({
         name: carta.name,
         zone,
-        reason: `"${carta.name}" no esta en el catalogo oficial`,
+        reason: ambiguous
+          ? `"${carta.name}" puede ser ${ambiguous.length} cartas (${ambiguous.join(', ')}): escribí el nombre completo`
+          : `"${carta.name}" no esta en el catalogo oficial`,
       });
       return null;
     }
