@@ -1,5 +1,5 @@
 {
- "_generated": "2026-11-09T19:23:32.628Z",
+ "_generated": "2026-11-09T22:13:45.315Z",
  "_source": "https://riftbound.leagueoflegends.com/en-us/card-gallery/",
  "_buildId": "saXcR0KxRzJ_Rr6squY8u",
  "_warning": "GENERADO por tools/fetch-cards.mjs. No editar a mano. Datos de carta (c) Riot Games.",
@@ -60,6 +60,13 @@
    "collectorNumber": 150,
    "energy": 3,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "body",
+     "mind"
+    ]
+   },
    "domain": "mind",
    "domains": [
     "mind",
@@ -69,8 +76,8 @@
    "might": null,
    "text": "<p>Ready up to 4 units, gear, and/or runes.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/31b71a16ee85cf30124fdaa2c575e709a4c83771-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre mind y body y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "VEN-150"
@@ -307,6 +314,30 @@
    ]
   },
   {
+   "id": "akali-deadly-weapon",
+   "name": "Akali, Deadly Weapon",
+   "baseName": "Akali",
+   "subtitle": "Deadly Weapon",
+   "code": "VEN-021/166",
+   "collectorNumber": 21,
+   "energy": 3,
+   "power": {},
+   "domain": "fury",
+   "domains": [
+    "fury"
+   ],
+   "type": "unit",
+   "might": 3,
+   "text": "<p>[Empower] :rb_energy_2::rb_rune_fury: (:rb_energy_2::rb_rune_fury:: Empower me. Use only if not Empowered.)<br />When I move, you may deal 1 to a unit at a battlefield I moved to or from. If I'm [Empowered], deal 2 instead.<br />[Empowered][&gt;] I have +1 :rb_might:.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/564e5f35ae39b6604290e83f39ffb61c2b2b9175-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "VEN-021"
+   ]
+  },
+  {
    "id": "akali-silent",
    "name": "Akali, Silent",
    "baseName": "Akali",
@@ -330,30 +361,6 @@
    "source": "gallery",
    "printings": [
     "VEN-038"
-   ]
-  },
-  {
-   "id": "akali-deadly-weapon",
-   "name": "Akali, Deadly Weapon",
-   "baseName": "Akali",
-   "subtitle": "Deadly Weapon",
-   "code": "VEN-021/166",
-   "collectorNumber": 21,
-   "energy": 3,
-   "power": {},
-   "domain": "fury",
-   "domains": [
-    "fury"
-   ],
-   "type": "unit",
-   "might": 3,
-   "text": "<p>[Empower] :rb_energy_2::rb_rune_fury: (:rb_energy_2::rb_rune_fury:: Empower me. Use only if not Empowered.)<br />When I move, you may deal 1 to a unit at a battlefield I moved to or from. If I'm [Empowered], deal 2 instead.<br />[Empowered][&gt;] I have +1 :rb_might:.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/564e5f35ae39b6604290e83f39ffb61c2b2b9175-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "VEN-021"
    ]
   },
   {
@@ -437,6 +444,13 @@
    "collectorNumber": 192,
    "energy": 3,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "body",
+     "calm"
+    ]
+   },
    "domain": "calm",
    "domains": [
     "calm",
@@ -446,8 +460,8 @@
    "might": null,
    "text": "<p>[Action] (Play on your turn or in showdowns.)<br />Choose a friendly unit. It deals damage equal to its Might split among enemy units at battlefields. Then for each unit this kills, do this: Gain 1 XP.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/154940caa774fd8219625cf051ddcb230ffc7f02-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre calm y body y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "UNL-192"
@@ -817,32 +831,6 @@
    ]
   },
   {
-   "id": "annie-fiery",
-   "name": "Annie, Fiery",
-   "baseName": "Annie",
-   "subtitle": "Fiery",
-   "code": "OGS-001/024",
-   "collectorNumber": 1,
-   "energy": 5,
-   "power": {
-    "fury": 1
-   },
-   "domain": "fury",
-   "domains": [
-    "fury"
-   ],
-   "type": "unit",
-   "might": 4,
-   "text": "<p>Your spells and abilities deal 1 Bonus Damage. (Each instance of damage they deal is increased by 1.)</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/532d75dc36a16eb5954253a77366fcceac7aec62-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "OGS-001"
-   ]
-  },
-  {
    "id": "annie-stubborn",
    "name": "Annie, Stubborn",
    "baseName": "Annie",
@@ -866,6 +854,32 @@
    "source": "gallery",
    "printings": [
     "OGS-010"
+   ]
+  },
+  {
+   "id": "annie-fiery",
+   "name": "Annie, Fiery",
+   "baseName": "Annie",
+   "subtitle": "Fiery",
+   "code": "OGS-001/024",
+   "collectorNumber": 1,
+   "energy": 5,
+   "power": {
+    "fury": 1
+   },
+   "domain": "fury",
+   "domains": [
+    "fury"
+   ],
+   "type": "unit",
+   "might": 4,
+   "text": "<p>Your spells and abilities deal 1 Bonus Damage. (Each instance of damage they deal is increased by 1.)</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/532d75dc36a16eb5954253a77366fcceac7aec62-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "OGS-001"
    ]
   },
   {
@@ -1025,6 +1039,13 @@
    "collectorNumber": 200,
    "energy": 3,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "chaos",
+     "mind"
+    ]
+   },
    "domain": "mind",
    "domains": [
     "mind",
@@ -1034,8 +1055,8 @@
    "might": null,
    "text": "<p>[Action] (Play on your turn or in showdowns.)<br />Banish a friendly unit, then its owner plays it, ignoring its cost. Deal 3 to an enemy unit at a battlefield. Banish this.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/a5d1d26dee01db24f32a1432639478753d22aa92-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre mind y chaos y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "SFD-200"
@@ -1098,6 +1119,13 @@
    "collectorNumber": 198,
    "energy": 6,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "calm",
+     "order"
+    ]
+   },
    "domain": "calm",
    "domains": [
     "calm",
@@ -1107,8 +1135,8 @@
    "might": null,
    "text": "<p>Play a 2 :rb_might: Sand Soldier unit token for each Equipment you control. Then ready two of them.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/346f4698fea2878dde88470c1793047140c981e3-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre calm y order y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "SFD-198"
@@ -2269,6 +2297,13 @@
    "collectorNumber": 150,
    "energy": 3,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "calm",
+     "chaos"
+    ]
+   },
    "domain": "calm",
    "domains": [
     "calm",
@@ -2278,8 +2313,8 @@
    "might": 3,
    "text": "<p>[Equip] — :rb_rune_rainbow: or exhaust a friendly unit. (Pay the cost: Attach this to a unit you control.)</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/04aaded01b23641e496e39f51882ccfe89715492-744x1040.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre calm y chaos y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "RAD-150"
@@ -4542,6 +4577,13 @@
    "collectorNumber": 194,
    "energy": 2,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "body",
+     "calm"
+    ]
+   },
    "domain": "calm",
    "domains": [
     "calm",
@@ -4551,8 +4593,8 @@
    "might": null,
    "text": "<p>[Reaction] (Play any time, even before spells and abilities resolve.)<br />Choose a unit. The next time that unit would be dealt damage this turn, prevent it. Draw 1.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/7c643b3da9a78518b1b92e3eeb0078b88d82bf79-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre calm y body y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "SFD-194"
@@ -4892,6 +4934,13 @@
    "collectorNumber": 196,
    "energy": 9,
    "power": {},
+   "powerAny": {
+    "amount": 2,
+    "domains": [
+     "calm",
+     "order"
+    ]
+   },
    "domain": "calm",
    "domains": [
     "calm",
@@ -4901,8 +4950,8 @@
    "might": 8,
    "text": "<p>I enter ready.<br />Reduce my cost by :rb_energy_1: for each of the following tags among your units — Bird, Cat, Dog, and Poro.<br />When I attack while your units have all 4 tags, [Stun] an enemy unit here. (It doesn't deal combat damage this turn.)</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/ada85b2a6076b60933831454d02a21da3654362c-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 2 de Poder entre calm y order y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "UNL-196"
@@ -4967,6 +5016,13 @@
    "collectorNumber": 182,
    "energy": 1,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "fury",
+     "mind"
+    ]
+   },
    "domain": "fury",
    "domains": [
     "fury",
@@ -4976,8 +5032,8 @@
    "might": null,
    "text": "<p>[Reaction] (Play any time, even before spells and abilities resolve.)<br />[Repeat] :rb_energy_1::rb_rune_rainbow: (You may pay the additional cost to repeat this spell's effect.)<br />Give your Mechs +1 :rb_might: this turn.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/c4652150ba885dd346b8f3622fd0e4ada7cf767f-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre fury y mind y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "SFD-182"
@@ -5247,6 +5303,13 @@
    "collectorNumber": 144,
    "energy": 2,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "chaos",
+     "fury"
+    ]
+   },
    "domain": "fury",
    "domains": [
     "fury",
@@ -5256,8 +5319,8 @@
    "might": null,
    "text": "<p>[Burn 3]. (Put the top 3 cards of your Main Deck into your trash.)<br />Play a 0 :rb_might: Shadow Clone unit token. (It has &quot;When I attack, you may banish a unit from your trash. If you do, give me [Assault 4] this turn.&quot;)<br />[Flow] :rb_energy_1::rb_rune_rainbow::rb_rune_rainbow: (You may play this from your trash for its Flow cost. Then banish it.)</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/87ccfb8d1c19f402bb37ffa392011ee2f0880aa9-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre fury y chaos y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "VEN-144"
@@ -5272,6 +5335,13 @@
    "collectorNumber": 186,
    "energy": 4,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "chaos",
+     "fury"
+    ]
+   },
    "domain": "fury",
    "domains": [
     "fury",
@@ -5281,8 +5351,8 @@
    "might": null,
    "text": "<p>Kill a unit at a battlefield. Then, if it had 3 :rb_might: or less, you may play this from your trash for :rb_rune_rainbow:.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/17d93a11a252287e3b0f4bbe32722ecc9469ec66-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre fury y chaos y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "UNL-186"
@@ -5347,6 +5417,13 @@
    "collectorNumber": 24,
    "energy": 5,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "body",
+     "order"
+    ]
+   },
    "domain": "body",
    "domains": [
     "body",
@@ -5356,8 +5433,8 @@
    "might": null,
    "text": "<p>[Action] (Play on your turn or in showdowns.)<br />Give friendly units +2 :rb_might: this turn.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/986782271be078c184a8d1c196e375106459c6c5-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre body y order y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "OGS-024"
@@ -5548,6 +5625,13 @@
    "collectorNumber": 196,
    "energy": 1,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "calm",
+     "chaos"
+    ]
+   },
    "domain": "calm",
    "domains": [
     "calm",
@@ -5557,8 +5641,8 @@
    "might": null,
    "text": "<p>[Reaction] (Play any time, even before spells and abilities resolve.)<br />Give a unit +2 :rb_might: this turn and another unit -2 :rb_might: this turn.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/6f5bc5c9e321830337998a2b85e4fec3cd8251c9-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre calm y chaos y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "SFD-196"
@@ -5649,6 +5733,13 @@
    "collectorNumber": 156,
    "energy": 2,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "body",
+     "order"
+    ]
+   },
    "domain": "body",
    "domains": [
     "body",
@@ -5658,8 +5749,8 @@
    "might": null,
    "text": "<p>[Deploy] (Play this only to a battlefield. When an opponent holds here, kill this.)<br />When one or more friendly units attack here, give one of them +2 :rb_might: this turn.<br />When you hold here, you may return this to its owner's hand.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/315b0f7901a83df38b9765f12b1edfdc7de566a3-744x1040.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre body y order y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "RAD-156"
@@ -6364,6 +6455,13 @@
    "collectorNumber": 258,
    "energy": 4,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "body",
+     "calm"
+    ]
+   },
    "domain": "calm",
    "domains": [
     "calm",
@@ -6373,8 +6471,8 @@
    "might": null,
    "text": "<p>Move an enemy unit. Then choose another enemy unit at its destination. They deal damage equal to their Mights to each other.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/7f4cbd4fb340cc13b3fbe0ec0db706464d9b29f4-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre calm y body y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "OGN-258"
@@ -6872,32 +6970,6 @@
    ]
   },
   {
-   "id": "ekko-recurrent",
-   "name": "Ekko, Recurrent",
-   "baseName": "Ekko",
-   "subtitle": "Recurrent",
-   "code": "OGN-110/298",
-   "collectorNumber": 110,
-   "energy": 5,
-   "power": {
-    "mind": 1
-   },
-   "domain": "mind",
-   "domains": [
-    "mind"
-   ],
-   "type": "unit",
-   "might": 5,
-   "text": "<p>[Accelerate] (You may pay :rb_energy_1::rb_rune_mind: as an additional cost to have me enter ready.)<br />[Deathknell] — Recycle me to ready your runes. (When I die, get the effect.)</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/65da19325b6def53d33c07bc1aa8f91fd2f1e723-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "OGN-110"
-   ]
-  },
-  {
    "id": "ekko-ingenious",
    "name": "Ekko, Ingenious",
    "baseName": "Ekko",
@@ -6946,6 +7018,32 @@
    "printings": [
     "RAD-021",
     "RAD-177"
+   ]
+  },
+  {
+   "id": "ekko-recurrent",
+   "name": "Ekko, Recurrent",
+   "baseName": "Ekko",
+   "subtitle": "Recurrent",
+   "code": "OGN-110/298",
+   "collectorNumber": 110,
+   "energy": 5,
+   "power": {
+    "mind": 1
+   },
+   "domain": "mind",
+   "domains": [
+    "mind"
+   ],
+   "type": "unit",
+   "might": 5,
+   "text": "<p>[Accelerate] (You may pay :rb_energy_1::rb_rune_mind: as an additional cost to have me enter ready.)<br />[Deathknell] — Recycle me to ready your runes. (When I die, get the effect.)</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/65da19325b6def53d33c07bc1aa8f91fd2f1e723-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "OGN-110"
    ]
   },
   {
@@ -7151,6 +7249,13 @@
    "collectorNumber": 152,
    "energy": 3,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "mind",
+     "order"
+    ]
+   },
    "domain": "mind",
    "domains": [
     "mind",
@@ -7160,8 +7265,8 @@
    "might": null,
    "text": "<p>Choose two —</p><ul><li>Deal 2 to a unit.</li><li>Play two 1 :rb_might: Recruit unit tokens.</li><li>Give up to two units each +1 :rb_might: this turn.</li><li>Look at the top 2 cards of your Main Deck, draw 1 and recycle the other.</li></ul>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/0200aeca5d0a1cca4b8ab5b3f3910207118ee4e4-744x1040.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre mind y order y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "RAD-152"
@@ -8554,6 +8659,13 @@
    "collectorNumber": 190,
    "energy": 4,
    "power": {},
+   "powerAny": {
+    "amount": 2,
+    "domains": [
+     "calm",
+     "mind"
+    ]
+   },
    "domain": "calm",
    "domains": [
     "calm",
@@ -8563,8 +8675,8 @@
    "might": 3,
    "text": "<p>[Unique] (Your deck can have only 1 card with this name.)<br />[Equip] :rb_rune_rainbow: (:rb_rune_rainbow:: Attach this to a unit you control.)</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/9bc49433a6ec5a8f4f1b44351094523d51b6bc11-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 2 de Poder entre calm y mind y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "SFD-190"
@@ -9752,6 +9864,13 @@
    "collectorNumber": 264,
    "energy": 2,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "chaos",
+     "mind"
+    ]
+   },
    "domain": "mind",
    "domains": [
     "mind",
@@ -9761,8 +9880,8 @@
    "might": null,
    "text": "<p>Return up to two cards with [Hidden] from your trash to your hand. You can hide ignoring costs this turn.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/3a1f70e49f1fdbac907a3395f517e96717e8afea-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre mind y chaos y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "OGN-264"
@@ -10469,6 +10588,13 @@
    "collectorNumber": 142,
    "energy": 2,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "chaos",
+     "fury"
+    ]
+   },
    "domain": "fury",
    "domains": [
     "fury",
@@ -10478,8 +10604,8 @@
    "might": null,
    "text": "<p>[Action] (Play on your turn or in showdowns.)<br />Kill any number of friendly Bomb tokens. At end of turn, play that many Bomb tokens to a single battlefield.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/65b599befcc6ed873de0e7965bf497a805505327-744x1040.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre fury y chaos y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "RAD-142"
@@ -10818,6 +10944,13 @@
    "collectorNumber": 202,
    "energy": 5,
    "power": {},
+   "powerAny": {
+    "amount": 2,
+    "domains": [
+     "mind",
+     "order"
+    ]
+   },
    "domain": "mind",
    "domains": [
     "mind",
@@ -10827,8 +10960,8 @@
    "might": null,
    "text": "<p>[Hidden] (Hide now for :rb_rune_rainbow: to react with later for :rb_energy_0:.)<br />Take control of an enemy unit at a battlefield. Ready it. (Start a combat if other enemies are there. Otherwise, conquer.)<br />Lose control of that unit and recall it at end of turn. (Send it to base. This isn't a move.)</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/56651a87166df7108ce9f945bd71390d4926770a-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 2 de Poder entre mind y order y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "SFD-202"
@@ -11061,6 +11194,13 @@
    "collectorNumber": 248,
    "energy": 7,
    "power": {},
+   "powerAny": {
+    "amount": 3,
+    "domains": [
+     "fury",
+     "mind"
+    ]
+   },
    "domain": "fury",
    "domains": [
     "fury",
@@ -11070,8 +11210,8 @@
    "might": null,
    "text": "<p>Deal 2 to a unit.<br />Deal 2 to a unit.<br />Deal 2 to a unit.<br />Deal 2 to a unit.<br />Deal 2 to a unit.<br />Deal 2 to a unit.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/8df37f633d3da734f3f2d85808a7cb9eadec1b04-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 3 de Poder entre fury y mind y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "OGN-248"
@@ -11825,32 +11965,6 @@
    ]
   },
   {
-   "id": "jax-unrelenting",
-   "name": "Jax, Unrelenting",
-   "baseName": "Jax",
-   "subtitle": "Unrelenting",
-   "code": "SFD-119/221",
-   "collectorNumber": 119,
-   "energy": 4,
-   "power": {
-    "body": 1
-   },
-   "domain": "body",
-   "domains": [
-    "body"
-   ],
-   "type": "unit",
-   "might": 3,
-   "text": "<p>[Weaponmaster] (When you play me, you may [Equip] one of your Equipment to me for :rb_rune_rainbow: less, even if it's already attached.)<br />When you attach an Equipment to me, you may pay :rb_energy_1: to draw 1.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/e63ab3370a6e4ce4baddfba12ab92468f6cc9541-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "SFD-119"
-   ]
-  },
-  {
    "id": "jax-unmatched",
    "name": "Jax, Unmatched",
    "baseName": "Jax",
@@ -11877,54 +11991,29 @@
    ]
   },
   {
-   "id": "jayce-man-of-progress",
-   "name": "Jayce, Man of Progress",
-   "baseName": "Jayce",
-   "subtitle": "Man of Progress",
-   "code": "SFD-084/221",
-   "collectorNumber": 84,
+   "id": "jax-unrelenting",
+   "name": "Jax, Unrelenting",
+   "baseName": "Jax",
+   "subtitle": "Unrelenting",
+   "code": "SFD-119/221",
+   "collectorNumber": 119,
    "energy": 4,
-   "power": {},
-   "domain": "mind",
-   "domains": [
-    "mind"
-   ],
-   "type": "unit",
-   "might": 4,
-   "text": "<p>When you play me, you may kill a friendly gear. If you do, you may play a gear with Energy cost no more than :rb_energy_7: from hand this turn, ignoring its Energy cost. (You must still pay its Power cost.)</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/b508fa4e52ebbd5f66e1fc7df28cfb70acdfe1f5-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "SFD-084",
-    "VEN-175"
-   ]
-  },
-  {
-   "id": "jayce-brilliant-inventor",
-   "name": "Jayce, Brilliant Inventor",
-   "baseName": "Jayce",
-   "subtitle": "Brilliant Inventor",
-   "code": "VEN-068/166",
-   "collectorNumber": 68,
-   "energy": 6,
    "power": {
-    "mind": 1
+    "body": 1
    },
-   "domain": "mind",
+   "domain": "body",
    "domains": [
-    "mind"
+    "body"
    ],
    "type": "unit",
-   "might": 6,
-   "text": "<p>When you play me or the first time you play a non-token gear each turn, you may ready something besides me that's exhausted.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/123e949085a63fdb6e1590ff0e519cab5758688b-744x1039.png?accountingTag=RB",
+   "might": 3,
+   "text": "<p>[Weaponmaster] (When you play me, you may [Equip] one of your Equipment to me for :rb_rune_rainbow: less, even if it's already attached.)<br />When you attach an Equipment to me, you may pay :rb_energy_1: to draw 1.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/e63ab3370a6e4ce4baddfba12ab92468f6cc9541-744x1039.png?accountingTag=RB",
    "needsCost": false,
    "reason": null,
    "source": "gallery",
    "printings": [
-    "VEN-068"
+    "SFD-119"
    ]
   },
   {
@@ -11954,6 +12043,57 @@
    ]
   },
   {
+   "id": "jayce-brilliant-inventor",
+   "name": "Jayce, Brilliant Inventor",
+   "baseName": "Jayce",
+   "subtitle": "Brilliant Inventor",
+   "code": "VEN-068/166",
+   "collectorNumber": 68,
+   "energy": 6,
+   "power": {
+    "mind": 1
+   },
+   "domain": "mind",
+   "domains": [
+    "mind"
+   ],
+   "type": "unit",
+   "might": 6,
+   "text": "<p>When you play me or the first time you play a non-token gear each turn, you may ready something besides me that's exhausted.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/123e949085a63fdb6e1590ff0e519cab5758688b-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "VEN-068"
+   ]
+  },
+  {
+   "id": "jayce-man-of-progress",
+   "name": "Jayce, Man of Progress",
+   "baseName": "Jayce",
+   "subtitle": "Man of Progress",
+   "code": "SFD-084/221",
+   "collectorNumber": 84,
+   "energy": 4,
+   "power": {},
+   "domain": "mind",
+   "domains": [
+    "mind"
+   ],
+   "type": "unit",
+   "might": 4,
+   "text": "<p>When you play me, you may kill a friendly gear. If you do, you may play a gear with Energy cost no more than :rb_energy_7: from hand this turn, ignoring its Energy cost. (You must still pay its Power cost.)</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/b508fa4e52ebbd5f66e1fc7df28cfb70acdfe1f5-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "SFD-084",
+    "VEN-175"
+   ]
+  },
+  {
    "id": "jeweled-colossus",
    "name": "Jeweled Colossus",
    "baseName": "Jeweled Colossus",
@@ -11975,6 +12115,30 @@
    "source": "gallery",
    "printings": [
     "OGN-086"
+   ]
+  },
+  {
+   "id": "jhin-meticulous-killer",
+   "name": "Jhin, Meticulous Killer",
+   "baseName": "Jhin",
+   "subtitle": "Meticulous Killer",
+   "code": "UNL-089/219",
+   "collectorNumber": 89,
+   "energy": 4,
+   "power": {},
+   "domain": "mind",
+   "domains": [
+    "mind"
+   ],
+   "type": "unit",
+   "might": 4,
+   "text": "<p>[Vision] (When you play me, look at the top card of your Main Deck. You may recycle it.)<br />If you've spent :rb_energy_4: or more to play a spell this turn, you may play me for :rb_rune_mind:.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/88fb6023ee9bd90fef3f36995ca27615dcd669f7-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "UNL-089"
    ]
   },
   {
@@ -12001,30 +12165,6 @@
    "source": "gallery",
    "printings": [
     "UNL-022"
-   ]
-  },
-  {
-   "id": "jhin-meticulous-killer",
-   "name": "Jhin, Meticulous Killer",
-   "baseName": "Jhin",
-   "subtitle": "Meticulous Killer",
-   "code": "UNL-089/219",
-   "collectorNumber": 89,
-   "energy": 4,
-   "power": {},
-   "domain": "mind",
-   "domains": [
-    "mind"
-   ],
-   "type": "unit",
-   "might": 4,
-   "text": "<p>[Vision] (When you play me, look at the top card of your Main Deck. You may recycle it.)<br />If you've spent :rb_energy_4: or more to play a spell this turn, you may play me for :rb_rune_mind:.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/88fb6023ee9bd90fef3f36995ca27615dcd669f7-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "UNL-089"
    ]
   },
   {
@@ -12477,6 +12617,13 @@
    "collectorNumber": 204,
    "energy": 2,
    "power": {},
+   "powerAny": {
+    "amount": 2,
+    "domains": [
+     "body",
+     "order"
+    ]
+   },
    "domain": "body",
    "domains": [
     "body",
@@ -12486,35 +12633,11 @@
    "might": null,
    "text": "<p>[Action] (Play on your turn or in showdowns.)<br />Choose an enemy unit at a battlefield. Its owner places it on the top or bottom of their Main Deck.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/90dcafd8ca6cedd534416232ebd29c451f12107c-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 2 de Poder entre body y order y no se sabe como se reparte",
-   "source": "gallery",
-   "printings": [
-    "UNL-204"
-   ]
-  },
-  {
-   "id": "kennen-keeper-of-balance",
-   "name": "Kennen, Keeper of Balance",
-   "baseName": "Kennen",
-   "subtitle": "Keeper of Balance",
-   "code": "VEN-135/166",
-   "collectorNumber": 135,
-   "energy": 3,
-   "power": {},
-   "domain": "order",
-   "domains": [
-    "order"
-   ],
-   "type": "unit",
-   "might": 2,
-   "text": "<p>[Hidden] (Hide now for :rb_rune_rainbow: to react with later for :rb_energy_0:.)<br />When you play me or I attack, you may pay :rb_energy_2: to [Stun] a unit. (It doesn't deal combat damage this turn.)<br />While there's a stunned enemy unit here, I have +2 :rb_might:.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/446ff54c091b07627f826952f45ee40e9976d040-744x1039.png?accountingTag=RB",
    "needsCost": false,
    "reason": null,
    "source": "gallery",
    "printings": [
-    "VEN-135"
+    "UNL-204"
    ]
   },
   {
@@ -12544,30 +12667,27 @@
    ]
   },
   {
-   "id": "kha-zix-evolving-hunter",
-   "name": "Kha'Zix, Evolving Hunter",
-   "baseName": "Kha'Zix",
-   "subtitle": "Evolving Hunter",
-   "code": "UNL-119/219",
-   "collectorNumber": 119,
-   "energy": 5,
-   "power": {
-    "body": 1
-   },
-   "domain": "body",
+   "id": "kennen-keeper-of-balance",
+   "name": "Kennen, Keeper of Balance",
+   "baseName": "Kennen",
+   "subtitle": "Keeper of Balance",
+   "code": "VEN-135/166",
+   "collectorNumber": 135,
+   "energy": 3,
+   "power": {},
+   "domain": "order",
    "domains": [
-    "body"
+    "order"
    ],
    "type": "unit",
-   "might": 5,
-   "text": "<p>[Hunt] (When I conquer or hold, gain 1 XP.)<br />When I attack, you may spend 3 XP to deal damage equal to my Might to an enemy unit here.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/ac07031af5b35881d781b7a7d7b78c59a0fb2cd4-744x1039.png?accountingTag=RB",
+   "might": 2,
+   "text": "<p>[Hidden] (Hide now for :rb_rune_rainbow: to react with later for :rb_energy_0:.)<br />When you play me or I attack, you may pay :rb_energy_2: to [Stun] a unit. (It doesn't deal combat damage this turn.)<br />While there's a stunned enemy unit here, I have +2 :rb_might:.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/446ff54c091b07627f826952f45ee40e9976d040-744x1039.png?accountingTag=RB",
    "needsCost": false,
    "reason": null,
    "source": "gallery",
    "printings": [
-    "UNL-119",
-    "VEN-180"
+    "VEN-135"
    ]
   },
   {
@@ -12594,6 +12714,33 @@
    "source": "gallery",
    "printings": [
     "UNL-143"
+   ]
+  },
+  {
+   "id": "kha-zix-evolving-hunter",
+   "name": "Kha'Zix, Evolving Hunter",
+   "baseName": "Kha'Zix",
+   "subtitle": "Evolving Hunter",
+   "code": "UNL-119/219",
+   "collectorNumber": 119,
+   "energy": 5,
+   "power": {
+    "body": 1
+   },
+   "domain": "body",
+   "domains": [
+    "body"
+   ],
+   "type": "unit",
+   "might": 5,
+   "text": "<p>[Hunt] (When I conquer or hold, gain 1 XP.)<br />When I attack, you may spend 3 XP to deal damage equal to my Might to an enemy unit here.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/ac07031af5b35881d781b7a7d7b78c59a0fb2cd4-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "UNL-119",
+    "VEN-180"
    ]
   },
   {
@@ -12930,6 +13077,13 @@
    "collectorNumber": 260,
    "energy": 3,
    "power": {},
+   "powerAny": {
+    "amount": 2,
+    "domains": [
+     "calm",
+     "chaos"
+    ]
+   },
    "domain": "calm",
    "domains": [
     "calm",
@@ -12939,8 +13093,8 @@
    "might": null,
    "text": "<p>[Action] (Play on your turn or in showdowns.)<br />Ready a friendly unit. It deals damage equal to its Might to an enemy unit at a battlefield.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/e7e6dc840210124825f787095541a66ae5cea178-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 2 de Poder entre calm y chaos y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "OGN-260"
@@ -13368,30 +13522,6 @@
    ]
   },
   {
-   "id": "lillia-protector-of-dreams",
-   "name": "Lillia, Protector of Dreams",
-   "baseName": "Lillia",
-   "subtitle": "Protector of Dreams",
-   "code": "UNL-058/219",
-   "collectorNumber": 58,
-   "energy": 5,
-   "power": {},
-   "domain": "calm",
-   "domains": [
-    "calm"
-   ],
-   "type": "unit",
-   "might": 4,
-   "text": "<p>When you play a token unit, give me +1 :rb_might: this turn.<br />Your token units have [Tank]. (They must be assigned combat damage first.)</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/daa5fe15e0a1c14c8dbb8f858d8a6d444ea6096e-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "UNL-058"
-   ]
-  },
-  {
    "id": "lillia-fae-fawn",
    "name": "Lillia, Fae Fawn",
    "baseName": "Lillia",
@@ -13416,6 +13546,30 @@
    ]
   },
   {
+   "id": "lillia-protector-of-dreams",
+   "name": "Lillia, Protector of Dreams",
+   "baseName": "Lillia",
+   "subtitle": "Protector of Dreams",
+   "code": "UNL-058/219",
+   "collectorNumber": 58,
+   "energy": 5,
+   "power": {},
+   "domain": "calm",
+   "domains": [
+    "calm"
+   ],
+   "type": "unit",
+   "might": 4,
+   "text": "<p>When you play a token unit, give me +1 :rb_might: this turn.<br />Your token units have [Tank]. (They must be assigned combat damage first.)</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/daa5fe15e0a1c14c8dbb8f858d8a6d444ea6096e-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "UNL-058"
+   ]
+  },
+  {
    "id": "lilting-lullaby",
    "name": "Lilting Lullaby",
    "baseName": "Lilting Lullaby",
@@ -13424,6 +13578,13 @@
    "collectorNumber": 190,
    "energy": 2,
    "power": {},
+   "powerAny": {
+    "amount": 2,
+    "domains": [
+     "calm",
+     "mind"
+    ]
+   },
    "domain": "calm",
    "domains": [
     "calm",
@@ -13433,8 +13594,8 @@
    "might": null,
    "text": "<p>[Reaction] (Play any time, even before spells and abilities resolve.)<br />Counter a spell. Its controller can't play spells this turn.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/272b71b493575e38ff8888ec187cd33e54c0eacc-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 2 de Poder entre calm y mind y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "UNL-190"
@@ -13666,30 +13827,6 @@
    ]
   },
   {
-   "id": "lucian-gunslinger",
-   "name": "Lucian, Gunslinger",
-   "baseName": "Lucian",
-   "subtitle": "Gunslinger",
-   "code": "SFD-028/221",
-   "collectorNumber": 28,
-   "energy": 3,
-   "power": {},
-   "domain": "fury",
-   "domains": [
-    "fury"
-   ],
-   "type": "unit",
-   "might": 2,
-   "text": "<p>[Assault] (+1 :rb_might: while I'm an attacker.)<br />When I attack, deal damage equal to my [Assault] to an enemy unit here.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/2dfb106d7c85235436d25261195a638e2ab15092-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "SFD-028"
-   ]
-  },
-  {
    "id": "lucian-merciless",
    "name": "Lucian, Merciless",
    "baseName": "Lucian",
@@ -13711,6 +13848,30 @@
    "source": "gallery",
    "printings": [
     "SFD-113"
+   ]
+  },
+  {
+   "id": "lucian-gunslinger",
+   "name": "Lucian, Gunslinger",
+   "baseName": "Lucian",
+   "subtitle": "Gunslinger",
+   "code": "SFD-028/221",
+   "collectorNumber": 28,
+   "energy": 3,
+   "power": {},
+   "domain": "fury",
+   "domains": [
+    "fury"
+   ],
+   "type": "unit",
+   "might": 2,
+   "text": "<p>[Assault] (+1 :rb_might: while I'm an attacker.)<br />When I attack, deal damage equal to my [Assault] to an enemy unit here.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/2dfb106d7c85235436d25261195a638e2ab15092-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "SFD-028"
    ]
   },
   {
@@ -14183,30 +14344,6 @@
    ]
   },
   {
-   "id": "master-yi-tempered",
-   "name": "Master Yi, Tempered",
-   "baseName": "Master Yi",
-   "subtitle": "Tempered",
-   "code": "UNL-113/219",
-   "collectorNumber": 113,
-   "energy": 4,
-   "power": {},
-   "domain": "body",
-   "domains": [
-    "body"
-   ],
-   "type": "unit",
-   "might": 4,
-   "text": "<p>[Hunt 2] (When I conquer or hold, gain 2 XP.)<br />[Level 6][&gt;] I have [Deflect] and [Ganking]. (While you have 6+ XP, opponents must pay :rb_rune_rainbow: to choose me with a spell or ability and I can move from battlefield to battlefield.)</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/a21feb3555825392fdb98f868840db3827ad0389-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "UNL-113"
-   ]
-  },
-  {
    "id": "master-yi-unstoppable",
    "name": "Master Yi, Unstoppable",
    "baseName": "Master Yi",
@@ -14230,6 +14367,30 @@
    "source": "gallery",
    "printings": [
     "UNL-059"
+   ]
+  },
+  {
+   "id": "master-yi-tempered",
+   "name": "Master Yi, Tempered",
+   "baseName": "Master Yi",
+   "subtitle": "Tempered",
+   "code": "UNL-113/219",
+   "collectorNumber": 113,
+   "energy": 4,
+   "power": {},
+   "domain": "body",
+   "domains": [
+    "body"
+   ],
+   "type": "unit",
+   "might": 4,
+   "text": "<p>[Hunt 2] (When I conquer or hold, gain 2 XP.)<br />[Level 6][&gt;] I have [Deflect] and [Ganking]. (While you have 6+ XP, opponents must pay :rb_rune_rainbow: to choose me with a spell or ability and I can move from battlefield to battlefield.)</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/a21feb3555825392fdb98f868840db3827ad0389-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "UNL-113"
    ]
   },
   {
@@ -14409,6 +14570,31 @@
    ]
   },
   {
+   "id": "mel-defiant-soul",
+   "name": "Mel, Defiant Soul",
+   "baseName": "Mel",
+   "subtitle": "Defiant Soul",
+   "code": "VEN-110/166",
+   "collectorNumber": 110,
+   "energy": 5,
+   "power": {},
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "unit",
+   "might": 4,
+   "text": "<p>[Empower] — Discard a spell (Pay the cost: Empower me. Use only if not Empowered.)<br />When I become [Empowered], banish an enemy unit at a battlefield with 3 :rb_might: or less.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/214567717b4f0156ff06c923e1603234cb52db61-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "VEN-110",
+    "VEN-188"
+   ]
+  },
+  {
    "id": "mel-newly-awakened",
    "name": "Mel, Newly Awakened",
    "baseName": "Mel",
@@ -14432,31 +14618,6 @@
    "source": "gallery",
    "printings": [
     "VEN-069"
-   ]
-  },
-  {
-   "id": "mel-defiant-soul",
-   "name": "Mel, Defiant Soul",
-   "baseName": "Mel",
-   "subtitle": "Defiant Soul",
-   "code": "VEN-110/166",
-   "collectorNumber": 110,
-   "energy": 5,
-   "power": {},
-   "domain": "chaos",
-   "domains": [
-    "chaos"
-   ],
-   "type": "unit",
-   "might": 4,
-   "text": "<p>[Empower] — Discard a spell (Pay the cost: Empower me. Use only if not Empowered.)<br />When I become [Empowered], banish an enemy unit at a battlefield with 3 :rb_might: or less.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/214567717b4f0156ff06c923e1603234cb52db61-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "VEN-110",
-    "VEN-188"
    ]
   },
   {
@@ -14667,6 +14828,13 @@
    "collectorNumber": 200,
    "energy": 3,
    "power": {},
+   "powerAny": {
+    "amount": 2,
+    "domains": [
+     "mind",
+     "order"
+    ]
+   },
    "domain": "mind",
    "domains": [
     "mind",
@@ -14676,8 +14844,8 @@
    "might": null,
    "text": "<p>Choose a unit. Play a ready Reflection unit token to your base. It becomes a copy of that unit. Give it [Temporary]. (Kill it at the start of its controller's Beginning Phase, before scoring.)</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/a7ef8a09c0297cd796c4e2dee15922745ede7417-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 2 de Poder entre mind y order y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "UNL-200"
@@ -14936,6 +15104,13 @@
    "collectorNumber": 198,
    "energy": 3,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "chaos",
+     "mind"
+    ]
+   },
    "domain": "mind",
    "domains": [
     "mind",
@@ -14945,8 +15120,8 @@
    "might": null,
    "text": "<p>[Action] (Play on your turn or in showdowns.)<br />Choose a battlefield where you have units. You may move up to one enemy unit to that battlefield. Then give enemy units there -2 :rb_might: this turn.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/2eda8d4bbee47857b1916599b5c7d5fa7ca400dc-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre mind y chaos y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "UNL-198"
@@ -15728,6 +15903,13 @@
    "collectorNumber": 254,
    "energy": 4,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "fury",
+     "order"
+    ]
+   },
    "domain": "fury",
    "domains": [
     "fury",
@@ -15737,8 +15919,8 @@
    "might": null,
    "text": "<p>[Action] (Play on your turn or in showdowns.)<br />Choose a unit. Kill it the next time it takes damage this turn.<br />[Legion] — Kill it now instead. (Get the effect if you've played another card this turn.)</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/57f646b0393b58b657cfabf66357d9fc4a34e046-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre fury y order y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "OGN-254"
@@ -15801,6 +15983,13 @@
    "collectorNumber": 148,
    "energy": 2,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "body",
+     "calm"
+    ]
+   },
    "domain": "calm",
    "domains": [
     "calm",
@@ -15810,8 +15999,8 @@
    "might": null,
    "text": "<p>[Action] (Play on your turn or in showdowns.)<br />Give a friendly unit [Shield 2] this turn, then deal damage equal to its [Shield] to an enemy unit. (A unit with Shield has +1 :rb_might: for each instance of Shield while it's a defender.)</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/ab5aa7d29bd49efe2c9da3b62a8065295c189991-744x1040.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre calm y body y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "RAD-148"
@@ -15922,6 +16111,13 @@
    "collectorNumber": 204,
    "energy": 1,
    "power": {},
+   "powerAny": {
+    "amount": 2,
+    "domains": [
+     "body",
+     "chaos"
+    ]
+   },
    "domain": "body",
    "domains": [
     "body",
@@ -15931,8 +16127,8 @@
    "might": null,
    "text": "<p>Ready your units.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/3205df9cf3d12551c445a740889392264ec95b09-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 2 de Poder entre body y chaos y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "SFD-204"
@@ -17542,6 +17738,13 @@
    "collectorNumber": 154,
    "energy": 2,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "body",
+     "order"
+    ]
+   },
    "domain": "body",
    "domains": [
     "body",
@@ -17551,8 +17754,8 @@
    "might": null,
    "text": "<p>Choose a friendly unit. Kill an enemy unit with less Might than it.<br />[Flow] :rb_energy_5::rb_rune_rainbow::rb_rune_rainbow: (You may play this from your trash for its Flow cost. Then banish it.)</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/c8348e2aef6bad5a38d4f71b1b1c277598670286-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre body y order y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "VEN-154"
@@ -17741,6 +17944,13 @@
    "collectorNumber": 191,
    "energy": 4,
    "power": {},
+   "powerAny": {
+    "amount": 2,
+    "domains": [
+     "calm",
+     "mind"
+    ]
+   },
    "domain": "calm",
    "domains": [
     "calm",
@@ -17750,8 +17960,8 @@
    "might": 3,
    "text": "<p>[Unique] (Your deck can have only 1 card with this name.)<br />[Equip] :rb_rune_rainbow: (:rb_rune_rainbow:: Attach this to a unit you control.)</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/e93d11bdae446762b1932f0327d2ffe489fa4481-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 2 de Poder entre calm y mind y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "SFD-191"
@@ -18104,6 +18314,13 @@
    "collectorNumber": 144,
    "energy": 2,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "fury",
+     "order"
+    ]
+   },
    "domain": "fury",
    "domains": [
     "fury",
@@ -18113,8 +18330,8 @@
    "might": null,
    "text": "<p>Give an enemy unit -2 :rb_might: this turn and a friendly unit +2 :rb_might: this turn. They deal damage equal to their Mights to each other.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/fd3b4c6939b6a80b33956da7e3a9102eba9c32a8-744x1040.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre fury y order y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "RAD-144"
@@ -18177,6 +18394,13 @@
    "collectorNumber": 152,
    "energy": 1,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "chaos",
+     "mind"
+    ]
+   },
    "domain": "mind",
    "domains": [
     "mind",
@@ -18186,8 +18410,8 @@
    "might": null,
    "text": "<p>[Reaction] (Play any time, even before spells and abilities resolve.)<br />Choose a spell with Energy cost no more than :rb_energy_4:.  You may pay :rb_rune_rainbow:. If you do, gain control of it and you may make new choices for it. Otherwise, counter it.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/2df67fe2ba17f0796ff1f9c03b85d2db48fe954b-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre mind y chaos y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "VEN-152"
@@ -18506,6 +18730,13 @@
    "collectorNumber": 184,
    "energy": 2,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "body",
+     "fury"
+    ]
+   },
    "domain": "fury",
    "domains": [
     "fury",
@@ -18515,8 +18746,8 @@
    "might": null,
    "text": "<p>[Action] (Play on your turn or in showdowns.)<br />Move a friendly unit. You may attach an Equipment with the same controller to it. This turn, that unit has &quot;When I conquer, you may move me to my base.&quot;</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/48754730486abefdb56221d0760b9c963aae7c09-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre fury y body y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "SFD-184"
@@ -19115,6 +19346,13 @@
    "collectorNumber": 206,
    "energy": 2,
    "power": {},
+   "powerAny": {
+    "amount": 2,
+    "domains": [
+     "body",
+     "order"
+    ]
+   },
    "domain": "body",
    "domains": [
     "body",
@@ -19124,8 +19362,8 @@
    "might": null,
    "text": "<p>[Reaction] (Play any time, even before spells and abilities resolve.)<br />Choose a friendly unit and a spell. Counter that spell and give that unit +:rb_might: equal to that spell's Energy cost this turn.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/07af52eada661904b467ca118c2715435f0a3b00-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 2 de Poder entre body y order y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "SFD-206"
@@ -19525,30 +19763,6 @@
    ]
   },
   {
-   "id": "rumble-hotheaded",
-   "name": "Rumble, Hotheaded",
-   "baseName": "Rumble",
-   "subtitle": "Hotheaded",
-   "code": "SFD-026/221",
-   "collectorNumber": 26,
-   "energy": 4,
-   "power": {},
-   "domain": "fury",
-   "domains": [
-    "fury"
-   ],
-   "type": "unit",
-   "might": 4,
-   "text": "<p>Your Mechs each have [Assault]. (+1 :rb_might: while we're attackers.)<br />When I conquer, you may recycle another friendly unit to play a Mech from your trash. Reduce its Energy cost by the Might of the unit you recycled.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/e211311ecb1475e87d3d94eba4a6774b4e900091-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "SFD-026"
-   ]
-  },
-  {
    "id": "rumble-scrapper",
    "name": "Rumble, Scrapper",
    "baseName": "Rumble",
@@ -19572,6 +19786,30 @@
    "source": "gallery",
    "printings": [
     "SFD-089"
+   ]
+  },
+  {
+   "id": "rumble-hotheaded",
+   "name": "Rumble, Hotheaded",
+   "baseName": "Rumble",
+   "subtitle": "Hotheaded",
+   "code": "SFD-026/221",
+   "collectorNumber": 26,
+   "energy": 4,
+   "power": {},
+   "domain": "fury",
+   "domains": [
+    "fury"
+   ],
+   "type": "unit",
+   "might": 4,
+   "text": "<p>Your Mechs each have [Assault]. (+1 :rb_might: while we're attackers.)<br />When I conquer, you may recycle another friendly unit to play a Mech from your trash. Reduce its Energy cost by the Might of the unit you recycled.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/e211311ecb1475e87d3d94eba4a6774b4e900091-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "SFD-026"
    ]
   },
   {
@@ -20554,6 +20792,33 @@
    ]
   },
   {
+   "id": "sett-kingpin",
+   "name": "Sett, Kingpin",
+   "baseName": "Sett",
+   "subtitle": "Kingpin",
+   "code": "RAD-183/167",
+   "collectorNumber": 183,
+   "energy": 4,
+   "power": {
+    "order": 1
+   },
+   "domain": "order",
+   "domains": [
+    "order"
+   ],
+   "type": "unit",
+   "might": 5,
+   "text": "<p>[Tank]<br />I get +1 :rb_might: for each buffed friendly unit at my battlefield.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/fbc2c6a0a0ea33b58c9cfbdc91c6c229b02a90da-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "OGN-240",
+    "RAD-183"
+   ]
+  },
+  {
    "id": "sett-brawler",
    "name": "Sett, Brawler",
    "baseName": "Sett",
@@ -20579,33 +20844,6 @@
     "OGN-164",
     "SFD-232",
     "VEN-SP4"
-   ]
-  },
-  {
-   "id": "sett-kingpin",
-   "name": "Sett, Kingpin",
-   "baseName": "Sett",
-   "subtitle": "Kingpin",
-   "code": "RAD-183/167",
-   "collectorNumber": 183,
-   "energy": 4,
-   "power": {
-    "order": 1
-   },
-   "domain": "order",
-   "domains": [
-    "order"
-   ],
-   "type": "unit",
-   "might": 5,
-   "text": "<p>[Tank]<br />I get +1 :rb_might: for each buffed friendly unit at my battlefield.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/fbc2c6a0a0ea33b58c9cfbdc91c6c229b02a90da-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "OGN-240",
-    "RAD-183"
    ]
   },
   {
@@ -20666,6 +20904,13 @@
    "collectorNumber": 148,
    "energy": 2,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "calm",
+     "order"
+    ]
+   },
    "domain": "calm",
    "domains": [
     "calm",
@@ -20675,8 +20920,8 @@
    "might": null,
    "text": "<p>Move an enemy unit to a battlefield where you have units. If you have exactly two units there, they each get +1 :rb_might: this turn.<br />[Flow] :rb_energy_5::rb_rune_rainbow::rb_rune_rainbow: (You may play this from your trash for its Flow cost. Then banish it.)</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/c95a4862c3af5f3ec1cee1f1ae7291c8724df7a1-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre calm y order y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "VEN-148"
@@ -21162,6 +21407,13 @@
    "collectorNumber": 270,
    "energy": 1,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "body",
+     "order"
+    ]
+   },
    "domain": "body",
    "domains": [
     "body",
@@ -21171,8 +21423,8 @@
    "might": null,
    "text": "<p>Buff a friendly unit in your base, then move it to a battlefield. (If it doesn't have a buff, it gets a +1 :rb_might: buff.)</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/c9b6f7a7cca1589fb53276f74ac8bc547b31e5ec-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre body y order y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "OGN-270"
@@ -21187,6 +21439,13 @@
    "collectorNumber": 192,
    "energy": 4,
    "power": {},
+   "powerAny": {
+    "amount": 2,
+    "domains": [
+     "calm",
+     "mind"
+    ]
+   },
    "domain": "calm",
    "domains": [
     "calm",
@@ -21196,8 +21455,8 @@
    "might": 2,
    "text": "<p>[Unique] (Your deck can have only 1 card with this name.)<br />[Equip] :rb_rune_rainbow: (:rb_rune_rainbow:: Attach this to a unit you control.)<br />When you play this, ready your units.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/6f2f7175e61486859d7f5da804e41733d66b2254-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 2 de Poder entre calm y mind y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "SFD-192"
@@ -21212,6 +21471,13 @@
    "collectorNumber": 140,
    "energy": 1,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "calm",
+     "fury"
+    ]
+   },
    "domain": "fury",
    "domains": [
     "fury",
@@ -21221,8 +21487,8 @@
    "might": null,
    "text": "<p>Deal 2 to up to one enemy unit at a battlefield, then move a friendly unit.<br />[Flow] :rb_energy_3::rb_rune_rainbow: (You may play this from your trash for its Flow cost. Then banish it.)</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/bac1ecff92d022e99a3696ad00d020530a1a09e7-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre fury y calm y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "VEN-140"
@@ -21337,6 +21603,13 @@
    "collectorNumber": 266,
    "energy": 2,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "mind",
+     "order"
+    ]
+   },
    "domain": "mind",
    "domains": [
     "mind",
@@ -21346,8 +21619,8 @@
    "might": null,
    "text": "<p>[Reaction] (Play any time, even before spells and abilities resolve.)<br />Choose a battlefield. Give friendly units there +1 :rb_might: this turn and enemy units there -1 :rb_might: this turn, to a minimum of 1 :rb_might:.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/b449170ba312711c82708d1fea2b044822ce5eaa-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre mind y order y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "OGN-266"
@@ -22137,6 +22410,13 @@
    "collectorNumber": 186,
    "energy": 2,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "chaos",
+     "fury"
+    ]
+   },
    "domain": "fury",
    "domains": [
     "fury",
@@ -22146,8 +22426,8 @@
    "might": 3,
    "text": "<p>[Quick-Draw] (This has [Reaction]. When you play it, attach it to a unit you control.)<br />[Equip] :rb_rune_rainbow: (:rb_rune_rainbow:: Attach this to a unit you control.)<br />[Temporary] (If this is unattached, kill it at the start of its controller's Beginning Phase, before scoring.)</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/e4e0328034e605d000e23ac5e820d233f0e3b520-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre fury y chaos y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "SFD-186"
@@ -22927,6 +23207,13 @@
    "collectorNumber": 250,
    "energy": 6,
    "power": {},
+   "powerAny": {
+    "amount": 2,
+    "domains": [
+     "body",
+     "fury"
+    ]
+   },
    "domain": "fury",
    "domains": [
     "fury",
@@ -22936,8 +23223,8 @@
    "might": null,
    "text": "<p>Choose a friendly unit in your base. Deal damage equal to its Might to all enemy units at a battlefield, then move your unit there.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/d86c4137cc7f77f103cd7d6228125df8cb9a54e1-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 2 de Poder entre fury y body y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "OGN-250"
@@ -23194,6 +23481,13 @@
    "collectorNumber": 252,
    "energy": 4,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "chaos",
+     "fury"
+    ]
+   },
    "domain": "fury",
    "domains": [
     "fury",
@@ -23203,8 +23497,8 @@
    "might": null,
    "text": "<p>Deal 5 to a unit.<br />When you conquer, you may discard 1 to return this from your trash to your hand.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/95d6fd4d7944e759cfe7ee5e208fa329b719333b-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre fury y chaos y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "OGN-252"
@@ -23713,6 +24007,13 @@
    "collectorNumber": 146,
    "energy": 5,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "calm",
+     "mind"
+    ]
+   },
    "domain": "calm",
    "domains": [
     "calm",
@@ -23722,8 +24023,8 @@
    "might": null,
    "text": "<p>[Deploy] (Play this only to a battlefield. When an opponent holds here, kill this.)<br />[Ganking] (While this is a unit, it can move from battlefield to battlefield.)<br />When you play or move this, choose one —</p><ul><li>Draw 1.</li><li>Deal 2 to enemy units here.</li></ul>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/4b11f36bd5ce2b08677959664cda3906a04d234c-744x1040.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre calm y mind y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "RAD-146"
@@ -24150,6 +24451,13 @@
    "collectorNumber": 184,
    "energy": 2,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "body",
+     "fury"
+    ]
+   },
    "domain": "fury",
    "domains": [
     "fury",
@@ -24159,8 +24467,8 @@
    "might": null,
    "text": "<p>[Reaction] (Play any time, even before spells and abilities resolve.)<br />Banish a friendly unit, then its owner plays it to any battlefield, ignoring its cost.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/2753c2b3ea4fd55e5225a4451a29736b5c3434a8-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre fury y body y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "UNL-184"
@@ -24225,6 +24533,13 @@
    "collectorNumber": 18,
    "energy": 8,
    "power": {},
+   "powerAny": {
+    "amount": 2,
+    "domains": [
+     "chaos",
+     "fury"
+    ]
+   },
    "domain": "fury",
    "domains": [
     "fury",
@@ -24234,8 +24549,8 @@
    "might": 7,
    "text": "<p>When you play me, deal 3 to all units at battlefields.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/74f8bc78573b33d9979b0e9c121b858d770a490c-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 2 de Poder entre fury y chaos y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "OGS-018"
@@ -25667,6 +25982,30 @@
    ]
   },
   {
+   "id": "vi-hotheaded",
+   "name": "Vi, Hotheaded",
+   "baseName": "Vi",
+   "subtitle": "Hotheaded",
+   "code": "UNL-030/219",
+   "collectorNumber": 30,
+   "energy": 4,
+   "power": {},
+   "domain": "fury",
+   "domains": [
+    "fury"
+   ],
+   "type": "unit",
+   "might": 3,
+   "text": "<p>[Deflect] (Opponents must pay :rb_rune_rainbow: to choose me with a spell or ability.)<br />:rb_energy_2::rb_rune_fury:: Double my Might this turn.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/03a55e8d494d7efe20da792365161f5c43c20779-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "UNL-030"
+   ]
+  },
+  {
    "id": "vi-peacekeeper",
    "name": "Vi, Peacekeeper",
    "baseName": "Vi",
@@ -25690,30 +26029,6 @@
    "source": "gallery",
    "printings": [
     "UNL-176"
-   ]
-  },
-  {
-   "id": "vi-hotheaded",
-   "name": "Vi, Hotheaded",
-   "baseName": "Vi",
-   "subtitle": "Hotheaded",
-   "code": "UNL-030/219",
-   "collectorNumber": 30,
-   "energy": 4,
-   "power": {},
-   "domain": "fury",
-   "domains": [
-    "fury"
-   ],
-   "type": "unit",
-   "might": 3,
-   "text": "<p>[Deflect] (Opponents must pay :rb_rune_rainbow: to choose me with a spell or ability.)<br />:rb_energy_2::rb_rune_fury:: Double my Might this turn.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/03a55e8d494d7efe20da792365161f5c43c20779-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "UNL-030"
    ]
   },
   {
@@ -25876,6 +26191,13 @@
    "collectorNumber": 202,
    "energy": 2,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "body",
+     "chaos"
+    ]
+   },
    "domain": "body",
    "domains": [
     "body",
@@ -25885,8 +26207,8 @@
    "might": null,
    "text": "<p>Move a friendly unit, then move an enemy unit. (If they both move to a battlefield you don't control, you're the attacker.)</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/0b79108a9492fb34866cc63815b57bfab8a5aeae-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre body y chaos y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "UNL-202"
@@ -25997,6 +26319,13 @@
    "collectorNumber": 188,
    "energy": 2,
    "power": {},
+   "powerAny": {
+    "amount": 1,
+    "domains": [
+     "fury",
+     "order"
+    ]
+   },
    "domain": "fury",
    "domains": [
     "fury",
@@ -26006,8 +26335,8 @@
    "might": null,
    "text": "<p>Reveal the top 2 cards of your Main Deck. You may play one of them, reducing its cost by :rb_energy_2:. Draw any you did not play this way.</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/ce606f096ae76485cd8dd3cc337629b510f0d1e7-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 1 de Poder entre fury y order y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "SFD-188"
@@ -27080,6 +27409,30 @@
    ]
   },
   {
+   "id": "zed-without-a-sound",
+   "name": "Zed, Without a Sound",
+   "baseName": "Zed",
+   "subtitle": "Without a Sound",
+   "code": "VEN-112/166",
+   "collectorNumber": 112,
+   "energy": 5,
+   "power": {},
+   "domain": "chaos",
+   "domains": [
+    "chaos"
+   ],
+   "type": "unit",
+   "might": 5,
+   "text": "<p>When I conquer, play a 0 :rb_might: Shadow Clone unit token to your base. (It has &quot;When I attack, you may banish a unit from your trash. If you do, give me [Assault 4] this turn.&quot;)<br />[Action][&gt;] :rb_energy_1::rb_rune_chaos:: Move me and a Shadow Clone you control to each other's locations.</p>",
+   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/be97ca6a33e25b85a04ec1b3a163b31f141776cf-744x1039.png?accountingTag=RB",
+   "needsCost": false,
+   "reason": null,
+   "source": "gallery",
+   "printings": [
+    "VEN-112"
+   ]
+  },
+  {
    "id": "zed-from-the-shadows",
    "name": "Zed, From the Shadows",
    "baseName": "Zed",
@@ -27107,30 +27460,6 @@
    ]
   },
   {
-   "id": "zed-without-a-sound",
-   "name": "Zed, Without a Sound",
-   "baseName": "Zed",
-   "subtitle": "Without a Sound",
-   "code": "VEN-112/166",
-   "collectorNumber": 112,
-   "energy": 5,
-   "power": {},
-   "domain": "chaos",
-   "domains": [
-    "chaos"
-   ],
-   "type": "unit",
-   "might": 5,
-   "text": "<p>When I conquer, play a 0 :rb_might: Shadow Clone unit token to your base. (It has &quot;When I attack, you may banish a unit from your trash. If you do, give me [Assault 4] this turn.&quot;)<br />[Action][&gt;] :rb_energy_1::rb_rune_chaos:: Move me and a Shadow Clone you control to each other's locations.</p>",
-   "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/be97ca6a33e25b85a04ec1b3a163b31f141776cf-744x1039.png?accountingTag=RB",
-   "needsCost": false,
-   "reason": null,
-   "source": "gallery",
-   "printings": [
-    "VEN-112"
-   ]
-  },
-  {
    "id": "zenith-blade-leona",
    "name": "Zenith Blade, Leona",
    "baseName": "Zenith Blade",
@@ -27139,6 +27468,13 @@
    "collectorNumber": 262,
    "energy": 3,
    "power": {},
+   "powerAny": {
+    "amount": 2,
+    "domains": [
+     "calm",
+     "order"
+    ]
+   },
    "domain": "calm",
    "domains": [
     "calm",
@@ -27148,8 +27484,8 @@
    "might": null,
    "text": "<p>[Action] (Play on your turn or in showdowns.)<br />Stun an enemy unit at a battlefield. You may move a friendly unit to that enemy unit's battlefield. (A stunned unit doesn't deal combat damage this turn.)</p>",
    "img": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/a572f0bc3ed1bd47c5759d36f5b951b15338e57e-744x1039.png?accountingTag=RB",
-   "needsCost": true,
-   "reason": "pide 2 de Poder entre calm y order y no se sabe como se reparte",
+   "needsCost": false,
+   "reason": null,
    "source": "gallery",
    "printings": [
     "OGN-262"
