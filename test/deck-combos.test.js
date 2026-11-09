@@ -347,7 +347,7 @@ test('AC-DUO-06: el índice conserva el Poder de dos dominios y lo cobra con cua
 
 test('AC-DUO-06: un Poder de dos dominios mal formado se rechaza con motivo', () => {
   for (const powerAny of [{ amount: 0, domains: ['calm', 'chaos'] }, { amount: 1, domains: ['calm'] },
-    { amount: 1, domains: ['calm', 'lunar'] }, { amount: 1, domains: ['calm', 'calm'] }, { amount: 1.5, domains: ['calm', 'chaos'] }]) {
+    { amount: 1, domains: ['calm', 'lunar'] }, { amount: 1, domains: ['calm', 'calm'] }, { amount: 1.5, domains: ['calm', 'chaos'] }, null, 'calm']) {
     const bad = normalizeDeck(duoDeck, [{ ...duoCards[0], powerAny }, duoCards[1]]);
     assert.equal(bad.ok, false, JSON.stringify(powerAny));
     assert.ok(bad.reason);

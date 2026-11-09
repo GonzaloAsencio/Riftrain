@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cardCost, rejectionRunes, canPlayCard, canPlaySet, availableRunes, boardAfterPaying, costLabel } from '../src/engine/cost.js';
+import { cardCost, rejectionRunes, canPlayCard, canPlaySet, availableRunes, boardAfterPaying, costLabel, sumCosts } from '../src/engine/cost.js';
 import { makeBoard } from '../src/engine/runes.js';
 
 const card = (id, energy, power = {}, extra = {}) => ({
@@ -253,4 +253,24 @@ test('AC-DUO-04: el texto del coste nombra los dos dominios y las runas a resalt
   const detail = { kind: 'domain', domains: ['calm', 'chaos'], need: 2, have: 1 };
   assert.deepEqual(rejectionRunes(detail, board), { indices: [0, 2], missingDomain: null, missingDomains: [] });
   assert.deepEqual(rejectionRunes(detail, runes([['fury', true]])), { indices: [], missingDomain: null, missingDomains: ['calm', 'chaos'] });
+});
+
+test('AC-DUO-03: el dominio fijo y el de dos dominios comparten runas sólo si alcanzan', () => {
+  const furyOne = card('fury-one', 1, { fury: 1 });
+  const calmOrFury = card('calm-or-fury', 1, {}, { powerAny: { amount: 1, domains: ['calm', 'fury'] } });
+  assert.equal(canPlaySet([furyOne, calmOrFury], runes([['fury', true], ['order', true]])).ok, false, 'una sola Fury no paga las dos');
+  assert.equal(canPlaySet([furyOne, calmOrFury], runes([['fury', true], ['fury', true]])).ok, true);
+  // La Calm tiene que estar abierta: las dos cartas piden 2 de Energía en total.
+  assert.equal(canPlaySet([furyOne, calmOrFury], runes([['fury', true], ['calm', true]])).ok, true);
+});
+
+test('AC-DUO-03: dos requisitos de dos dominios que se pisan se cubren o se rechazan como un todo (Hall)', () => {
+  const a = card('a', 0, {}, { powerAny: { amount: 1, domains: ['calm', 'chaos'] } });
+  const b = card('b', 0, {}, { powerAny: { amount: 1, domains: ['chaos', 'order'] } });
+  assert.equal(canPlaySet([a, b], runes([['chaos', true]])).ok, false, 'una Chaos no paga a las dos');
+  assert.equal(canPlaySet([a, b], runes([['chaos', true], ['calm', true]])).ok, true);
+  assert.equal(canPlaySet([a, b], runes([['chaos', true], ['order', true]])).ok, true);
+  const merged = sumCosts([cardCost(a), cardCost(a)]);
+  assert.deepEqual(merged.choices, [{ amount: 2, domains: ['calm', 'chaos'] }], 'mismos dominios se suman');
+  assert.equal(merged.powerTotal, 2);
 });

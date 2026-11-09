@@ -1197,6 +1197,18 @@ deskFrame.remove();
   celMount.remove();
 }
 
+// ---- Carta de dos dominios dibujada (AC-DUO-09)
+{
+  const duo = renderCard({ id: 'duo', name: 'Hoja', type: 'gear', energy: 3, power: {}, powerAny: { amount: 1, domains: ['calm', 'chaos'] } }, { faceUp: true });
+  document.body.appendChild(duo);
+  const pips = [...duo.querySelectorAll('.pip')];
+  check('AC-DUO-09: sin imagen, la carta muestra la Energía y un pip de Poder de dos dominios; el lector oye los dos',
+    pips.length === 2 && pips[0].textContent === '3' && pips[1].textContent === '1' &&
+    pips[1].title === '1 de Poder Calm o Chaos' && /1 de poder Calm o Chaos/.test(duo.getAttribute('aria-label')),
+    pips.map((p) => p.textContent + ':' + p.title).join(' | ') + ' / ' + duo.getAttribute('aria-label'));
+  duo.remove();
+}
+
 // ---- Carta de dos dominios rechazada (AC-DUO-08)
 {
   const duoMount = document.createElement('div');
