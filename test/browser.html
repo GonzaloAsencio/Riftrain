@@ -897,7 +897,8 @@ const motionRun = (reducedMotion) => {
   const result = {
     reducedClass: mount.querySelector('.recall').classList.contains('recall--reduced'),
     durations: [...duringRound, ...closedSlots.map((slot) => getComputedStyle(slot).transitionDuration)],
-    animations: mount.getAnimations({ subtree: true }).length,
+    // La mano (el panel): el festejo vive aparte y con movimiento reducido sólo funde opacidad (AC-CEL-13).
+    animations: mount.querySelector('.recall').getAnimations({ subtree: true }).length,
     visible: JSON.stringify({ stamp, states: closedSlots.map((slot) => [slot.dataset.cardId, slot.dataset.state, slot.dataset.reason ?? null, !!slot.querySelector('.fan__tag')]) }),
   };
   run.destroy(); mount.remove();
@@ -1206,8 +1207,8 @@ deskFrame.remove();
   press(type(celMount, 'bet'), 'Enter');
   press(type(celMount, 'alp'), 'Enter');
   press(type(celMount, 'gam'), 'Enter');
-  check('AC-CEL-15: cerrar en revisión (hubo un falso positivo) no festeja',
-    act('repeat').hidden === false && !banner() && pieces().length === 0);
+  check('AC-CEL-15: cerrar en revisión (hubo un falso positivo) también festeja, y el foco va a Repetir nivel',
+    act('repeat').hidden === false && banner()?.textContent === 'Nivel terminado' && pieces().length > 0 && document.activeElement === act('repeat'));
   act('repeat').click();
   check('AC-CEL-19: Repetir con todo hallado cierra solo y festeja, con el foco en Siguiente nivel',
     act('next').hidden === false && act('finish').hidden === true && banner()?.textContent === 'Nivel terminado' &&
@@ -1225,7 +1226,7 @@ deskFrame.remove();
   const emptyDeck = { cards: [{ cardId: 'hard', qty: 1 }], runes: { order: 12 } };
   run = mountRecall(celMount, { deck: emptyDeck, cards: [{ id: 'hard', name: 'Hard', energy: 9, power: {} }], seed: 7, storage: stub });
   act('skip').click();
-  check('AC-CEL-15: saltar un nivel sin pagables no festeja', !banner() && pieces().length === 0);
+  check('AC-CEL-15: saltar un nivel sin pagables también festeja', !!banner() && pieces().length > 0);
   run.destroy();
 
   run = mountRecall(celMount, { deck: terminalDeck, cards: [terminalCard], seed: 17, initialLevel: 12, storage: stub });

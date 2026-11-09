@@ -210,7 +210,11 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
   function celebrate() {
     const text = state.status === 'complete' ? MESSAGES.complete : 'Nivel terminado';
     celebration.show(text);
-    if (state.status === 'next') message.textContent = `${text}: ${MESSAGES.next.toLowerCase()}`;
+    if (state.status === 'next') {
+      message.textContent = state.payable.length
+        ? `${text}: ${MESSAGES.next.toLowerCase()}`
+        : `${text}: con esta mesa el rival no podía pagar ninguna carta`;
+    }
     focusNextAction();
   }
 
@@ -224,11 +228,9 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
       fan.reveal(cardsById.get(cardId), { fresh: true });
       composer.clear();
       draw();
-      // La ultima pagable cierra sola (lo decide el motor): completo festeja, con falsos positivos revisa.
-      if (answer.closed) {
-        if (['next', 'complete'].includes(state.status)) celebrate();
-        else focusNextAction();
-      }
+      // La ultima pagable cierra sola (lo decide el motor). Terminar un nivel siempre se festeja,
+      // tambien en revision (decision del usuario, 2026-11-09).
+      if (answer.closed) celebrate();
       save();   // despues del festejo: un aviso de guardado pisa al mensaje, nunca al reves
     } else if (answer.kind === 'false-positive') {
       state = answer.state;
@@ -244,8 +246,8 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
     clearRejection();
     composer.clear();
     draw();
+    celebrate();
     save();
-    focusNextAction();
   });
   finish.addEventListener('click', () => {
     if (disposed || state?.status !== 'active') return;
@@ -257,9 +259,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
     draw();
     // Las que faltaron las marca el motor (missed); un falso positivo solo no es "faltar".
     if (outcomes.some((card) => card.outcome === 'missed')) feedback.notify('Te faltaron cartas. Revisá las que están en gris');
-    // Terminé completa sólo un nivel abierto con todo hallado: el de un snapshot de la version anterior.
-    if (answer.kind === 'finished') celebrate();
-    else focusNextAction();
+    celebrate();
     save();
   });
   repeat.addEventListener('click', () => {
