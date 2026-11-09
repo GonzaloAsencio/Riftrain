@@ -1,0 +1,36 @@
+Legend:
+1 Kai'Sa, Daughter of the Void
+
+Champion:
+1 Kai'Sa, Survivor
+
+MainDeck:
+3 Cleave
+3 Hextech Ray
+3 Pouty Poro
+3 Falling Star
+3 Lecturing Yordle
+3 Stupefy
+3 Watchful Sentry
+3 Ravenbloom Student
+3 Retreat
+3 Thousand-Tailed Watcher
+2 Noxus Hopeful
+2 Time Warp
+2 Icathian Rain
+3 Darius, Trifarian
+
+Battlefields:
+1 Reaver's Row
+1 Targon's Peak
+1 The Dreaming Tree
+
+Runes:
+7 Fury Rune
+5 Mind Rune
+
+Sideboard:
+3 Smoke Screen
+2 Brynhir Thundersong
+2 Mega-Mech
+1 Progress Day

@@ -110,3 +110,21 @@ test('AC-IMP-02: la lista pegada con finales de línea de Windows (CRLF) da el m
   assert.equal(windows.ok, true, windows.reason);
   assert.deepEqual(windows.deck, unix.deck);
 });
+
+// ---- Hechizos firma: Riot los publica con el campeón como subtítulo ("Icathian Rain" + "Kai'Sa"),
+// los exports los escriben sin él. (AC-IMP-09)
+test('AC-IMP-09: un hechizo firma escrito sin subtítulo se encuentra si el nombre es único', () => {
+  const kaisa = readFileSync(new URL('./fixtures/kaisa-list.txt', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+  const result = run(kaisa);
+  assert.equal(result.ok, true, JSON.stringify(result.missing ?? result.reason));
+  assert.ok(result.deck.cards.some((c) => c.cardId === 'icathian-rain-kai-sa' && c.qty === 2));
+});
+
+test('AC-IMP-09: un nombre base que comparten varias cartas no se adivina: se nombran las opciones', () => {
+  const result = run(LIST.replace('3 Traveling Merchant', '3 Ahri'));
+  assert.equal(result.ok, false);
+  const ahri = result.missing.find((m) => m.label === 'Ahri');
+  assert.ok(ahri, JSON.stringify(result.missing));
+  assert.match(ahri.reason, /Ahri, Inquisitive/);
+  assert.match(ahri.reason, /Ahri, Alluring/);
+});
