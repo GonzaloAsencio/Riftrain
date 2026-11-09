@@ -1338,6 +1338,7 @@ deskFrame.remove();
     level(4).classList.contains('settings__level--out') && !level(5).classList.contains('settings__level--out') &&
     /Empezás en el nivel 5/.test(dlg().querySelector('.settings__hint').textContent) &&
     [...dlg().querySelectorAll('[data-start]')].every((b) => b.getBoundingClientRect().height >= 44));
+  check('AC-CFG-27: cambiar el nivel de inicio avisa que el recorrido empieza de nuevo', dlg().querySelector('.settings__restart').hidden === false);
   level(2).click();
   check('AC-CFG-27: bajar el hasta a 2 baja el desde a 2', start(2).getAttribute('aria-pressed') === 'true');
   start(2).click(); level(7).click();

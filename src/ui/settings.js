@@ -87,7 +87,7 @@ export function openSettings(host, { startLevel = 1, maxLevel, deck, deckName, l
   preview.id = `${id}-preview`;
   preview.setAttribute('role', 'status');
   preview.setAttribute('aria-live', 'polite');
-  const restart = el('p', 'settings__restart', 'Cambiar de mazo empieza el recorrido de nuevo desde el nivel de inicio.');
+  const restart = el('p', 'settings__restart', 'Cambiar de mazo o de nivel de inicio empieza el recorrido de nuevo.');
   restart.hidden = true;
   deckGroup.append(label, row, preview, restart);
 
@@ -96,6 +96,9 @@ export function openSettings(host, { startLevel = 1, maxLevel, deck, deckName, l
   const save = button('Guardar', 'save');
   foot.append(cancel, save);
   dialog.append(head, levels, deckGroup, foot);
+
+  /** Se pierde el recorrido en curso si cambia el mazo (uno leido) o el nivel de inicio. */
+  function paintRestart() { restart.hidden = !(pending || start !== startLevel); }
 
   function paintLevels() {
     // Fuera del recorrido: en "hasta", lo que queda antes del inicio o despues del maximo;
@@ -111,6 +114,7 @@ export function openSettings(host, { startLevel = 1, maxLevel, deck, deckName, l
     levelHint.textContent = start === 1
       ? `El recorrido termina al completar el nivel ${level}. Cada nivel es una runa abierta más en la mesa del rival.`
       : `Empezás en el nivel ${start} y el recorrido termina al completar el ${level}. Cada nivel es una runa abierta más en la mesa del rival.`;
+    paintRestart();
   }
 
   /** Guardar se puede si no hay codigo a medio leer: o el input esta vacio, o el mazo ya se leyo bien. */
@@ -119,7 +123,7 @@ export function openSettings(host, { startLevel = 1, maxLevel, deck, deckName, l
   function showError(reason, missing = []) {
     pending = null;
     input.setAttribute('aria-invalid', 'true');
-    restart.hidden = true;
+    paintRestart();
     const box = el('div', 'settings__error');
     box.appendChild(el('strong', null, reason));
     if (missing.length) {
@@ -145,7 +149,7 @@ export function openSettings(host, { startLevel = 1, maxLevel, deck, deckName, l
     if (next.champion) box.appendChild(el('span', null, `Campeón: ${byId.get(next.champion)?.name ?? next.champion}`));
     box.appendChild(el('span', null, `${total} cartas en el mazo principal · 12 runas: ${runes}`));
     preview.replaceChildren(box);
-    restart.hidden = false;
+    paintRestart();
     paintSave();
   }
 
@@ -186,7 +190,7 @@ export function openSettings(host, { startLevel = 1, maxLevel, deck, deckName, l
     pending = null;
     input.removeAttribute('aria-invalid');
     preview.replaceChildren();
-    restart.hidden = true;
+    paintRestart();
     paintSave();
   });
   // En una lista Enter es un salto de linea: leer es Ctrl/Cmd+Enter (o el boton).
