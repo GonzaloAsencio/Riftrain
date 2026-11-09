@@ -72,3 +72,31 @@ test('AC-IMP-06: el camino del código sigue igual que antes (códigos rotos con
   assert.equal(missing.ok, false);
   assert.equal(missing.missing[0].label, 'OGN-185');
 });
+
+// ---- Bordes que encontró la revisión
+test('AC-IMP-08: una carta sin costo publicado se avisa al leer, por nombre, en los dos caminos', () => {
+  const sinCosto = CATALOG.find((c) => c.needsCost && c.type === 'spell');
+  const result = run(LIST.replace('3 Traveling Merchant', `3 Traveling Merchant
+2 ${sinCosto.name}`));
+  assert.equal(result.ok, false);
+  assert.match(result.reason, /costo/i);
+  assert.deepEqual(result.missing.map((m) => [m.label, m.qty]), [[sinCosto.name, 2]]);
+  const viaCode = importDeck(prepareDeckInput(code), CATALOG.map((c) => (c.id === 'traveling-merchant' ? { ...c, needsCost: true, energy: null } : c)));
+  assert.equal(viaCode.ok, false);
+  assert.ok(viaCode.missing.some((m) => m.label === 'Traveling Merchant'));
+});
+
+test('AC-IMP-01: un código partido en varias líneas sigue siendo código; una lista en una línea es lista', () => {
+  const partido = `${code.slice(0, 30)}
+${code.slice(30, 70)}
+${code.slice(70)}`;
+  assert.equal(looksLikeList(partido), false);
+  assert.equal(run(partido).ok, true);
+  assert.equal(looksLikeList('3 Gust 2 Flash'), true);
+});
+
+test('AC-IMP-03: una leyenda o un campeón que faltan salen con cantidad 1', () => {
+  const result = run(LIST.replace('1 Kennen, Storm of Shuriken', '1 Campeón Inventado'));
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.missing.map((m) => [m.label, m.qty]), [['Campeón Inventado', 1]]);
+});

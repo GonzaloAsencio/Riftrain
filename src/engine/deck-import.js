@@ -14,11 +14,33 @@ import { decodeDeckCode, resolveDeckCode } from './deck-code.js';
 import { parseDecklist } from './decklist.js';
 import { resolveDeck } from './catalog.js';
 
-/** Una lista tiene saltos de linea o encabezados ("MainDeck:"); un codigo es una sola tira. */
+/**
+ * Una lista tiene encabezados ("MainDeck:") o lineas con espacios ("3 Gust"). Un codigo no tiene
+ * ni una cosa ni la otra, aunque venga partido en varias lineas al copiarlo.
+ */
 export function looksLikeList(text) {
   if (typeof text !== 'string') return false;
   const trimmed = text.trim();
-  return /\n/.test(trimmed) || /:/.test(trimmed);
+  return /:/.test(trimmed) || trimmed.split(/\r?\n/).some((line) => /\S\s+\S/.test(line.trim()));
+}
+
+/**
+ * Una carta sin costo publicado no se puede entrenar (no se inventa un 0): se avisa al leer, por
+ * nombre, y no recien al guardar.
+ */
+function withCosts(result) {
+  if (!result.ok) return result;
+  const byId = new Map(result.cards.map((card) => [card.id, card]));
+  const uncosted = result.deck.cards
+    .map(({ cardId, qty }) => ({ card: byId.get(cardId), qty }))
+    .filter(({ card }) => card && (card.needsCost === true || !Number.isSafeInteger(card.energy)));
+  if (!uncosted.length) return result;
+  return {
+    ok: false,
+    reason: `${uncosted.length} carta${uncosted.length === 1 ? '' : 's'} sin costo publicado: no se pueden entrenar`,
+    missing: uncosted.map(({ card, qty }) => ({ label: card.name, qty,
+      reason: card.reason ? `en la galería oficial ${card.reason}` : 'la galería oficial no publica su costo' })),
+  };
 }
 
 /** @returns {{ok: true, kind: 'code'|'list', decoded?, parsed?} | {ok: false, reason: string}} */
@@ -46,7 +68,7 @@ export function importDeck(prepared, catalogCards) {
   if (!prepared?.ok) return { ok: false, reason: prepared?.reason ?? 'Mazo inválido' };
   if (prepared.kind === 'code') {
     const result = resolveDeckCode(prepared.decoded, catalogCards);
-    if (result.ok) return result;
+    if (result.ok) return withCosts(result);
     return { ...result, ...(result.missing ? { missing: result.missing.map(({ code, qty, reason }) => ({ label: code, qty, reason })) } : {}) };
   }
 
@@ -55,7 +77,7 @@ export function importDeck(prepared, catalogCards) {
   if (resolved.missing.length) {
     const qtyOf = new Map(parsed.cards.map((c) => [c.name, c.qty]));
     return { ok: false, reason: `Faltan ${resolved.missing.length} cartas en el catálogo`,
-      missing: resolved.missing.map(({ name, reason }) => ({ label: name, qty: qtyOf.get(name), reason })) };
+      missing: resolved.missing.map(({ name, zone, reason }) => ({ label: name, qty: zone === 'main' ? qtyOf.get(name) : 1, reason })) };
   }
   const { legend, champion, runes = {} } = resolved.deck;
   const runeTotal = Object.values(runes).reduce((a, b) => a + b, 0);
@@ -73,5 +95,5 @@ export function importDeck(prepared, catalogCards) {
     runes,
     cards: resolved.deck.cards,
   };
-  return { ok: true, deck, cards: [...byId.values()] };
+  return withCosts({ ok: true, deck, cards: [...byId.values()] });
 }
