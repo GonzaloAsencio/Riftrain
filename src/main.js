@@ -14,18 +14,26 @@ function warn(text) {
 }
 
 async function boot() {
-  const res = await fetch('data/cards.json');
-  const data = await res.json();
-  if (data._placeholder) {
-    warn('Datos de andamio: estas cartas NO son reales de Riftbound. Reemplaza data/cards.json por tus decklists.');
+  // El mazo importado viaja con sus cartas: con uno guardado, arrancar no descarga nada.
+  const loaded = store.loadSettings();
+  if (!loaded.ok) warn(loaded.reason);
+  const { maxLevel, deck: imported } = loaded.settings;
+  let deck = imported?.deck;
+  let cards = imported?.cards;
+  if (!deck) {
+    const data = await (await fetch('data/cards.json')).json();
+    if (data._placeholder) {
+      warn('Datos de andamio: estas cartas NO son reales de Riftbound. Reemplaza data/cards.json por tus decklists.');
+    }
+    deck = data.decks?.[0];
+    cards = data.cards;
   }
   if (store.isMemoryOnly()) {
     warn('El navegador bloquea el almacenamiento: el progreso no va a sobrevivir al cierre.');
   }
-  const deck = data.decks[0];
   if (!deck) { root.textContent = 'No hay mazo cargado. Cargá uno para practicar.'; return; }
   const seed = crypto.getRandomValues(new Uint32Array(1))[0];
-  const controller = mountRecall(root, { deck, cards: data.cards, seed, storage: store });
+  const controller = mountRecall(root, { deck, cards, seed, maxLevel, storage: store });
   await controller.ready;
 }
 

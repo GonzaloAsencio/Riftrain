@@ -290,3 +290,36 @@ test('AC-CEL-18: Repetir con pagables pendientes reabre el nivel, sin cerrar', (
   assert.equal(again.closed, false);
   assert.equal(again.state.status, 'active');
 });
+
+// ---- Nivel máximo (AC-CFG-10, 11, 14)
+const startAt = (level, maxLevel) => startRecall(lvl(level), wallIdx, maxLevel === undefined ? undefined : { maxLevel });
+
+test('AC-CFG-10: al completar el nivel máximo el recorrido termina, sin nivel siguiente', () => {
+  const last = named(named(startAt(5, 5).state, 'cheap').state, 'fury2').state;
+  assert.equal(last.status, 'complete');
+  assert.equal(last.nextLevel, undefined);
+  assert.equal(advanceRecall(last, lvl(6), wallIdx).ok, false);
+});
+
+test('AC-CFG-11: sin ajuste el máximo es 12 y un nivel intermedio sigue ofreciendo el siguiente', () => {
+  const state = startAt(5).state;
+  assert.equal(state.maxLevel, 12);
+  assert.equal(named(named(state, 'cheap').state, 'fury2').state.status, 'next');
+  for (const bad of [0, 13, 2.5, '8', null]) assert.equal(startAt(3, bad).ok, false, String(bad));
+});
+
+test('AC-CFG-10: el máximo pasa de nivel en nivel y nunca se avanza más allá', () => {
+  const done = named(named(startAt(3, 4).state, 'cheap').state, 'fury2').state;
+  assert.equal(done.status, 'next');
+  const next = advanceRecall(done, lvl(4), wallIdx);
+  assert.equal(next.ok, true);
+  assert.equal(next.state.maxLevel, 4);
+  assert.equal(named(named(next.state, 'cheap').state, 'fury2').state.status, 'complete');
+});
+
+test('AC-CFG-14: bajar el máximo por debajo del nivel actual cierra completo al terminar el nivel', () => {
+  const last = named(named(startAt(7, 5).state, 'cheap').state, 'fury2').state;
+  assert.equal(last.status, 'complete');
+  const skipped = reduceRecall(startRecall(lvl(9, [{ domain: 'fury', ready: false }]), wallIdx, { maxLevel: 2 }).state, { type: 'skip' }, wallIdx);
+  assert.equal(skipped.state.status, 'omitted');
+});
