@@ -323,3 +323,28 @@ test('AC-CFG-14: bajar el máximo por debajo del nivel actual cierra completo al
   const skipped = reduceRecall(startRecall(lvl(9, [{ domain: 'fury', ready: false }]), wallIdx, { maxLevel: 2 }).state, { type: 'skip' }, wallIdx);
   assert.equal(skipped.state.status, 'omitted');
 });
+
+// ---- Seguir después del máximo (AC-CFG-22): terminar no es un callejón sin salida.
+test('AC-CFG-22: un recorrido completo antes del 12 se extiende al nivel siguiente', () => {
+  const done = named(named(startAt(3, 3).state, 'cheap').state, 'fury2').state;
+  assert.equal(done.status, 'complete');
+  const extended = reduceRecall(done, { type: 'extend', maxLevel: 4 }, wallIdx);
+  assert.equal(extended.kind, 'extended');
+  assert.equal(extended.state.status, 'next');
+  assert.equal(extended.state.nextLevel, 4);
+  assert.equal(extended.state.maxLevel, 4);
+  assert.equal(advanceRecall(extended.state, lvl(4), wallIdx).state.maxLevel, 4);
+});
+
+test('AC-CFG-22: extender vale también tras un último nivel omitido, y nunca más allá del 12 ni hacia atrás', () => {
+  const poor = lvl(2, [{ domain: 'fury', ready: false }]);
+  const omitted = reduceRecall(startRecall(poor, wallIdx, { maxLevel: 2 }).state, { type: 'skip' }, wallIdx).state;
+  assert.equal(omitted.status, 'omitted');
+  assert.equal(reduceRecall(omitted, { type: 'extend', maxLevel: 3 }, wallIdx).state.status, 'next');
+  const last = named(named(startAt(12, 12).state, 'cheap').state, 'fury2').state;
+  for (const [state, maxLevel] of [[last, 13], [omitted, 2], [omitted, 1], [startAt(3, 3).state, 4]]) {
+    const result = reduceRecall(state, { type: 'extend', maxLevel }, wallIdx);
+    assert.equal(result.kind, 'invalid', `${state.status} -> ${maxLevel}`);
+    assert.equal(result.state, state);
+  }
+});

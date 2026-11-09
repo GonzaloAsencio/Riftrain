@@ -763,8 +763,10 @@ check('AC-CMB-35: cerrar el nivel 12 completo termina el entrenamiento, sin nive
   terminalMount.textContent.includes('Entrenamiento completado') && !terminalMount.textContent.includes('Nivel 13') &&
   terminalMount.querySelector('[data-action="next"]').hidden === true &&
   terminalMount.querySelector('.fan__card[data-card-id="free"]')?.dataset.state === 'found');
-check('AC-ARC-60: al terminar el entrenamiento no queda botón que enfocar: el foco va al mensaje final, no al body',
-  document.activeElement === terminalMount.querySelector('.recall__message'));
+check('AC-ARC-60 + AC-CFG-23: al terminar el nivel 12 queda Empezar de nuevo (sin Siguiente) y tiene el foco',
+  terminalMount.querySelector('[data-action="restart"]')?.hidden === false &&
+  terminalMount.querySelector('[data-action="next"]').hidden === true &&
+  document.activeElement === terminalMount.querySelector('[data-action="restart"]'));
 terminalFlow.destroy(); terminalMount.remove();
 
 const emptyMount = document.createElement('div');
@@ -1132,11 +1134,20 @@ deskFrame.remove();
     act('next').hidden === false && act('finish').hidden === true && document.activeElement === act('next') &&
     /Nivel terminado/.test(celMount.querySelector('.recall__message').textContent));
   const layer = celMount.querySelector('.celebration');
-  check('AC-CEL-12: el confetti son 20+ piezas que no reciben clics ni hacen scroll horizontal',
+  check('AC-CEL-12: los fuegos artificiales son 20+ chispas que no reciben clics ni hacen scroll horizontal',
     pieces().length >= 20 && getComputedStyle(layer).pointerEvents === 'none' &&
     [...pieces()].every((piece) => getComputedStyle(piece).pointerEvents === 'none') &&
     document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
     `${pieces().length} sw=${document.documentElement.scrollWidth}/${document.documentElement.clientWidth}`);
+  // Fuegos artificiales, no lluvia: varios estallidos, cada uno abre sus chispas en todas direcciones.
+  const sparks = [...pieces()].map((p) => ({ x: p.style.getPropertyValue('--x'), y: p.style.getPropertyValue('--y'),
+    dx: parseFloat(p.style.getPropertyValue('--dx')), dy: parseFloat(p.style.getPropertyValue('--dy')),
+    anim: getComputedStyle(p).animationName }));
+  const origins = new Set(sparks.map((sp) => `${sp.x},${sp.y}`));
+  check('AC-CEL-24: el festejo son fuegos artificiales: 3+ estallidos que se abren hacia los cuatro lados',
+    origins.size >= 3 && sparks.every((sp) => sp.anim === 'celebration-burst') &&
+    sparks.some((sp) => sp.dx > 0) && sparks.some((sp) => sp.dx < 0) && sparks.some((sp) => sp.dy > 0) && sparks.some((sp) => sp.dy < 0),
+    `${origins.size} orígenes, anim ${sparks[0]?.anim}`);
   act('next').click();
   check('AC-CEL-16: Siguiente nivel retira cartel y confetti y arranca con todos los dorsos',
     !banner() && pieces().length === 0 && [...celMount.querySelectorAll('.fan__card')].every((slot) => slot.dataset.state === 'down'));
@@ -1230,9 +1241,33 @@ deskFrame.remove();
   document.querySelector('#stage main').appendChild(maxMount);
   const run = mountRecall(maxMount, { deck: terminalDeck, cards: [terminalCard], seed: 17, initialLevel: 3, maxLevel: 3, storage: stub });
   press(type(maxMount, 'costo uno'), 'Enter');
-  check('AC-CFG-10: con máximo 3, completar el nivel 3 termina el entrenamiento, sin Siguiente nivel',
-    maxMount.textContent.includes('Entrenamiento completado') && maxMount.querySelector('[data-action="next"]').hidden === true);
-  run.destroy(); maxMount.remove();
+  check('AC-CFG-10 + AC-CFG-22: con máximo 3, completar el 3 termina, pero ofrece Siguiente nivel y Empezar de nuevo',
+    maxMount.textContent.includes('Entrenamiento completado') && maxMount.querySelector('[data-action="next"]').hidden === false &&
+    maxMount.querySelector('[data-action="restart"]').hidden === false);
+  run.destroy();
+
+  // Siguiente después del máximo: lo sube en uno, lo avisa para guardarlo y sigue jugando.
+  const raised = [];
+  const cont = mountRecall(maxMount, { deck: terminalDeck, cards: [terminalCard], seed: 17, initialLevel: 3, maxLevel: 3, storage: stub,
+    onMaxLevelChange: (m) => raised.push(m) });
+  press(type(maxMount, 'costo uno'), 'Enter');
+  maxMount.querySelector('[data-action="next"]').click();
+  check('AC-CFG-22: Siguiente nivel después del máximo sube el máximo a 4, lo guarda y arranca el nivel 4',
+    raised.join() === '4' && maxMount.querySelector('.table__level').textContent === 'Nivel 4' &&
+    maxMount.querySelector('.table__max').textContent === 'de 4' && maxMount.querySelector('[data-action="finish"]').hidden === false);
+  cont.destroy();
+
+  // Empezar de nuevo: otra mesa desde el nivel 1, mismo máximo, el foco en el input.
+  const seeds = [99];
+  const again = mountRecall(maxMount, { deck: terminalDeck, cards: [terminalCard], seed: 17, initialLevel: 3, maxLevel: 3, storage: stub,
+    newSeed: () => seeds.shift() });
+  press(type(maxMount, 'costo uno'), 'Enter');
+  maxMount.querySelector('[data-action="restart"]').click();
+  check('AC-CFG-23: Empezar de nuevo arranca el nivel 1 con otra mesa, el mismo máximo y el foco en el input',
+    seeds.length === 0 && maxMount.querySelector('.table__level').textContent === 'Nivel 1' &&
+    maxMount.querySelector('.table__max').textContent === 'de 3' && maxMount.querySelectorAll('.fan__card[data-state="found"]').length === 0 &&
+    document.activeElement === maxMount.querySelector('input[role="combobox"]'));
+  again.destroy(); maxMount.remove();
 }
 
 // ---- Configuración (AC-CFG-15..21)

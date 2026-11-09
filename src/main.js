@@ -28,7 +28,8 @@ async function start() {
   // El mazo importado viaja con sus cartas: con uno guardado, arrancar no descarga nada.
   const loaded = store.loadSettings();
   if (!loaded.ok) warn(loaded.reason);
-  const { maxLevel, deck: imported } = loaded.settings;
+  const { deck: imported } = loaded.settings;
+  let { maxLevel } = loaded.settings;
   let deck = imported?.deck;
   let cards = imported?.cards;
   if (!deck) {
@@ -47,6 +48,12 @@ async function start() {
   controller?.destroy();
   controller = mountRecall(root, {
     deck, cards, seed, maxLevel, storage: store,
+    // Seguir despues del maximo lo sube: se guarda sin remontar (la partida sigue en pantalla).
+    onMaxLevelChange: (next) => {
+      maxLevel = next;
+      const saved = store.saveSettings({ maxLevel: next, deck: imported ?? null });
+      if (!saved.ok) warn(`No se pudo guardar el nivel máximo: ${saved.reason}`);
+    },
     onOpenSettings: (gear) => openSettings(document.body, {
       maxLevel, deck: imported ?? null, deckName: deck.name, loadCatalog,
       onSave: (value) => {

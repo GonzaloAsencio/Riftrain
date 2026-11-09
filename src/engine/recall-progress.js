@@ -42,6 +42,15 @@ export function reduceRecall(state, event, index) {
     if (!reopened.payable.every((id) => reopened.found.includes(id))) return { kind: 'repeated', state: reopened, closed: false };
     return { kind: 'repeated', state: closeLevel(reopened, 'complete'), closed: true };
   }
+  if (event?.type === 'extend') {
+    // Terminar antes del 12 no es un callejon sin salida: se sube el maximo y se sigue.
+    const level = state?.scenario?.level;
+    const max = event.maxLevel;
+    if (!['complete', 'omitted'].includes(state?.status) || !Number.isSafeInteger(max) || max <= level || max > 12) {
+      return { kind: 'invalid', state, reason: 'Sólo se extiende un recorrido terminado, hacia un nivel más alto y hasta el 12' };
+    }
+    return { kind: 'extended', state: { ...state, maxLevel: max, status: 'next', nextLevel: level + 1 } };
+  }
   if (event?.type !== 'name') return { kind: 'invalid', state, reason: 'Acción desconocida' };
   if (!['active', 'empty'].includes(state?.status)) return { kind: 'invalid', state, reason: 'El nivel ya está cerrado' };
   const { cardId } = event;

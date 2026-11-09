@@ -30,6 +30,8 @@ const MESSAGES = {
 
 export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLevel = 12,
   storage = defaultStore, feedbackOptions, onOpenSettings = null,
+  // Al seguir despues del maximo se guarda el maximo nuevo; empezar de nuevo pide otra mesa.
+  onMaxLevelChange = () => {}, newSeed = () => globalThis.crypto.getRandomValues(new Uint32Array(1))[0],
   // Inyectable para testear: el navegador headless no deja emular prefers-reduced-motion.
   reducedMotion = !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches }) {
   let disposed = false;
@@ -48,7 +50,8 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
   const table = node('section', 'table recall__table recall-band');
   table.setAttribute('aria-label', 'Mesa del rival');
   const tableHead = node('div', 'table__head');
-  tableHead.append(node('span', 'table__deck', deck?.name ?? 'Mazo'), levelText, node('span', 'table__max', `de ${maxLevel}`));
+  const maxText = node('span', 'table__max', `de ${maxLevel}`);
+  tableHead.append(node('span', 'table__deck', deck?.name ?? 'Mazo'), levelText, maxText);
   if (onOpenSettings) {
     const gear = node('button', 'table__settings');
     gear.type = 'button';
@@ -92,7 +95,8 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
   const finish = button('Terminé', 'finish', true);
   const repeat = button('Repetir nivel', 'repeat');
   const next = button('Siguiente nivel', 'next');
-  controls.append(skip, finish, repeat, next);
+  const restart = button('Empezar de nuevo', 'restart', true);
+  controls.append(skip, finish, repeat, restart, next);
   // Tres zonas: banda, mano, dock. El dock junta lo que se contesta y lo que avisa.
   const info = node('div', 'recall__info');
   info.append(feedbackHost, notice, message);
@@ -175,8 +179,11 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
       cards: searchCards, onName: name, onUserEdit: clearRejection,
     });
     composer?.setDisabled(!playable);
+    // Terminar no es un callejon sin salida: antes del 12 se puede seguir, y siempre empezar de nuevo.
+    const terminal = ['complete', 'omitted'].includes(state.status);
     skip.hidden = state.status !== 'empty';
-    next.hidden = state.status !== 'next';
+    next.hidden = !(state.status === 'next' || (terminal && state.scenario.level < 12));
+    restart.hidden = !terminal;
     finish.hidden = state.status !== 'active';
     repeat.hidden = state.status !== 'review';
     message.textContent = MESSAGES[state.status] ?? '';
@@ -190,8 +197,8 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
 
   /** El boton que se toco se oculta: el foco pasa a lo que sigue en vez de caer al <body>. */
   function focusNextAction() {
-    // Sin boton que siga (el ultimo nivel, completo u omitido): el mensaje final, que es lo que hay para leer.
-    ([repeat, next].find((item) => !item.hidden) ?? message).focus();
+    // Lo que sigue: repetir, el siguiente nivel o empezar de nuevo. Sin nada, el mensaje final.
+    ([repeat, next, restart].find((item) => !item.hidden) ?? message).focus();
   }
 
   /** Cierre completo: el unico festejo de la ronda. El anuncio accesible es el mensaje de estado. */
@@ -265,8 +272,31 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
     save();
   });
   next.addEventListener('click', () => {
-    if (disposed || state?.status !== 'next') return;
+    if (disposed || !state) return;
+    if (['complete', 'omitted'].includes(state.status)) {
+      // Despues del maximo: se sube en uno, se guarda y se sigue (la banda nunca dice "Nivel 2 de 1").
+      const answer = reduceRecall(state, { type: 'extend', maxLevel: state.scenario.level + 1 }, normalized.index);
+      if (answer.kind !== 'extended') { message.textContent = answer.reason; return; }
+      state = answer.state;
+      maxLevel = state.maxLevel;
+      maxText.textContent = `de ${maxLevel}`;
+      onMaxLevelChange(maxLevel);
+    }
+    if (state.status !== 'next') return;
     prepare(state.nextLevel, state);
+  });
+  restart.addEventListener('click', () => {
+    if (disposed || !['complete', 'omitted'].includes(state?.status)) return;
+    // Otra mesa desde el nivel 1, con el mismo maximo; el recorrido anterior se reemplaza.
+    // La semilla nueva se adopta solo si la mesa se puede crear: si no, sigue todo como estaba.
+    const seedNext = newSeed();
+    const created = createRecallScenario(deck, normalized.index, seedNext, 1);
+    if (!created.ok) { message.textContent = created.reason; return; }
+    runSeed = seedNext;
+    prepare(1);
+    save();
+    // Un nivel 1 sin pagables no tiene input activo: el foco va a Saltar, no al <body>.
+    if (state.status === 'empty') skip.focus(); else composer?.focus();
   });
 
   /** Arranca (o avanza a) un nivel: todo es sincrono, no hay objetivo que calcular aparte. */
