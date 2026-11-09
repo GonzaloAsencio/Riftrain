@@ -37,7 +37,7 @@ html, body {
 }
 
 /* Todo numero que cambia lleva tabular-nums: sin esto el layout tiembla. */
-.num, .stat__v, .streak__n, .timer, .pip, .might { font-variant-numeric: tabular-nums; }
+.pip, .might { font-variant-numeric: tabular-nums; }
 
 button { font: inherit; color: inherit; }
 
@@ -57,38 +57,6 @@ button { font: inherit; color: inherit; }
 .app > main { min-width: 0; }
 .table { min-width: 0; }
 
-.topbar {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 2px 8px;
-  position: sticky; top: 0; z-index: 20;
-  background: linear-gradient(var(--bg) 78%, transparent);
-}
-
-.streak { display: flex; align-items: baseline; gap: 5px; font-weight: 650; }
-.streak__n { font-size: 20px; letter-spacing: -.02em; }
-.streak__l { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
-.streak--hot .streak__n { color: var(--accent); }
-
-.timer {
-  margin-left: auto; font-size: 13px; color: var(--muted);
-  min-width: 4ch; text-align: right;
-}
-.timer--warn { color: var(--bad); }
-
-.level {
-  font-size: 11px; font-weight: 650; color: var(--muted);
-  border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px;
-  background: var(--surface);
-}
-
-.iconbtn {
-  border: 1px solid var(--line); background: var(--surface); border-radius: 8px;
-  min-width: 30px; height: 30px; padding: 0 7px;
-  display: grid; place-items: center; cursor: pointer;
-  color: var(--ink-soft); font-size: 13px;
-}
-.iconbtn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
-
 /* ---------- LA MESA ---------- */
 .table {
   background: var(--panel);
@@ -102,9 +70,9 @@ button { font: inherit; color: inherit; }
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   font-size: 12px; color: #98a0ad; margin-bottom: 10px;
 }
-.table__turn { font-weight: 700; color: #e8eaee; font-size: 13px; }
 .table__deck { color: #b9c0cb; }
-.chip { border: 1px solid #333842; border-radius: 999px; padding: 2px 8px; font-size: 11px; }
+.table__level { font-weight: 700; color: #e8eaee; font-size: 13px; }
+.table__deck + .table__level::before { content: "·"; margin-right: 8px; color: #6b7280; font-weight: 400; }
 
 /* La fila de la mesa: la leyenda del rival a la izquierda (dice QUE mazo es),
    las runas a la derecha. */
@@ -147,39 +115,6 @@ button { font: inherit; color: inherit; }
   font-size: 12px; color: #b9c0cb;
 }
 .runes__meta b { color: #e8eaee; font-weight: 700; }
-
-/* ---------- LA MANO EN ABANICO ---------- */
-.hand {
-  display: flex; justify-content: center; align-items: flex-end;
-  min-height: 210px; padding: 6px 0 2px;
-  perspective: 1100px;
-  max-width: 100%;
-}
-/* El slot pide 120px pero PUEDE encogerse (flex-shrink 1 + min-width 0). Asi la
-   mano se adapta al ancho real del contenedor sin depender de unidades vw: con 7
-   cartas mas un par de falsos positivos, se aprietan en vez de partir la pagina. */
-.hand__slot {
-  width: 120px;
-  margin-inline: -26px;                    /* solapado */
-  flex: 0 1 auto;
-  min-width: 0;
-  transition: transform var(--flip) var(--ease);
-  will-change: transform;
-  cursor: pointer;
-}
-.hand__slot:first-child { margin-left: 0; }
-.hand__slot:last-child { margin-right: 0; }
-.hand__slot[data-lift="1"] { transform: translateY(-14px); }
-
-/* AL CERRAR el abanico se ABRE. Durante la ronda el solapado esta bien: son
-   dorsos, no hay nada que leer. Pero el cierre existe para poder LEER que se te
-   escapo, y unas cartas pisadas entre si no se leen. Siguen en la misma fila y
-   sin scroll: si no entran, se achican (mantener pulsado amplia cualquiera). */
-.hand--open { gap: 4px; }
-.hand--open .hand__slot {
-  margin-inline: 0;            /* dejan de pisarse: se leen */
-  width: 110px;
-}
 
 /* ---------- LA CARTA ---------- */
 .card {
@@ -262,86 +197,10 @@ button { font: inherit; color: inherit; }
   padding: 2px 5px; border-radius: 5px; background: #14171c; color: #fff;
 }
 
-/* --- LOS TRES ESTADOS DEL CIERRE --- */
-
-/* Acertada: en color, sin tocar. */
-.card[data-result="hit"] { box-shadow: 0 0 0 2px var(--ok), 0 6px 18px -8px rgba(47,125,90,.6); }
-
-/* No la vi: gris DE VERDAD. Se tiene que notar a un metro. */
-.card[data-result="missed"] .card__face--front { filter: grayscale(1); opacity: .38; }
-.card[data-result="missed"] .card__band { background: #9aa0aa; }
-
-/* La esperaba y no estaba: entra igual, tachada y con borde rojo. */
-.card[data-result="false-positive"] .card__face--front {
-  border: 2px solid var(--bad);
-  filter: grayscale(.7);
-  opacity: .62;
-}
-.card[data-result="false-positive"] .card__name { text-decoration: line-through; }
-.fp-tag {
-  position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
-  font-size: 8px; font-weight: 700; color: #fff; background: var(--bad);
-  padding: 1px 5px; border-radius: 3px; z-index: 3; white-space: nowrap;
-  max-width: 100%; overflow: hidden; text-overflow: ellipsis;   /* nunca mas ancha que su carta */
-}
-
-/* ---------- OVERLAY DE CARTA AMPLIADA ---------- */
-.zoom {
-  position: fixed; inset: 0; z-index: 60;
-  background: rgba(10,12,16,.72);
-  display: grid; place-items: center; padding: 24px;
-  animation: fade 140ms var(--ease);
-}
-.zoom__card { width: min(70vw, 300px); }
-.zoom .card { transform: rotateY(180deg); }
-@keyframes fade { from { opacity: 0 } }
-
 /* ---------- PREGUNTA / INPUT ---------- */
 .ask { margin: 14px 0 8px; font-size: 15px; font-weight: 600; line-height: 1.35; }
 .ask__hint { display: block; font-size: 12px; font-weight: 450; color: var(--muted); margin-top: 3px; }
 
-.picks { display: flex; flex-wrap: wrap; gap: 7px; }
-.pick {
-  border: 1px solid var(--line); background: var(--surface); border-radius: 9px;
-  padding: 8px 11px; font-size: 13px; cursor: pointer; text-align: left;
-  transition: transform 90ms var(--ease), border-color 90ms, background 90ms;
-}
-.pick:active { transform: translateY(1px) scale(.985); }
-.pick[aria-pressed="true"] { border-color: var(--accent); background: #eef4fe; color: var(--accent); font-weight: 600; }
-.pick__cost { font-size: 11px; color: var(--muted); margin-left: 6px; }
-.pick[aria-pressed="true"] .pick__cost { color: var(--accent); }
-
-.typebox { position: relative; }
-.typebox input {
-  width: 100%; padding: 11px 12px; font-size: 15px;
-  border: 1px solid var(--line); border-radius: 10px; background: var(--surface);
-  color: var(--ink);
-}
-.typebox input:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
-
-.suggest {
-  position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 30;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
-  max-height: 210px; overflow-y: auto; box-shadow: 0 12px 28px -16px rgba(0,0,0,.4);
-}
-.suggest__item {
-  display: flex; justify-content: space-between; gap: 8px; width: 100%;
-  padding: 9px 11px; border: 0; background: none; cursor: pointer; font-size: 14px; text-align: left;
-}
-.suggest__item[aria-selected="true"] { background: #eef4fe; }
-.suggest__cost { color: var(--muted); font-size: 12px; }
-
-.named { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
-.named__tag { font-size: 12px; padding: 4px 9px; border-radius: 999px; background: #e8ecf3; color: var(--ink-soft); }
-
-.numpad { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-.numpad button {
-  aspect-ratio: 1; border: 1px solid var(--line); background: var(--surface);
-  border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;
-}
-.numpad button[aria-pressed="true"] { border-color: var(--accent); background: #eef4fe; color: var(--accent); }
-
-.actions { display: flex; gap: 8px; margin-top: 12px; padding-bottom: 16px; }
 .btn {
   flex: 1; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink);
   border-radius: 10px; padding: 12px; font-size: 15px; font-weight: 650; cursor: pointer;
@@ -351,29 +210,6 @@ button { font: inherit; color: inherit; }
 .recall__controls .btn { min-height: 44px; }
 .btn--ghost { background: var(--surface); color: var(--ink-soft); border-color: var(--line); }
 .btn[disabled] { opacity: .45; cursor: default; }
-
-/* ---------- FEEDBACK ---------- */
-.verdict { margin-top: 12px; }
-.verdict__head { display: flex; align-items: baseline; gap: 8px; font-weight: 700; font-size: 15px; }
-.verdict--ok .verdict__head { color: var(--ok); }
-.verdict--bad .verdict__head { color: var(--bad); }
-.verdict__score { font-size: 13px; color: var(--muted); font-weight: 500; }
-
-.why { margin-top: 8px; border: 1px solid var(--line-soft); border-radius: 10px; background: var(--surface); overflow: hidden; }
-.why__row {
-  display: flex; gap: 8px; padding: 8px 11px; font-size: 12.5px; line-height: 1.35;
-  border-top: 1px solid var(--line-soft);
-}
-.why__row:first-child { border-top: 0; }
-.why__mark { flex: 0 0 auto; font-weight: 800; }
-.why__row--yes .why__mark { color: var(--ok); }
-.why__row--no .why__mark { color: var(--bad); }
-.why__name { font-weight: 600; }
-.why__reason { color: var(--ink-soft); }
-
-.chain { font-family: ui-monospace, "Cascadia Code", Menlo, monospace; font-size: 12px; }
-.chain div { padding: 2px 0; color: var(--ink-soft); }
-.chain div b { color: var(--ink); }
 
 .hidden { display: none !important; }
 
@@ -386,9 +222,11 @@ button { font: inherit; color: inherit; }
 
 /* Recall: la mesa y las cartas existentes siguen siendo el centro de la tarea. */
 .recall { padding-bottom: 28px; min-width: 0; }
-.recall__head { display: flex; align-items: baseline; gap: 12px; margin: 14px 0 12px; }
-.recall__head h1 { margin: 0; font-size: clamp(20px, 5vw, 26px); letter-spacing: -.025em; line-height: 1.2; }
-.recall__level { flex: 0 0 auto; font-size: 15px; font-weight: 700; color: var(--ink); }
+/* Para el lector de pantalla, no para la vista: la pagina conserva su titulo. */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0;
+}
 .recall__table { min-width: 0; }
 /* La leyenda se queda dentro de la banda aunque la pantalla sea ancha. */
 .recall-band .legend { position: static; width: auto; }
@@ -427,7 +265,7 @@ button { font: inherit; color: inherit; }
 .recall-composer__thumb .card { border-radius: 5px; }
 .recall-composer__name { flex: 1; font-size: 14px; font-weight: 650; min-width: 0; overflow-wrap: anywhere; }
 .recall-composer__status { min-height: 1em; margin: 5px 0; font-size: 12px; color: var(--ink-soft); }
-.recall button:focus-visible, #btn-mode:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.recall button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .recall button:disabled { opacity: .48; cursor: not-allowed; }
 .recall-composer__input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 @media (max-width: 390px) {
@@ -438,8 +276,8 @@ button { font: inherit; color: inherit; }
 }
 
 /* ---------- ESCRITORIO: la pantalla completa, sin scroll de página ----------
-   Mismos elementos que en el teléfono; sólo cambia la disposición. Encabezado, banda,
-   mano y dock en cuatro filas; la mano se queda con todo el alto que sobra. */
+   Mismos elementos que en el teléfono; sólo cambia la disposición. Banda, mano y dock
+   en tres filas; la mano se queda con todo el alto que sobra. */
 .recall-dock { min-width: 0; }
 .recall__info { display: flex; flex-wrap: wrap; column-gap: 16px; }
 @media (min-width: 1024px) and (min-height: 700px) {
@@ -448,14 +286,12 @@ button { font: inherit; color: inherit; }
     --muted: #98a0ad; --line: #333842; --line-soft: #2a2e36; --warn: #e3a94b;
   }
   .app:has(.recall) { max-width: none; height: 100dvh; min-height: 0; }
-  .app:has(.recall) #btn-mode { margin-left: auto; }   /* el nivel queda arriba a la izquierda */
   .app:has(.recall) > main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
   .app:has(.recall) #recall-root { flex: 1 1 auto; min-height: 0; }
   .recall {
     height: 100%; padding-bottom: 12px; row-gap: 10px;
-    display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto;
+    display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
   }
-  .recall__head { margin: 0; }
   .recall-band {
     display: grid; grid-template: "head" auto "board" auto / minmax(0, 1fr);
   }
@@ -578,7 +414,7 @@ button { font: inherit; color: inherit; }
 .recall--reduced .card, .recall--reduced .fan__card { transition: none !important; animation: none !important; }
 .celebration--reduced .celebration__banner { animation: celebration-fade 2.6s linear both; }
 @media (prefers-reduced-motion: reduce) {
-  .card, .hand__slot, .pick, .zoom, .fan__card { transition: none !important; animation: none !important; }
+  .card, .fan__card { transition: none !important; animation: none !important; }
   .celebration__banner { animation: celebration-fade 2.6s linear both; }
   .celebration__piece { display: none; }
 }
