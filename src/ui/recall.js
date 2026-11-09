@@ -125,12 +125,14 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
 
   /** Rechazo visible: las runas que lo explican, o el dominio que falta. El motor decide cuales. */
   function markRejection(detail) {
-    const { indices, missingDomain } = rejectionRunes(detail, state.scenario.runes);
+    const { indices, missingDomain, missingDomains = [] } = rejectionRunes(detail, state.scenario.runes);
     const nodes = runes.querySelectorAll('.rune');
     for (const i of indices) nodes[i]?.setAttribute('data-highlight', 'true');
-    if (missingDomain) {
-      missing.dataset.domain = missingDomain;
-      missing.textContent = `Sin runas ${DOMAIN_LABEL[missingDomain] ?? missingDomain} en mesa`;
+    // Un dominio (Pide 1 Fury) o los dos de una carta de dos dominios (Calm o Chaos).
+    const absent = missingDomain ? [missingDomain] : missingDomains;
+    if (absent.length) {
+      missing.dataset.domain = absent.join(' ');
+      missing.textContent = `Sin runas ${absent.map((d) => DOMAIN_LABEL[d] ?? d).join(' ni ')} en mesa`;
       missing.hidden = false;
     }
     composer?.flagRejected(true);

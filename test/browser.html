@@ -1197,6 +1197,21 @@ deskFrame.remove();
   celMount.remove();
 }
 
+// ---- Carta de dos dominios rechazada (AC-DUO-08)
+{
+  const duoMount = document.createElement('div');
+  document.querySelector('#stage main').appendChild(duoMount);
+  const duoCard = { id: 'blade', name: 'Hoja de dos dominios', energy: 1, power: {}, powerAny: { amount: 1, domains: ['calm', 'chaos'] }, type: 'gear' };
+  const duoDeck = { id: 'duo', name: 'Deck dos dominios', runes: { order: 12 }, cards: [{ cardId: 'blade', qty: 3 }, { cardId: 'free', qty: 3 }] };
+  const run = mountRecall(duoMount, { deck: duoDeck, cards: [duoCard, terminalCard], seed: 17, initialLevel: 3, storage: stub });
+  press(type(duoMount, 'dos dominios'), 'Enter');
+  const mark = duoMount.querySelector('.runes__missing:not([hidden])');
+  check('AC-DUO-08: una carta de dos dominios sin runas de ninguno muestra NO ENTRA con su motivo y nombra los dos dominios',
+    /Calm o Chaos/.test(duoMount.querySelector('.recall-stamp span')?.textContent ?? '') &&
+    mark?.textContent === 'Sin runas Calm ni Chaos en mesa', mark?.textContent ?? 'sin marca');
+  run.destroy(); duoMount.remove();
+}
+
 // ---- Nivel máximo en la pantalla (AC-CFG-10)
 {
   const maxMount = document.createElement('div');
