@@ -545,9 +545,40 @@ button { font: inherit; color: inherit; }
   .fan__why { grid-column: 1 / -1; }
 }
 
+/* ---------- FESTEJO DE FIN DE NIVEL ---------- */
+/* Capa fija: fuera de la grilla, sin clics; recorta el confetti para que nunca haya scroll.
+   El cartel va en el tercio superior y se desvanece: la mano dada vuelta es el feedback, no se tapa. */
+.celebration { position: fixed; inset: 0; z-index: 40; pointer-events: none; overflow: hidden;
+  display: grid; justify-items: center; align-items: start; padding-top: 16vh; }
+.celebration[hidden], .celebration__banner[hidden] { display: none; }
+.celebration__confetti { position: absolute; inset: 0; }
+.celebration__piece { position: absolute; top: -16px; left: var(--x); width: 8px; height: 14px; border-radius: 2px;
+  pointer-events: none; background: hsl(var(--hue) 80% 60%);
+  animation: celebration-fall 1.9s var(--ease) var(--delay) forwards; }
+.celebration__banner { position: relative; margin: 0 16px; padding: 14px 28px; border-radius: var(--r);
+  background: var(--panel); color: #fff; border: 2px solid var(--order);
+  font-size: clamp(22px, 5vw, 40px); font-weight: 800; letter-spacing: .02em; text-align: center;
+  box-shadow: 0 0 0 6px rgb(192 160 42 / .18), 0 18px 48px rgb(0 0 0 / .45);
+  animation: celebration-banner 2.6s var(--ease) both; }
+@keyframes celebration-fall {
+  from { transform: translate3d(0, 0, 0) rotate(0); opacity: 1; }
+  to { transform: translate3d(var(--drift), 105vh, 0) rotate(var(--spin)); opacity: .9; }
+}
+@keyframes celebration-banner {
+  0% { transform: scale(.85); opacity: 0; }
+  14% { transform: scale(1); opacity: 1; }
+  78% { opacity: 1; }
+  100% { transform: scale(1); opacity: 0; }
+}
+/* Sin movimiento: sólo opacidad (aparece y se va), sin escala. */
+@keyframes celebration-fade { 0%, 100% { opacity: 0; } 8%, 78% { opacity: 1; } }
+
 /* ---------- MOTION ---------- */
 /* La clase la pone recall.js con la misma preferencia: cambia el movimiento, nunca el estado visible. */
 .recall--reduced .card, .recall--reduced .fan__card { transition: none !important; animation: none !important; }
+.celebration--reduced .celebration__banner { animation: celebration-fade 2.6s linear both; }
 @media (prefers-reduced-motion: reduce) {
   .card, .hand__slot, .pick, .zoom, .fan__card { transition: none !important; animation: none !important; }
+  .celebration__banner { animation: celebration-fade 2.6s linear both; }
+  .celebration__piece { display: none; }
 }
