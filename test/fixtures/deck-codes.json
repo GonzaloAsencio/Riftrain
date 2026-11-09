@@ -1,0 +1,557 @@
+{
+ "_source": "@piltoverarchive/riftbound-deck-codes 1.5.0 (Apache-2.0), corrida fuera del repo como oráculo",
+ "_generated": "2026-11-09T19:33:00.529Z",
+ "_note": "Generado una vez con la librería de referencia: cada código con su decodificación esperada. No editar a mano.",
+ "cases": [
+  {
+   "name": "readme-example",
+   "note": "Código de ejemplo del README de la librería",
+   "code": "CIAAAAAAAAAQCAAAA4AACAIAABMQAAILAAAAICIMDMOVOX3AM5UHIAIDAAACO6XYAEAQKAAABX3QDGACUABKIAQAAEBQAAAWDBOQCAQAABMHE",
+   "format": 1,
+   "version": 2,
+   "expected": {
+    "mainDeck": [
+     {
+      "cardCode": "OGN-007",
+      "count": 7
+     },
+     {
+      "cardCode": "OGN-089",
+      "count": 5
+     },
+     {
+      "cardCode": "OGN-004",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-009",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-012",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-027",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-029",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-087",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-095",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-096",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-103",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-104",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-116",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-039",
+      "count": 2
+     },
+     {
+      "cardCode": "OGN-122",
+      "count": 2
+     },
+     {
+      "cardCode": "OGN-248",
+      "count": 2
+     },
+     {
+      "cardCode": "OGN-013",
+      "count": 1
+     },
+     {
+      "cardCode": "OGN-247",
+      "count": 1
+     },
+     {
+      "cardCode": "OGN-280",
+      "count": 1
+     },
+     {
+      "cardCode": "OGN-288",
+      "count": 1
+     },
+     {
+      "cardCode": "OGN-292",
+      "count": 1
+     }
+    ],
+    "sideboard": [
+     {
+      "cardCode": "OGN-022",
+      "count": 2
+     },
+     {
+      "cardCode": "OGN-024",
+      "count": 2
+     },
+     {
+      "cardCode": "OGN-093",
+      "count": 2
+     },
+     {
+      "cardCode": "OGN-088",
+      "count": 1
+     },
+     {
+      "cardCode": "OGN-114",
+      "count": 1
+     }
+    ]
+   }
+  },
+  {
+   "name": "koko-kennen-runas-ogn",
+   "note": "Mazo real con runas de Origins (números normales) y campeón elegido",
+   "code": "CMAAAAABAEAABJQBAAAAAAAAAICAAAFZAHBQDTAB2YAQGBIAL5UJYAIDAQBQBDABSEAZKAMWAEAQIAEAAEAQKADDAUCQAAFJAGWQDRQBY4A6AAIBAEAAWAIDACBACAIEACJQCAYFABTXDGYBAAAAAAIFABYQ",
+   "format": 1,
+   "version": 3,
+   "expected": {
+    "mainDeck": [
+     {
+      "cardCode": "OGN-166",
+      "count": 9
+     },
+     {
+      "cardCode": "OGN-185",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-195",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-204",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-214",
+      "count": 3
+     },
+     {
+      "cardCode": "VEN-095",
+      "count": 3
+     },
+     {
+      "cardCode": "VEN-104",
+      "count": 3
+     },
+     {
+      "cardCode": "VEN-156",
+      "count": 3
+     },
+     {
+      "cardCode": "SFD-140",
+      "count": 2
+     },
+     {
+      "cardCode": "SFD-145",
+      "count": 2
+     },
+     {
+      "cardCode": "SFD-149",
+      "count": 2
+     },
+     {
+      "cardCode": "SFD-150",
+      "count": 2
+     },
+     {
+      "cardCode": "UNL-128",
+      "count": 2
+     },
+     {
+      "cardCode": "VEN-099",
+      "count": 2
+     },
+     {
+      "cardCode": "OGN-169",
+      "count": 1
+     },
+     {
+      "cardCode": "OGN-173",
+      "count": 1
+     },
+     {
+      "cardCode": "OGN-198",
+      "count": 1
+     },
+     {
+      "cardCode": "OGN-199",
+      "count": 1
+     },
+     {
+      "cardCode": "OGN-224",
+      "count": 1
+     },
+     {
+      "cardCode": "OGS-011",
+      "count": 1
+     },
+     {
+      "cardCode": "SFD-130",
+      "count": 1
+     },
+     {
+      "cardCode": "UNL-147",
+      "count": 1
+     },
+     {
+      "cardCode": "VEN-103",
+      "count": 1
+     },
+     {
+      "cardCode": "VEN-113",
+      "count": 1
+     },
+     {
+      "cardCode": "VEN-155",
+      "count": 1
+     }
+    ],
+    "sideboard": [],
+    "chosenChampion": "VEN-113"
+   }
+  },
+  {
+   "name": "koko-kennen-runas-ven",
+   "note": "Las mismas runas con prefijo R (VEN-R05, VEN-R06): flag de runa por carta",
+   "code": "CQAAAAABAECQAAIFAAAAAAAAAIBQAAAAXEAQBQYBADGACBAFAAAF6ADIACOACAIGAMCAGAAARQAQBEIBACKQCAEWAEAQIAAAQAAQCBIAABRQKBIAAAAKSAIAVUAQBRQBADDQCAHAAEAQCAAABMAQGAAAQIAQCBAAACJQCAYFAAAGOADRACNQCAAAAAAQKAAAOE",
+   "format": 1,
+   "version": 4,
+   "expected": {
+    "mainDeck": [
+     {
+      "cardCode": "VEN-R05",
+      "count": 9
+     },
+     {
+      "cardCode": "OGN-185",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-195",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-204",
+      "count": 3
+     },
+     {
+      "cardCode": "VEN-095",
+      "count": 3
+     },
+     {
+      "cardCode": "VEN-104",
+      "count": 3
+     },
+     {
+      "cardCode": "VEN-156",
+      "count": 3
+     },
+     {
+      "cardCode": "VEN-R06",
+      "count": 3
+     },
+     {
+      "cardCode": "SFD-140",
+      "count": 2
+     },
+     {
+      "cardCode": "SFD-145",
+      "count": 2
+     },
+     {
+      "cardCode": "SFD-149",
+      "count": 2
+     },
+     {
+      "cardCode": "SFD-150",
+      "count": 2
+     },
+     {
+      "cardCode": "UNL-128",
+      "count": 2
+     },
+     {
+      "cardCode": "VEN-099",
+      "count": 2
+     },
+     {
+      "cardCode": "OGN-169",
+      "count": 1
+     },
+     {
+      "cardCode": "OGN-173",
+      "count": 1
+     },
+     {
+      "cardCode": "OGN-198",
+      "count": 1
+     },
+     {
+      "cardCode": "OGN-199",
+      "count": 1
+     },
+     {
+      "cardCode": "OGN-224",
+      "count": 1
+     },
+     {
+      "cardCode": "OGS-011",
+      "count": 1
+     },
+     {
+      "cardCode": "SFD-130",
+      "count": 1
+     },
+     {
+      "cardCode": "UNL-147",
+      "count": 1
+     },
+     {
+      "cardCode": "VEN-103",
+      "count": 1
+     },
+     {
+      "cardCode": "VEN-113",
+      "count": 1
+     },
+     {
+      "cardCode": "VEN-155",
+      "count": 1
+     }
+    ],
+    "sideboard": [],
+    "chosenChampion": "VEN-113"
+   }
+  },
+  {
+   "name": "sideboard",
+   "note": "Sideboard con conteos 1 a 3",
+   "code": "CMAQCAAAUYAQAAAAAAAAAAAAAIBQAAFZAHBQDTABAMCQAX3ITQAQAAIBAUAJWAIAAEAQAADXAEAQGAEMAEAA",
+   "format": 1,
+   "version": 3,
+   "expected": {
+    "mainDeck": [
+     {
+      "cardCode": "OGN-166",
+      "count": 12
+     },
+     {
+      "cardCode": "OGN-185",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-195",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-204",
+      "count": 3
+     },
+     {
+      "cardCode": "VEN-095",
+      "count": 3
+     },
+     {
+      "cardCode": "VEN-104",
+      "count": 3
+     },
+     {
+      "cardCode": "VEN-156",
+      "count": 3
+     },
+     {
+      "cardCode": "VEN-155",
+      "count": 1
+     }
+    ],
+    "sideboard": [
+     {
+      "cardCode": "OGN-119",
+      "count": 2
+     },
+     {
+      "cardCode": "SFD-140",
+      "count": 1
+     }
+    ]
+   }
+  },
+  {
+   "name": "variantes",
+   "note": "Variantes a, b y firmada (s) en el mazo",
+   "code": "CMAQCAAAA4AAAAAAAAAAAAABAEAAC5YBAECAHEYBAIAQGAXDAEAQKAE3AEAAAAAA",
+   "format": 1,
+   "version": 3,
+   "expected": {
+    "mainDeck": [
+     {
+      "cardCode": "OGN-007",
+      "count": 12
+     },
+     {
+      "cardCode": "OGN-119a",
+      "count": 3
+     },
+     {
+      "cardCode": "UNL-147b",
+      "count": 2
+     },
+     {
+      "cardCode": "SFD-227s",
+      "count": 1
+     },
+     {
+      "cardCode": "VEN-155",
+      "count": 1
+     }
+    ],
+    "sideboard": []
+   }
+  },
+  {
+   "name": "especial-sp",
+   "note": "Carta SP: obliga a la versión 5 con bit de prefijo",
+   "code": "CUAQGDABAECQAAIFAMBAGAAAAC4QCAGDAEAMYAIBAUAAAXYBAEBAKAAATMAQEAYAAECQAADR",
+   "format": 1,
+   "version": 5,
+   "expected": {
+    "mainDeck": [
+     {
+      "cardCode": "VEN-R05",
+      "count": 12
+     },
+     {
+      "cardCode": "OGN-185",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-195",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-204",
+      "count": 3
+     },
+     {
+      "cardCode": "VEN-095",
+      "count": 3
+     },
+     {
+      "cardCode": "VEN-155",
+      "count": 1
+     },
+     {
+      "cardCode": "VEN-SP3",
+      "count": 1
+     }
+    ],
+    "sideboard": [],
+    "chosenChampion": "VEN-113"
+   }
+  },
+  {
+   "name": "conteo-alto",
+   "note": "Una carta con más de 12 copias: versión 5 con conteos dispersos",
+   "code": "CUAAIDYBAEAAA5YMAEAQAAFGAEBQCAYAAC4QDQYBZQAQCAIBAUAJWAIAAA",
+   "format": 1,
+   "version": 5,
+   "expected": {
+    "mainDeck": [
+     {
+      "cardCode": "OGN-119",
+      "count": 15
+     },
+     {
+      "cardCode": "OGN-166",
+      "count": 12
+     },
+     {
+      "cardCode": "OGN-185",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-195",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-204",
+      "count": 3
+     },
+     {
+      "cardCode": "VEN-155",
+      "count": 1
+     }
+    ],
+    "sideboard": []
+   }
+  },
+  {
+   "name": "leyendas-adicionales",
+   "note": "Versión 6: leyendas además de la inicial, en orden",
+   "code": "CYAAGDABAEAABVQBAMBAGAAAXEA4GAOMAEBAKAC7NAAQCAIFACNQCAABAUAHCAQAAD6QCAAA7MAQ",
+   "format": 1,
+   "version": 6,
+   "expected": {
+    "mainDeck": [
+     {
+      "cardCode": "OGN-214",
+      "count": 12
+     },
+     {
+      "cardCode": "OGN-185",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-195",
+      "count": 3
+     },
+     {
+      "cardCode": "OGN-204",
+      "count": 3
+     },
+     {
+      "cardCode": "VEN-095",
+      "count": 3
+     },
+     {
+      "cardCode": "VEN-104",
+      "count": 3
+     },
+     {
+      "cardCode": "VEN-155",
+      "count": 1
+     }
+    ],
+    "sideboard": [],
+    "chosenChampion": "VEN-113",
+    "additionalLegends": [
+     "OGN-253",
+     "OGN-251"
+    ]
+   }
+  }
+ ]
+}
