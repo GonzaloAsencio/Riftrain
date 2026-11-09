@@ -45,7 +45,9 @@ export function mountCelebration(root, { reducedMotion = false } = {}) {
     item.style.setProperty('--dx', `${Math.round(Math.cos(angle) * reach)}px`);
     item.style.setProperty('--dy', `${Math.round(Math.sin(angle) * reach)}px`);
     item.style.setProperty('--delay', `${b * 220}ms`);
-    item.style.setProperty('--hue', String(HUES[b % HUES.length]));
+    // Papelitos de confetti: cada uno de un color y girando para su lado.
+    item.style.setProperty('--hue', String(HUES[(b + j) % HUES.length]));
+    item.style.setProperty('--spin', `${(j % 2 ? 1 : -1) * (300 + ((b * 7 + j * 53) % 360))}deg`);
     return item;
   }
 

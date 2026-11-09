@@ -1152,6 +1152,14 @@ deskFrame.remove();
     dx: parseFloat(p.style.getPropertyValue('--dx')), dy: parseFloat(p.style.getPropertyValue('--dy')),
     anim: getComputedStyle(p).animationName }));
   const origins = new Set(sparks.map((sp) => `${sp.x},${sp.y}`));
+  // Son papelitos de confetti, no puntos: tiras más altas que anchas, que giran, de varios colores por estallido.
+  const firstBurst = [...pieces()].slice(0, 12);
+  const shape = getComputedStyle(firstBurst[0]);
+  check('AC-CEL-25: lo que estalla es confetti: tiras rectangulares que giran, varios colores en un mismo estallido',
+    parseFloat(shape.height) > parseFloat(shape.width) && shape.borderRadius !== '50%' &&
+    firstBurst.every((p) => p.style.getPropertyValue('--spin') !== '') &&
+    new Set(firstBurst.map((p) => p.style.getPropertyValue('--hue'))).size >= 3,
+    `${shape.width}x${shape.height} r=${shape.borderRadius} hues=${new Set(firstBurst.map((p) => p.style.getPropertyValue('--hue'))).size}`);
   check('AC-CEL-24: el festejo son fuegos artificiales: 3+ estallidos que se abren hacia los cuatro lados',
     origins.size >= 3 && sparks.every((sp) => sp.anim === 'celebration-burst') &&
     sparks.some((sp) => sp.dx > 0) && sparks.some((sp) => sp.dx < 0) && sparks.some((sp) => sp.dy > 0) && sparks.some((sp) => sp.dy < 0),
