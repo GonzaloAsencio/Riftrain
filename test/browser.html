@@ -980,6 +980,21 @@ check('AC-ARC-33: en la app real nombrar Gust da vuelta su celda, con su imagen 
   liveSlot('gust')?.dataset.state === 'found' && !!liveSlot('gust').querySelector('.card__face--image img') &&
   liveDoc.querySelector('#recall-root').textContent.includes('Nivel 1'));
 
+liveDoc.querySelector('#recall-root .table__head button[aria-label="Configuración"]')?.click();
+const liveDialog = liveDoc.querySelector('dialog.settings');
+const liveLevels = liveDialog ? [...liveDialog.querySelectorAll('[data-level]')] : [];
+check('AC-CFG-20: a 320 la configuración es una hoja inferior sin desborde, con los niveles en 2 filas de 6 y controles de 44 px',
+  !!liveDialog?.open && Math.abs(liveDialog.getBoundingClientRect().bottom - liveFrame.contentWindow.innerHeight) <= 2 &&
+  liveDialog.getBoundingClientRect().left >= -1 && liveDialog.getBoundingClientRect().right <= liveDoc.documentElement.clientWidth + 1 &&
+  new Set(liveLevels.map((b) => Math.round(b.getBoundingClientRect().top))).size === 2 &&
+  [...liveDialog.querySelectorAll('button, input')].every((c) => c.getBoundingClientRect().height >= 44) &&
+  liveDoc.documentElement.scrollWidth <= liveDoc.documentElement.clientWidth + 1,
+  liveDialog ? `${Math.round(liveDialog.getBoundingClientRect().bottom)} / ${liveFrame.contentWindow.innerHeight} filas ${new Set(liveLevels.map((b) => Math.round(b.getBoundingClientRect().top))).size}` : 'sin dialog');
+liveDialog?.querySelector('[data-level="5"]')?.click();
+liveDialog?.querySelector('[data-action="save"]')?.click();
+await liveFrame.contentWindow.__riftrainReady;
+check('AC-CFG-17: en la app real, guardar el máximo 5 actualiza la banda a "de 5"',
+  liveDoc.querySelector('#recall-root .table__max')?.textContent === 'de 5' && !liveDoc.querySelector('dialog.settings'));
 check('AC-CMB-21: la app completa no desborda el documento a 320px',
   liveDoc.documentElement.scrollWidth <= liveDoc.documentElement.clientWidth + 1,
   `${liveDoc.documentElement.scrollWidth} / ${liveDoc.documentElement.clientWidth}`);
@@ -1191,6 +1206,120 @@ deskFrame.remove();
   check('AC-CFG-10: con máximo 3, completar el nivel 3 termina el entrenamiento, sin Siguiente nivel',
     maxMount.textContent.includes('Entrenamiento completado') && maxMount.querySelector('[data-action="next"]').hidden === true);
   run.destroy(); maxMount.remove();
+}
+
+// ---- Configuración (AC-CFG-15..21)
+{
+  const { openSettings } = await import('../src/ui/settings.js');
+  const catalog = (await (await fetch('../data/catalog.json')).json()).cards;
+  const codes = (await (await fetch('./fixtures/deck-codes.json')).json()).cases;
+  const kkCode = codes.find((c) => c.name === 'koko-kennen-runas-ogn').code;
+  const until = async (fn) => { for (let i = 0; i < 150; i++) { if (fn()) return true; await new Promise((r) => setTimeout(r, 20)); } return false; };
+
+  // La banda: engranaje a la derecha y "de M".
+  const gearMount = document.createElement('div');
+  document.querySelector('#stage main').appendChild(gearMount);
+  let opened = 0;
+  const gearRun = mountRecall(gearMount, { deck: terminalDeck, cards: [terminalCard], seed: 17, initialLevel: 3, maxLevel: 8,
+    storage: stub, onOpenSettings: () => { opened++; } });
+  const gear = gearMount.querySelector('.table__head button[aria-label="Configuración"]');
+  check('AC-CFG-15: la banda tiene el botón Configuración (44 px) a la derecha y dice "Nivel 3 de 8"',
+    !!gear && gear.getBoundingClientRect().height >= 44 && gear.getBoundingClientRect().width >= 44 &&
+    gear.getBoundingClientRect().left > gearMount.querySelector('.table__level').getBoundingClientRect().right &&
+    gearMount.querySelector('.table__level').textContent === 'Nivel 3' && gearMount.querySelector('.table__max')?.textContent === 'de 8');
+  gear?.click();
+  check('AC-CFG-15: tocar el engranaje pide abrir la configuración', opened === 1);
+  gearRun.destroy(); gearMount.remove();
+
+  let catalogLoads = 0;
+  const loadCatalog = async () => { catalogLoads++; return catalog; };
+  let saved = null; let closed = 0;
+  const opener = document.createElement('button');
+  document.body.appendChild(opener);
+  opener.focus();
+  const open = (extra = {}) => openSettings(document.body, { maxLevel: 12, deck: null, deckName: 'koko-kennen', loadCatalog,
+    onSave: (value) => { saved = value; }, onClose: () => { closed++; opener.focus(); }, ...extra });
+  const dlg = () => document.querySelector('dialog.settings');
+  const act = (name) => dlg()?.querySelector(`[data-action="${name}"]`);
+  const level = (n) => dlg()?.querySelector(`[data-level="${n}"]`);
+
+  open();
+  check('AC-CFG-16: se abre un dialog modal con el foco adentro',
+    !!dlg() && dlg().open && dlg().matches(':modal') && dlg().contains(document.activeElement));
+  act('close').click();
+  check('AC-CFG-16: Cerrar lo cierra, lo saca del DOM y el foco vuelve al botón', !dlg() && closed === 1 && document.activeElement === opener);
+
+  open({ maxLevel: 12 });
+  level(8).click();
+  check('AC-CFG-17: elegir el 8 lo marca y deja 9 a 12 fuera del recorrido',
+    level(8).getAttribute('aria-pressed') === 'true' && level(12).getAttribute('aria-pressed') === 'false' &&
+    [9, 10, 11, 12].every((n) => level(n).classList.contains('settings__level--out')) && !level(8).classList.contains('settings__level--out') &&
+    [...dlg().querySelectorAll('[data-level]')].every((b) => b.getBoundingClientRect().height >= 44));
+  act('save').click();
+  check('AC-CFG-17: Guardar entrega el máximo elegido sin tocar el mazo y cierra', saved?.maxLevel === 8 && saved.deck === null && !dlg());
+
+  saved = null;
+  open();
+  const input = dlg().querySelector('input');
+  input.value = kkCode; input.dispatchEvent(new Event('input', { bubbles: true }));
+  act('read').click();
+  await until(() => dlg().querySelector('.settings__preview strong'));
+  const preview = dlg().querySelector('.settings__preview');
+  check('AC-CFG-18: leer el código muestra la leyenda, el campeón, las cartas, las runas y el aviso de reinicio',
+    /Heart of the Tempest/.test(preview.textContent) && /Kennen, Storm of Shuriken/.test(preview.textContent) &&
+    /39 cartas/.test(preview.textContent) && /9 Chaos/.test(preview.textContent) && /3 Order/.test(preview.textContent) &&
+    !dlg().querySelector('.settings__restart').hidden && act('save').disabled === false, preview.textContent);
+  act('read').click();
+  await until(() => catalogLoads > 1 || dlg().querySelector('.settings__preview strong'));
+  check('AC-CFG-18: el catálogo se descarga una sola vez', catalogLoads === 1, String(catalogLoads));
+  act('save').click();
+  check('AC-CFG-18: Guardar entrega el mazo resuelto con sus cartas',
+    saved?.deck?.deck?.legend === 'heart-of-the-tempest' && saved.deck.cards.some((c) => c.id === 'heart-of-the-tempest'));
+
+  saved = null;
+  open();
+  const bad = dlg().querySelector('input');
+  bad.value = 'ESTO-NO-ES-UN-CODIGO'; bad.dispatchEvent(new Event('input', { bubbles: true }));
+  act('read').click();
+  await until(() => bad.getAttribute('aria-invalid') === 'true');
+  check('AC-CFG-19: un código roto marca el input, dice el motivo y deshabilita Guardar',
+    bad.getAttribute('aria-invalid') === 'true' && dlg().querySelector('.settings__preview').getAttribute('role') === 'status' &&
+    dlg().querySelector('.settings__preview').textContent.length > 10 && act('save').disabled === true);
+  act('close').click();
+
+  open({ loadCatalog: async () => catalog.filter((c) => !['traveling-merchant', 'rhasa-the-sunderer'].includes(c.id)) });
+  const miss = dlg().querySelector('input');
+  miss.value = kkCode; miss.dispatchEvent(new Event('input', { bubbles: true }));
+  act('read').click();
+  await until(() => dlg().querySelectorAll('.settings__preview li').length > 0);
+  check('AC-CFG-19: las cartas que faltan se listan TODAS, una por línea, con su código',
+    dlg().querySelectorAll('.settings__preview li').length === 2 && act('save').disabled === true &&
+    /OGN-185/.test(dlg().querySelector('.settings__preview').textContent));
+  act('cancel').click();
+  check('AC-CFG-21: Cancelar cierra sin guardar nada', !dlg() && saved === null);
+
+  // Carrera: se lee A, se edita a B mientras baja el catálogo -> A no se muestra ni se guarda.
+  let release;
+  open({ loadCatalog: () => new Promise((resolve) => { release = () => resolve(catalog); }) });
+  const race = dlg().querySelector('input');
+  race.value = kkCode; race.dispatchEvent(new Event('input', { bubbles: true }));
+  race.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  race.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  race.value = codes.find((c) => c.name === 'variantes').code; race.dispatchEvent(new Event('input', { bubbles: true }));
+  release();
+  await new Promise((r) => setTimeout(r, 60));
+  check('AC-CFG-19: una lectura vieja no pisa el código editado ni habilita Guardar',
+    !dlg().querySelector('.settings__preview strong') && act('save').disabled === true, dlg().querySelector('.settings__preview').textContent);
+  act('close').click();
+
+  // Si guardar falla, el modal queda abierto con lo elegido.
+  open({ onSave: () => false });
+  level(4).click();
+  act('save').click();
+  check('AC-CFG-17: si guardar falla, el modal sigue abierto con el nivel elegido',
+    !!dlg() && level(4).getAttribute('aria-pressed') === 'true');
+  act('close').click();
+  opener.remove();
 }
 
 // ---- Sin restos del modo legacy (AC-SHL-07/08)

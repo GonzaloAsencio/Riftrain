@@ -1,19 +1,30 @@
 /**
  * El arranque: una sola pantalla. Abre y ya hay una mano boca abajo esperando.
- * Sin menus, sin pantalla de inicio, sin selector de modo.
+ * Sin menus, sin pantalla de inicio: lo unico configurable vive detras del engranaje.
  */
 import * as store from './store.js';
 import { mountRecall } from './ui/recall.js';
+import { openSettings } from './ui/settings.js';
 
 const root = document.getElementById('recall-root');
 const banner = document.getElementById('ph-banner');
+let controller = null;
 
 function warn(text) {
   banner.textContent = banner.textContent ? `${banner.textContent} ${text}` : text;
   banner.classList.remove('hidden');
 }
 
-async function boot() {
+// El catalogo completo (~800 KB) solo hace falta para leer un codigo de mazo: se pide ahi.
+const loadCatalog = async () => {
+  const res = await fetch('data/catalog.json');
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return (await res.json()).cards;
+};
+
+async function start() {
+  banner.textContent = '';
+  banner.classList.add('hidden');
   // El mazo importado viaja con sus cartas: con uno guardado, arrancar no descarga nada.
   const loaded = store.loadSettings();
   if (!loaded.ok) warn(loaded.reason);
@@ -33,12 +44,32 @@ async function boot() {
   }
   if (!deck) { root.textContent = 'No hay mazo cargado. Cargá uno para practicar.'; return; }
   const seed = crypto.getRandomValues(new Uint32Array(1))[0];
-  const controller = mountRecall(root, { deck, cards, seed, maxLevel, storage: store });
+  controller?.destroy();
+  controller = mountRecall(root, {
+    deck, cards, seed, maxLevel, storage: store,
+    onOpenSettings: (gear) => openSettings(document.body, {
+      maxLevel, deck: imported ?? null, deckName: deck.name, loadCatalog,
+      onSave: (value) => {
+        // Sin cambios no se remonta: la mano en juego sigue.
+        if (value.maxLevel === maxLevel && value.deck === (imported ?? null)) return true;
+        const saved = store.saveSettings(value);
+        if (!saved.ok) { warn(`No se pudo guardar la configuración: ${saved.reason}`); return false; }
+        // Remontar con los ajustes nuevos; el foco vuelve al engranaje de la pantalla nueva.
+        window.__riftrainReady = boot().then(() => root.querySelector('.table__settings')?.focus());
+        return true;
+      },
+      onClose: () => { if (gear.isConnected) gear.focus(); },
+    }),
+  });
   await controller.ready;
 }
 
+function boot() {
+  return start().catch((err) => {
+    root.textContent = `No se pudieron cargar los datos: ${err.message}`;
+    console.error(err);
+  });
+}
+
 // Los tests de navegador esperan esta promesa antes de mirar la app real.
-window.__riftrainReady = boot().catch((err) => {
-  root.textContent = `No se pudieron cargar los datos: ${err.message}`;
-  console.error(err);
-});
+window.__riftrainReady = boot();
