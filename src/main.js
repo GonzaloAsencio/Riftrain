@@ -9,7 +9,7 @@ const root = document.getElementById('recall-root');
 const banner = document.getElementById('ph-banner');
 
 function warn(text) {
-  banner.textContent += text;
+  banner.textContent = banner.textContent ? `${banner.textContent} ${text}` : text;
   banner.classList.remove('hidden');
 }
 
@@ -20,7 +20,7 @@ async function boot() {
     warn('Datos de andamio: estas cartas NO son reales de Riftbound. Reemplaza data/cards.json por tus decklists.');
   }
   if (store.isMemoryOnly()) {
-    warn(' (El navegador bloquea el almacenamiento: el progreso no va a sobrevivir al cierre.)');
+    warn('El navegador bloquea el almacenamiento: el progreso no va a sobrevivir al cierre.');
   }
   const deck = data.decks[0];
   if (!deck) { root.textContent = 'No hay mazo cargado. Cargá uno para practicar.'; return; }
