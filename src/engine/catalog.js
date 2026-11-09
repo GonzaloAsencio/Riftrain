@@ -43,6 +43,19 @@ export function isVariant(code) {
 }
 
 /**
+ * El codigo de una impresion, sin el total del set ni la marca de variante:
+ * "OGN-007a/298" -> "OGN-007", "VEN-SP3/006" -> "VEN-SP3", "RAD-R01a" -> "RAD-R01".
+ * Es la forma en que los codigos de mazo nombran una carta. Lo que no tiene esa
+ * forma devuelve null: no se adivina.
+ */
+export function printingCode(code) {
+  const m = typeof code === 'string' && /^([A-Z]{3})-((?:R|SP|T)?\d+)[a-z*]?\s*(?:\/\s*\d+)?$/.exec(code.trim());
+  return m ? `${m[1]}-${m[2]}` : null;
+}
+
+const byPrinting = (a, b) => a.localeCompare(b, 'en', { numeric: true });
+
+/**
  * Un item de la galeria -> una carta del motor.
  * @returns {{ card: object|null, error: string|null }}
  */
@@ -134,6 +147,11 @@ export function buildCatalog(items) {
 
   const errors = [];
   const byId = new Map();
+  // POR QUE SE GUARDAN TODAS LAS IMPRESIONES: un codigo de mazo nombra la impresion
+  // (OGN-007 es la Fury Rune de Origins, VEN-R01 la de Vendetta). Con una sola por
+  // carta, un mazo real no se podria cruzar.
+  const printings = new Map();   // id -> Set de codigos de impresion
+  const owner = new Map();       // codigo de impresion -> id de la carta
 
   for (const item of items) {
     const { card, error } = normalizeCard(item);
@@ -142,9 +160,20 @@ export function buildCatalog(items) {
       continue;
     }
 
+    const printing = printingCode(card.code);
+    const claimed = printing && owner.get(printing);
+    if (claimed && claimed !== card.id) {
+      errors.push({
+        code: card.code,
+        reason: `"${card.name}" reclama la impresion ${printing}, que ya es de "${byId.get(claimed)?.name ?? claimed}"`,
+      });
+      continue;
+    }
+
     const previo = byId.get(card.id);
     if (!previo) {
       byId.set(card.id, card);
+      if (printing) { owner.set(printing, card.id); printings.set(card.id, new Set([printing])); }
       continue;
     }
 
@@ -165,9 +194,16 @@ export function buildCatalog(items) {
         : ((card.collectorNumber ?? Infinity) < (previo.collectorNumber ?? Infinity) ? card : previo);
 
     byId.set(card.id, mejor);
+    if (printing) {
+      owner.set(printing, card.id);
+      if (!printings.has(card.id)) printings.set(card.id, new Set());
+      printings.get(card.id).add(printing);
+    }
   }
 
-  return { cards: [...byId.values()], errors };
+  const cards = [...byId.values()].map((card) =>
+    ({ ...card, printings: [...(printings.get(card.id) ?? [])].sort(byPrinting) }));
+  return { cards, errors };
 }
 
 /**
