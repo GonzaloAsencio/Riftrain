@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { normalizeCard, buildCatalog } from '../src/engine/catalog.js';
+import { normalizeCard, buildCatalog, printingCode, isVariant } from '../src/engine/catalog.js';
 import { cardCost, canPlayCard } from '../src/engine/cost.js';
 import { parseDecklist } from '../src/engine/decklist.js';
 
@@ -172,4 +172,64 @@ test('AC-CAT-12: entradas invalidas explotan, no devuelven basura', () => {
   const { card, error } = normalizeCard({ collectorNumber: 1 });
   assert.equal(card, null);
   assert.ok(error, 'un item sin nombre se descarta con su motivo');
+});
+
+// ---- Todas las impresiones (AC-CAT-15..17): los códigos de mazo nombran impresiones, no cartas.
+test('AC-CAT-15: printingCode saca el total y la marca de variante, y conserva los prefijos R/SP/T', () => {
+  assert.equal(printingCode('OGN-007a/298'), 'OGN-007');
+  assert.equal(printingCode('OGN-007/298'), 'OGN-007');
+  assert.equal(printingCode('SFD-227*/221'), 'SFD-227');
+  assert.equal(printingCode('UNL-147b/219'), 'UNL-147');
+  assert.equal(printingCode('RAD-R01a'), 'RAD-R01');
+  assert.equal(printingCode('VEN-R01'), 'VEN-R01');
+  assert.equal(printingCode('VEN-SP3/006'), 'VEN-SP3');
+  assert.equal(printingCode('UNL-T01'), 'UNL-T01');
+  assert.equal(printingCode(null), null);
+  assert.equal(printingCode('basura'), null);
+});
+
+test('AC-CAT-16: cada carta lleva TODAS sus impresiones, sin variantes repetidas y en orden', () => {
+  const { cards } = buildCatalog(ITEMS);
+  const by = (name) => cards.find((c) => c.name === name);
+  assert.deepEqual(by('Ahri, Inquisitive').printings, ['OGN-119', 'SFD-227', 'VEN-SP3']);
+  assert.deepEqual(by('Baron Nashor').printings, ['UNL-147', 'UNL-238']);
+  assert.deepEqual(by('Heart of the Tempest').printings, ['VEN-155', 'VEN-197']);
+  assert.deepEqual(by('Fizz, Trickster').printings, ['SFD-140']);
+  // El code de siempre no cambia de regla (la base de número más bajo) y es una de sus impresiones.
+  for (const card of cards) assert.ok(card.printings.includes(printingCode(card.code)), card.name);
+});
+
+test('AC-CAT-17: dos cartas distintas que reclaman la misma impresión se reportan', () => {
+  const clon = { ...ITEMS.find((x) => x.name === 'Fizz' && x.subtitle === 'Trickster'), subtitle: 'Impostor' };
+  const { cards, errors } = buildCatalog([...ITEMS, clon]);
+  assert.ok(errors.some((e) => /SFD-140/.test(e.reason) && /Fizz/.test(e.reason)), JSON.stringify(errors));
+  const owners = cards.filter((c) => c.printings.includes('SFD-140'));
+  assert.equal(owners.length, 1, 'la impresión queda en una sola carta');
+});
+
+test('AC-CAT-17: una impresión con costo en conflicto se reporta pero NO se pierde', () => {
+  const fizz = ITEMS.find((x) => x.name === 'Fizz' && x.subtitle === 'Trickster');
+  const errata = { ...fizz, publicCode: 'SFD-140a/221', energy: { value: { id: 9 } } };
+  const { cards, errors } = buildCatalog([...ITEMS, errata]);
+  assert.ok(errors.some((e) => e.code === 'SFD-140a/221'), 'el conflicto de costo se reporta');
+  assert.deepEqual(cards.find((c) => c.name === 'Fizz, Trickster').printings, ['SFD-140'], 'la impresión sigue en su carta');
+  const otra = { ...fizz, publicCode: 'OGN-999/298', energy: { value: { id: 9 } } };
+  assert.deepEqual(buildCatalog([...ITEMS, otra]).cards.find((c) => c.name === 'Fizz, Trickster').printings, ['OGN-999', 'SFD-140']);
+});
+
+test('AC-CAT-16: el orden de las impresiones es por set, prefijo y número, sin depender del idioma', () => {
+  const ahri = ITEMS.filter((x) => x.name === 'Ahri' && x.subtitle === 'Inquisitive');
+  const raros = ['VEN-155/166', 'VEN-SP12/006', 'VEN-SP3/006', 'VEN-R02', 'VEN-9/166'].map((publicCode) => ({ ...ahri[0], publicCode }));
+  const card = buildCatalog(raros).cards[0];
+  assert.deepEqual(card.printings, ['VEN-9', 'VEN-155', 'VEN-R02', 'VEN-SP3', 'VEN-SP12']);
+});
+
+test('AC-CAT-15: una impresión sin la forma esperada se reporta, no deja la carta muda', () => {
+  const fizz = ITEMS.find((x) => x.name === 'Fizz' && x.subtitle === 'Trickster');
+  const { errors } = buildCatalog([{ ...fizz, publicCode: 'raro_123' }]);
+  assert.ok(errors.some((e) => e.code === 'raro_123' && /impresion/.test(e.reason)), JSON.stringify(errors));
+  assert.equal(isVariant('RAD-R01a'), true);
+  assert.equal(isVariant('RAD-R01'), false);
+  assert.equal(isVariant('SFD-227*/221'), true);
+  assert.equal(isVariant('OGN-119/298'), false);
 });

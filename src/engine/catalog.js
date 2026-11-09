@@ -37,10 +37,30 @@ function domainsOf(item) {
   return raw.map((v) => v?.id).filter((d) => DOMAINS.includes(d));
 }
 
-/** Una variante (art alternativo o firmada) lleva marca en el codigo: UNL-147a, VEN-197*. */
+/** Una variante (art alternativo o firmada) lleva marca en el codigo: UNL-147a, VEN-197*, RAD-R01a. */
 export function isVariant(code) {
-  return typeof code === 'string' && /(\*|\d+[a-z])\s*\//.test(code);
+  return typeof code === 'string' && /\d[a-z*]\s*(?:\/|$)/.test(code.trim());
 }
+
+/**
+ * El codigo de una impresion, sin el total del set ni la marca de variante:
+ * "OGN-007a/298" -> "OGN-007", "VEN-SP3/006" -> "VEN-SP3", "RAD-R01a" -> "RAD-R01".
+ * Es la forma en que los codigos de mazo nombran una carta. Lo que no tiene esa
+ * forma devuelve null: no se adivina.
+ */
+export function printingCode(code) {
+  const m = typeof code === 'string' && /^([A-Z]{3})-((?:R|SP|T)?\d+)[a-z*]?\s*(?:\/\s*\d+)?$/.exec(code.trim());
+  return m ? `${m[1]}-${m[2]}` : null;
+}
+
+// Orden propio (set, prefijo, numero) y no localeCompare: el catalogo tiene que salir
+// identico en cualquier build de Node, no depender de la colacion del idioma.
+const PREFIX_RANK = { '': 0, R: 1, SP: 2, T: 3 };
+const printingKey = (p) => { const [, set, prefix = '', n] = /^([A-Z]{3})-(R|SP|T)?(\d+)$/.exec(p); return [set, PREFIX_RANK[prefix], Number(n)]; };
+const byPrinting = (a, b) => {
+  const [x, y] = [printingKey(a), printingKey(b)];
+  return x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : (x[1] - y[1]) || (x[2] - y[2]);
+};
 
 /**
  * Un item de la galeria -> una carta del motor.
@@ -134,12 +154,38 @@ export function buildCatalog(items) {
 
   const errors = [];
   const byId = new Map();
+  // POR QUE SE GUARDAN TODAS LAS IMPRESIONES: un codigo de mazo nombra la impresion
+  // (OGN-007 es la Fury Rune de Origins, VEN-R01 la de Vendetta). Con una sola por
+  // carta, un mazo real no se podria cruzar.
+  const printings = new Map();   // id -> Set de codigos de impresion
+  const owner = new Map();       // codigo de impresion -> id de la carta
 
   for (const item of items) {
     const { card, error } = normalizeCard(item);
     if (error) {
       errors.push({ code: item?.publicCode ?? null, reason: error });
       continue;
+    }
+
+    const printing = printingCode(card.code);
+    const claimed = printing && owner.get(printing);
+    if (claimed && claimed !== card.id) {
+      errors.push({
+        code: card.code,
+        reason: `"${card.name}" reclama la impresion ${printing}, que ya es de "${byId.get(claimed)?.name ?? claimed}"`,
+      });
+      continue;
+    }
+
+    if (card.code && !printing) {
+      errors.push({ code: card.code, reason: `"${card.name}": la impresion ${card.code} no tiene la forma SET-NNN` });
+    }
+    // La impresion se registra aunque despues haya un conflicto de costo: el error se
+    // reporta igual, pero un codigo de mazo que la nombre sabe de que carta es.
+    if (printing) {
+      owner.set(printing, card.id);
+      if (!printings.has(card.id)) printings.set(card.id, new Set());
+      printings.get(card.id).add(printing);
     }
 
     const previo = byId.get(card.id);
@@ -167,7 +213,9 @@ export function buildCatalog(items) {
     byId.set(card.id, mejor);
   }
 
-  return { cards: [...byId.values()], errors };
+  const cards = [...byId.values()].map((card) =>
+    ({ ...card, printings: [...(printings.get(card.id) ?? [])].sort(byPrinting) }));
+  return { cards, errors };
 }
 
 /**
