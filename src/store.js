@@ -117,7 +117,15 @@ function replay(deck, index, seed, level, identity, runes, found, status) {
     if (result.kind !== 'accepted') return problem('Carta guardada no pagable, duplicada o fuera del mazo');
     state = result.state;
   }
-  if (status === 'omitted' || (status === 'next' && state.payable.length === 0)) {
+  if (['next', 'complete'].includes(state.status)) {
+    // La ultima pagable ya cerro el nivel al repetirla, pero el snapshot manda: los falsos positivos
+    // eran de la sesion y no se guardaron (revision), y tras Repetir con todo hallado el nivel sigue
+    // abierto hasta Terminé (activo).
+    if (['review', 'active'].includes(status)) {
+      const { nextLevel, ...open } = state;
+      state = { ...open, status };
+    }
+  } else if (status === 'omitted' || (status === 'next' && state.payable.length === 0)) {
     const result = reduceRecall(state, { type: 'skip' }, index);
     if (result.kind !== 'skipped') return problem('Salto incompatible');
     state = result.state;
