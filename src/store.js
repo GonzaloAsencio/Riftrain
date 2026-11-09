@@ -146,17 +146,22 @@ function replay(deck, index, seed, level, identity, runes, found, status, maxLev
 }
 
 /** Regenera el escenario y repite cada carta; nunca confía en totales ni en semillas ajenas. */
-function restoreSnapshot(deck, index, saved, maxLevel) {
+function restoreSnapshot(deck, index, saved, maxLevel, startLevel) {
   if (!saved || saved.schema !== SCHEMA || !Number.isSafeInteger(saved.seed) ||
       !Number.isSafeInteger(saved.level) || !Array.isArray(saved.history) ||
-      saved.history.length !== saved.level - 1) return problem('Snapshot ausente o versión incompatible');
+      saved.history.length > saved.level - 1) return problem('Snapshot ausente o versión incompatible');
+  // El recorrido puede empezar en cualquier nivel (ajuste "desde"): el historial son los niveles
+  // consecutivos desde ese inicio hasta el anterior al actual.
+  // Ese inicio tiene que ser el configurado: un historial al que le faltan niveles no pasa por bueno.
+  const firstLevel = saved.level - saved.history.length;
+  if (firstLevel !== startLevel) return problem('El recorrido guardado no empieza en el nivel de inicio configurado');
   const result = replay(deck, index, saved.seed, saved.level, saved.identity,
     saved.runes, saved.found, saved.status, maxLevel);
   if (!result.ok) return result;
   const history = [];
   for (const item of saved.history) {
     if (!item || !Number.isSafeInteger(item.level) || item.level >= saved.level ||
-        item.level !== history.length + 1 || typeof item.omitted !== 'boolean') return problem('Historial incompatible');
+        item.level !== firstLevel + history.length || typeof item.omitted !== 'boolean') return problem('Historial incompatible');
     const earlier = createRecallScenario(deck, index, saved.seed, item.level);
     if (!earlier.ok) return problem('Escenario anterior inválido');
     const check = replay(deck, index, saved.seed, item.level, item.identity,
@@ -168,24 +173,28 @@ function restoreSnapshot(deck, index, saved, maxLevel) {
   return result;
 }
 
-export function loadRecallSnapshot(deck, index, { maxLevel = 12 } = {}) {
-  return restoreSnapshot(deck, index, load({}).recall, maxLevel);
+export function loadRecallSnapshot(deck, index, { maxLevel = 12, startLevel = 1 } = {}) {
+  return restoreSnapshot(deck, index, load({}).recall, maxLevel, startLevel);
 }
 
 // ---- Ajustes: hasta que nivel se juega y el mazo importado (con sus cartas, para arrancar
 // sin el catalogo). Viven en la misma raiz que el progreso y lo legacy, sin pisarlos.
-const DEFAULT_SETTINGS = Object.freeze({ maxLevel: 12, deck: null });
+const DEFAULT_SETTINGS = Object.freeze({ startLevel: 1, maxLevel: 12, deck: null });
 
 function checkSettings(value) {
   if (!value || typeof value !== 'object') return problem('Ajustes inválidos');
-  const { maxLevel, deck } = value;
+  // Ajustes de antes del "desde" no lo traen: empiezan en 1, como siempre.
+  const { startLevel = 1, maxLevel, deck } = value;
   if (!Number.isSafeInteger(maxLevel) || maxLevel < 1 || maxLevel > 12) return problem('El nivel máximo tiene que ser de 1 a 12');
+  if (!Number.isSafeInteger(startLevel) || startLevel < 1 || startLevel > maxLevel) {
+    return problem('El nivel de inicio tiene que ser de 1 al nivel máximo');
+  }
   if (deck !== null) {
     if (!deck || typeof deck !== 'object' || !Array.isArray(deck.cards) || !deck.deck) return problem('Mazo guardado inválido');
     const normalized = normalizeDeck(deck.deck, deck.cards, { policy: 'positive-energy' });
     if (!normalized.ok) return problem(`Mazo guardado inválido: ${normalized.reason}`);
   }
-  return { ok: true, settings: { maxLevel, deck } };
+  return { ok: true, settings: { startLevel, maxLevel, deck } };
 }
 
 export function loadSettings() {
@@ -206,7 +215,10 @@ export function saveSettings(value) {
   const checked = checkSettings(value);
   if (!checked.ok) return checked;
   const { recall, ...current } = load({});
+  // Otro mazo u otro nivel de inicio: se empieza de nuevo. Solo el maximo no toca el progreso.
   const sameDeck = deckKey(current.settings?.deck ?? null) === deckKey(checked.settings.deck);
-  const persisted = writeRoot({ ...current, ...(sameDeck && recall ? { recall } : {}), settings: checked.settings });
+  const sameStart = (current.settings?.startLevel ?? 1) === checked.settings.startLevel;
+  const keep = sameDeck && sameStart && recall;
+  const persisted = writeRoot({ ...current, ...(keep ? { recall } : {}), settings: checked.settings });
   return { ok: true, persisted };
 }
