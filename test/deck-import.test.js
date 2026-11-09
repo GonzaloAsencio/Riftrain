@@ -8,7 +8,8 @@ import { normalizeDeck } from '../src/engine/deck-combos.js';
  * Un solo campo para el mazo del rival: el código de Piltover Archive o su export de texto
  * ("Legend: / Champion: / MainDeck: / Runes: ..."). Los dos caminos terminan en la misma forma.
  */
-const LIST = readFileSync(new URL('./fixtures/piltover-export.txt', import.meta.url), 'utf8');
+// Normalizado a LF: con core.autocrlf el checkout lo deja en CRLF. El caso CRLF se prueba aparte.
+const LIST = readFileSync(new URL('./fixtures/piltover-export.txt', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 const CATALOG = JSON.parse(readFileSync(new URL('../data/catalog.json', import.meta.url), 'utf8')).cards;
 const CODES = JSON.parse(readFileSync(new URL('./fixtures/deck-codes.json', import.meta.url), 'utf8')).cases;
 const code = CODES.find((c) => c.name === 'koko-kennen-runas-ogn').code;
@@ -99,4 +100,11 @@ test('AC-IMP-03: una leyenda o un campeón que faltan salen con cantidad 1', () 
   const result = run(LIST.replace('1 Kennen, Storm of Shuriken', '1 Campeón Inventado'));
   assert.equal(result.ok, false);
   assert.deepEqual(result.missing.map((m) => [m.label, m.qty]), [['Campeón Inventado', 1]]);
+});
+
+test('AC-IMP-02: la lista pegada con finales de línea de Windows (CRLF) da el mismo mazo', () => {
+  const windows = run(LIST.replace(/\n/g, '\r\n'));
+  const unix = run(LIST);
+  assert.equal(windows.ok, true, windows.reason);
+  assert.deepEqual(windows.deck, unix.deck);
 });
