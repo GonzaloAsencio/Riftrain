@@ -2,11 +2,13 @@
  * El festejo de fin de nivel: un cartel y confetti. Es lo unico que celebra en toda la ronda
  * (cada acierto se ve en la carta que se da vuelta); aparece una vez, cuando el motor cierra completo.
  * Capa fija sobre la ventana: no toca la grilla, no recibe clics y recorta lo que cae (sin scroll).
+ * El confetti es un <canvas> a pantalla completa: dos cañones disparan papelitos de los seis colores
+ * de runa desde las esquinas de abajo. La fisica vive en confetti.js (pura); aca solo se dibuja.
  */
-const HUES = [45, 280, 200, 340, 140];   // oro, violeta, celeste, rosa, verde
-// Fuegos artificiales: centros de estallido (en % de la pantalla), lejos del cartel y de la mano.
-const BURSTS = [[18, 30], [82, 26], [30, 70], [72, 66], [88, 50]];
-const SPARKS = 12;                       // chispas por estallido, en circulo
+import { mulberry32 } from '../engine/rng.js';
+import { spawnConfetti, stepConfetti } from './confetti.js';
+
+const SEED = 0x51f7;   // mismo festejo siempre: sin azar ni reloj
 
 export function mountCelebration(root, { reducedMotion = false } = {}) {
   const layer = document.createElement('div');
@@ -17,38 +19,52 @@ export function mountCelebration(root, { reducedMotion = false } = {}) {
   // El anuncio accesible lo hace el mensaje de estado de la pantalla: el cartel no se lee dos veces.
   banner.setAttribute('aria-hidden', 'true');
   banner.hidden = true;
-  const confetti = document.createElement('div');
-  confetti.className = 'celebration__confetti';
-  layer.append(confetti, banner);
+  const canvas = document.createElement('canvas');
+  canvas.className = 'celebration__confetti';
+  canvas.setAttribute('aria-hidden', 'true');
+  canvas.dataset.pieces = '0';
+  layer.append(canvas, banner);
   root.appendChild(layer);
 
-  function hide() {
-    layer.hidden = true;
-    banner.hidden = true;
-    confetti.replaceChildren();
+  let pieces = [];
+  let frame = 0;
+
+  function stop() {
+    cancelAnimationFrame(frame);
+    frame = 0;
+    pieces = [];
+    canvas.dataset.pieces = '0';
+    canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
   }
 
-  /**
-   * Una chispa del estallido b: sale del centro y se abre en circulo, a distancias alternadas.
-   * Todo sale del indice: mismo festejo siempre, sin azar ni reloj.
-   */
-  function spark(b, j) {
-    const [x, y] = BURSTS[b];
-    const angle = (2 * Math.PI * j) / SPARKS + b * 0.3;
-    // En pantallas angostas el estallido se achica: en 320 px no se corta contra el borde.
-    const scale = Math.min(1, (globalThis.innerWidth || 1280) / 900);
-    const reach = Math.round((70 + (j % 3) * 28) * Math.max(scale, 0.45));
-    const item = document.createElement('span');
-    item.className = 'celebration__piece';
-    item.style.setProperty('--x', `${x}%`);
-    item.style.setProperty('--y', `${y}%`);
-    item.style.setProperty('--dx', `${Math.round(Math.cos(angle) * reach)}px`);
-    item.style.setProperty('--dy', `${Math.round(Math.sin(angle) * reach)}px`);
-    item.style.setProperty('--delay', `${b * 220}ms`);
-    // Papelitos de confetti: cada uno de un color y girando para su lado.
-    item.style.setProperty('--hue', String(HUES[(b + j) % HUES.length]));
-    item.style.setProperty('--spin', `${(j % 2 ? 1 : -1) * (300 + ((b * 7 + j * 53) % 360))}deg`);
-    return item;
+  function hide() {
+    stop();
+    layer.hidden = true;
+    banner.hidden = true;
+  }
+
+  /** Un papelito: un rectangulo que gira y se achata al balancearse (de frente / de canto). */
+  function paint(ctx, p, dpr) {
+    ctx.save();
+    ctx.globalAlpha = p.opacity;
+    ctx.fillStyle = p.color;
+    ctx.translate(p.x * dpr, p.y * dpr);
+    ctx.rotate(p.rotation);
+    ctx.scale(1, Math.cos(p.wobble));
+    const w = p.size * dpr;
+    ctx.fillRect(-w / 2, -w * 0.3, w, w * 0.6);
+    ctx.restore();
+  }
+
+  function tick() {
+    const ctx = canvas.getContext('2d');
+    const dpr = canvas.width / Math.max(1, canvas.clientWidth);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (const p of pieces) paint(ctx, p, dpr);
+    pieces = stepConfetti(pieces);
+    canvas.dataset.pieces = String(pieces.length);
+    frame = pieces.length ? requestAnimationFrame(tick) : 0;
+    if (!pieces.length) ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
 
   return {
@@ -58,13 +74,18 @@ export function mountCelebration(root, { reducedMotion = false } = {}) {
       banner.hidden = false;
       layer.hidden = false;
       if (reducedMotion) return;
-      const items = BURSTS.flatMap((_, b) => Array.from({ length: SPARKS }, (__, j) => spark(b, j)));
-      confetti.append(...items);
-      // Cuando cae la ultima, el confetti se va solo. El cartel se desvanece por CSS a los 2.6s;
-      // lo que queda fijo es el mensaje de estado de la pantalla.
-      items.at(-1)?.addEventListener('animationend', () => confetti.replaceChildren(), { once: true });
+      // El canvas toma el tamaño de la ventana (en pixeles reales: nitido en pantallas densas).
+      const width = layer.clientWidth || globalThis.innerWidth;
+      const height = layer.clientHeight || globalThis.innerHeight;
+      const dpr = Math.min(2, globalThis.devicePixelRatio || 1);
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      pieces = spawnConfetti({ width, height, rand: mulberry32(SEED) });
+      canvas.dataset.pieces = String(pieces.length);
+      frame = requestAnimationFrame(tick);
+      // El cartel se desvanece por CSS a los 2.6s; lo que queda fijo es el mensaje de estado.
     },
     hide,
-    destroy() { layer.remove(); },
+    destroy() { stop(); layer.remove(); },
   };
 }

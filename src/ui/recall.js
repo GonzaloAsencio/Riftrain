@@ -3,7 +3,7 @@ import { normalizeDeck } from '../engine/deck-combos.js';
 import { createRecallScenario } from '../engine/recall-scenario.js';
 import { rejectionRunes } from '../engine/cost.js';
 import { DOMAIN_LABEL } from '../engine/runes.js';
-import { startRecall, reduceRecall, advanceRecall, levelCardOutcomes } from '../engine/recall-progress.js';
+import { startRecall, reduceRecall, advanceRecall, rerollRecall, levelCardOutcomes } from '../engine/recall-progress.js';
 import * as defaultStore from '../store.js';
 import { renderCard } from './card.js';
 import { renderRune } from './rune.js';
@@ -321,6 +321,30 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
   });
 
   /**
+   * Reiniciar el nivel: otra mesa del mismo nivel, desde cero. La semilla nueva se adopta solo si
+   * el motor acepta la mesa; si no, sigue todo como estaba (igual que Empezar de nuevo).
+   */
+  function rerollLevel() {
+    if (disposed || !state) return;
+    const seedNext = newSeed();
+    const created = createRecallScenario(deck, normalized.index, seedNext, state.scenario.level);
+    if (!created.ok) { message.textContent = created.reason; return; }
+    const answer = rerollRecall(state, created.scenario, normalized.index);
+    if (!answer.ok) { message.textContent = answer.reason; return; }
+    transition(() => {
+      runSeed = seedNext;
+      state = answer.state;
+      clearRejection();
+      composer?.clear();
+      mountHand();
+      draw();
+      save();
+      if (state.status === 'empty') skip.focus(); else composer?.focus();
+      return true;
+    });
+  }
+
+  /**
    * Entre niveles las cartas se dan vuelta y vuelven al mazo; recien despues se reparte la mano
    * nueva. Un segundo clic durante la vuelta no hace nada.
    */
@@ -382,6 +406,8 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
     ready: Promise.resolve(),
     /** Termina cuando termina la vuelta al mazo en curso (o enseguida si no hay ninguna). */
     idle: () => pending,
+    /** Otra mesa del mismo nivel, desde cero (lo pide la configuracion). */
+    rerollLevel,
     destroy() { disposed = true; celebration.destroy(); feedback.destroy(); composer?.destroy(); fan?.destroy(); root.replaceChildren(); },
   };
 }
