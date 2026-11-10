@@ -1104,6 +1104,13 @@ check('AC-CFG-27: en la app real, guardar desde 4 arranca la partida en el nivel
 check('AC-CMB-21: la app completa no desborda el documento a 320px',
   liveDoc.documentElement.scrollWidth <= liveDoc.documentElement.clientWidth + 1,
   `${liveDoc.documentElement.scrollWidth} / ${liveDoc.documentElement.clientWidth}`);
+const [phoneRestart, phoneGear] = ['.table__restart', '.table__settings'].map((sel) => liveDoc.querySelector(`#recall-root ${sel}`)?.getBoundingClientRect());
+check('AC-ARC-62: a 320px reiniciar y el engranaje quedan juntos en la misma fila, sin desbordar',
+  !!phoneRestart && !!phoneGear && Math.abs(phoneRestart.top - phoneGear.top) <= 1 && phoneRestart.right <= phoneGear.left &&
+  phoneGear.right <= liveDoc.documentElement.clientWidth &&
+  liveDoc.querySelector('#recall-root .table__level').getClientRects().length === 1 &&
+  liveDoc.querySelector('#recall-root .table__level').getBoundingClientRect().height < 24,
+  `restart ${Math.round(phoneRestart?.left)},${Math.round(phoneRestart?.top)} gear ${Math.round(phoneGear?.left)},${Math.round(phoneGear?.top)}`);
 const phoneShape = [...liveDoc.querySelectorAll('.recall > *')].map((item) => item.className).join('|');
 // Cierre a 320: ~21 celdas con sus cuatro estados, todas alcanzables sin scroll horizontal.
 liveDoc.querySelector('#recall-root [data-action="finish"]').click();
@@ -1220,6 +1227,17 @@ deskFrame.style.width = '1280px';
 deskFrame.style.height = '600px';
 check('AC-ARC-57: con ventana baja (1280x600) la misma pantalla deja de ser grilla de pantalla completa',
   getComputedStyle(dq('.recall')).display !== 'grid');
+// Volver al nivel de inicio en cualquier momento: un botón al lado del engranaje (AC-ARC-62).
+deskFrame.style.height = '800px';
+const headRestart = dq('.table__restart');
+const gearBox = dq('.table__settings')?.getBoundingClientRect();
+check('AC-ARC-62: al lado del engranaje hay un botón "Volver al nivel inicial" de 44px, visible a mitad del entrenamiento',
+  !!headRestart && !headRestart.hidden && headRestart.getAttribute('aria-label') === 'Volver al nivel inicial' &&
+  headRestart.offsetWidth >= 44 && headRestart.offsetHeight >= 44 &&
+  Math.abs(headRestart.getBoundingClientRect().top - gearBox.top) <= 1 && headRestart.getBoundingClientRect().right <= gearBox.left &&
+  dq('.table__level').textContent !== 'Nivel 1', dq('.table__level')?.textContent);
+// El clic se prueba abajo, con transitionMs: 0: la vuelta al mazo real gasta el presupuesto de
+// tiempo virtual del runner (4s) y despues el confetti ya no recibe cuadros.
 deskFrame.remove();
 
 // ---- Celebración al cerrar completo (AC-CEL-11..17) ----
@@ -1263,6 +1281,21 @@ deskFrame.remove();
     !banner() && pieces().length === 0 && [...celMount.querySelectorAll('.fan__card')].every((slot) => slot.dataset.state === 'down'));
   run.destroy();
   check('AC-CEL-16: desmontar no deja la capa de festejo', !document.querySelector('.celebration'));
+
+  // AC-ARC-62: a mitad del entrenamiento, el botón de la banda vuelve al nivel de inicio.
+  run = cel();
+  press(type(celMount, 'alp'), 'Enter');
+  press(type(celMount, 'gam'), 'Enter');
+  act('next').click();
+  await run.idle();
+  const levelNow = celMount.querySelector('.table__level').textContent;
+  celMount.querySelector('.table__restart').click();
+  await run.idle();
+  check('AC-ARC-62: un nivel más arriba, tocarlo vuelve al nivel de inicio con todas las cartas boca abajo y sin festejo',
+    levelNow === `Nivel ${celLevel + 1}` && celMount.querySelector('.table__level').textContent === `Nivel ${celLevel}` &&
+    [...celMount.querySelectorAll('.fan__card')].every((slot) => slot.dataset.state === 'down') && !banner(),
+    `${levelNow} -> ${celMount.querySelector('.table__level').textContent}`);
+  run.destroy();
 
   run = cel({ reducedMotion: true });
   press(type(celMount, 'alp'), 'Enter');
