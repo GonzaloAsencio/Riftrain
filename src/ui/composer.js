@@ -99,7 +99,15 @@ export function mountComposer(root, { cards, onName, onUserEdit = () => {} }) {
     clear() { input.value = ''; close(); status.textContent = ''; },
     focus() { input.focus(); },
     /** Marca el input mientras el sello NO ENTRA esta a la vista. */
-    flagRejected(value) { if (value) input.setAttribute('aria-invalid', 'true'); else input.removeAttribute('aria-invalid'); },
+    flagRejected(value) {
+      input.classList.remove('recall-composer__input--shake');
+      if (!value) { input.removeAttribute('aria-invalid'); return; }
+      input.setAttribute('aria-invalid', 'true');
+      // Temblor leve (AC-ARC-63). Leer offsetWidth fuerza el reflow: sin eso, dos errores seguidos
+      // no reiniciarian la animacion.
+      void input.offsetWidth;
+      input.classList.add('recall-composer__input--shake');
+    },
     setDisabled(value) { input.disabled = value; if (value) close(); },
     destroy() { root.replaceChildren(); },
   };

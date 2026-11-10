@@ -233,6 +233,26 @@ check('AC-FAN-01: la mano tiene exactamente N cartas boca abajo con el dorso rea
     !dealHost.querySelector('.fan--deal'), getComputedStyle(dealSlots[0]).animationName);
   dealt.destroy(); dealHost.remove();
 }
+{
+  // AC-DEAL-04: la vuelta al mazo termina cuando llega la ULTIMA carta, no a un tiempo fijo: con 8
+  // cartas la ultima sale a los 700ms y llega a los 1180ms, despues de los 1000ms que se esperaban.
+  // Las animaciones se terminan a mano (sin gastar el presupuesto de tiempo virtual del runner).
+  const backHost = document.createElement('div');
+  document.querySelector('#stage main').appendChild(backHost);
+  const backFan = mountRivalFan(backHost, { size: 8 });
+  const backSlots = [...backHost.querySelectorAll('.fan__card')];
+  let arrived = false;
+  backFan.collect(1000).then(() => { arrived = true; });
+  const lastSlot = backSlots.at(-1);
+  backHost.getAnimations({ subtree: true }).filter((a) => !lastSlot.contains(a.effect?.target)).forEach((a) => a.finish());
+  await new Promise((r) => setTimeout(r, 0));
+  const earlyArrived = arrived;
+  backHost.getAnimations({ subtree: true }).forEach((a) => a.finish());
+  await new Promise((r) => setTimeout(r, 0));
+  check('AC-DEAL-04: la vuelta al mazo espera a que llegue la última carta antes de repartir la mano nueva',
+    getComputedStyle(lastSlot).animationName === 'fan-collect' && !earlyArrived && arrived, `antes=${earlyArrived} después=${arrived}`);
+  backFan.destroy(); backHost.remove();
+}
 check('AC-FAN-03: cada carta lleva su ángulo de fanAngles en --a',
   fanSlots().map((slot) => parseFloat(slot.style.getPropertyValue('--a'))).every((a, i) => near(a, fanAngles(3)[i])));
 check('AC-FAN-21: la mano es un grupo "Mano del rival"; los dorsos no tienen identidad ni foco',
@@ -644,6 +664,10 @@ await flow.ready;
 press(type(flowMount, 'bet'), 'Enter');
 check('AC-ARC-35: tras remontar, beta vuelve a sellar y a marcar el dominio',
   stampShown() && !!missingMark(flowMount) && flowInput().getAttribute('aria-invalid') === 'true' && saves === 0);
+check('AC-ARC-63: errar la carta hace temblar el input, leve y corto (menos de medio segundo)',
+  getComputedStyle(flowInput()).animationName === 'composer-shake' &&
+  flowInput().getAnimations().some((a) => a.animationName === 'composer-shake' && a.effect.getTiming().duration < 500),
+  getComputedStyle(flowInput()).animationName);
 press(type(flowMount, 'zzzz'), 'Enter');
 check('AC-ARC-37: nombrar otra cosa (otro aviso) limpia el sello y la marca del dominio',
   !stampShown() && !missingMark(flowMount) && flowInput().getAttribute('aria-invalid') !== 'true' && toastText() !== null);
@@ -1104,6 +1128,13 @@ check('AC-CFG-27: en la app real, guardar desde 4 arranca la partida en el nivel
 check('AC-CMB-21: la app completa no desborda el documento a 320px',
   liveDoc.documentElement.scrollWidth <= liveDoc.documentElement.clientWidth + 1,
   `${liveDoc.documentElement.scrollWidth} / ${liveDoc.documentElement.clientWidth}`);
+const [phoneRestart, phoneGear] = ['.table__restart', '.table__settings'].map((sel) => liveDoc.querySelector(`#recall-root ${sel}`)?.getBoundingClientRect());
+check('AC-ARC-62: a 320px reiniciar y el engranaje quedan juntos en la misma fila, sin desbordar',
+  !!phoneRestart && !!phoneGear && Math.abs(phoneRestart.top - phoneGear.top) <= 1 && phoneRestart.right <= phoneGear.left &&
+  phoneGear.right <= liveDoc.documentElement.clientWidth &&
+  liveDoc.querySelector('#recall-root .table__level').getClientRects().length === 1 &&
+  liveDoc.querySelector('#recall-root .table__level').getBoundingClientRect().height < 24,
+  `restart ${Math.round(phoneRestart?.left)},${Math.round(phoneRestart?.top)} gear ${Math.round(phoneGear?.left)},${Math.round(phoneGear?.top)}`);
 const phoneShape = [...liveDoc.querySelectorAll('.recall > *')].map((item) => item.className).join('|');
 // Cierre a 320: ~21 celdas con sus cuatro estados, todas alcanzables sin scroll horizontal.
 liveDoc.querySelector('#recall-root [data-action="finish"]').click();
@@ -1157,6 +1188,14 @@ check('AC-ARC-54: runas y leyenda quedan dentro de la banda',
   deskDoc.querySelectorAll('.recall-band .rune').length > 0 &&
   [...deskDoc.querySelectorAll('.recall-band .rune, .recall-band .legend .card')]
     .every((item) => inside(item.getBoundingClientRect(), rect('.recall-band'))));
+check('AC-ARC-61: en la banda el campeón va primero y la leyenda después, más grandes (72px+ a 1280) y con esquinas rectas', (() => {
+  const shown = [...deskDoc.querySelectorAll('.recall-band .legend .card')];
+  const square = shown.every((card) => [card, ...card.querySelectorAll('.card__face')]
+    .every((part) => parseFloat(getComputedStyle(part).borderTopLeftRadius) === 0));
+  return shown.map((card) => card.dataset.cardId).join() === [liveDeck.champion, liveDeck.legend].join() &&
+    shown.every((card) => card.getBoundingClientRect().width >= 72) && square;
+})(), [...deskDoc.querySelectorAll('.recall-band .legend .card')].map((card) =>
+  `${card.dataset.cardId}:${Math.round(card.getBoundingClientRect().width)}px r=${getComputedStyle(card).borderTopLeftRadius}`).join(' '));
 check('AC-FAN-18: la mano tiene tantos dorsos como pagables, todos dentro de su área, sin pisar el dock y legibles', (() => {
   const zone = rect('.fan-zone');
   const cards = fanCardsDesk();
@@ -1212,6 +1251,17 @@ deskFrame.style.width = '1280px';
 deskFrame.style.height = '600px';
 check('AC-ARC-57: con ventana baja (1280x600) la misma pantalla deja de ser grilla de pantalla completa',
   getComputedStyle(dq('.recall')).display !== 'grid');
+// Volver al nivel de inicio en cualquier momento: un botón al lado del engranaje (AC-ARC-62).
+deskFrame.style.height = '800px';
+const headRestart = dq('.table__restart');
+const gearBox = dq('.table__settings')?.getBoundingClientRect();
+check('AC-ARC-62: al lado del engranaje hay un botón "Volver al nivel inicial" de 44px, visible a mitad del entrenamiento',
+  !!headRestart && !headRestart.hidden && headRestart.getAttribute('aria-label') === 'Volver al nivel inicial' &&
+  headRestart.offsetWidth >= 44 && headRestart.offsetHeight >= 44 &&
+  Math.abs(headRestart.getBoundingClientRect().top - gearBox.top) <= 1 && headRestart.getBoundingClientRect().right <= gearBox.left &&
+  dq('.table__level').textContent !== 'Nivel 1', dq('.table__level')?.textContent);
+// El clic se prueba abajo, con transitionMs: 0: la vuelta al mazo real gasta el presupuesto de
+// tiempo virtual del runner (4s) y despues el confetti ya no recibe cuadros.
 deskFrame.remove();
 
 // ---- Celebración al cerrar completo (AC-CEL-11..17) ----
@@ -1256,10 +1306,32 @@ deskFrame.remove();
   run.destroy();
   check('AC-CEL-16: desmontar no deja la capa de festejo', !document.querySelector('.celebration'));
 
+  // AC-ARC-62: a mitad del entrenamiento, el botón de la banda vuelve al nivel de inicio.
+  run = cel();
+  press(type(celMount, 'alp'), 'Enter');
+  press(type(celMount, 'gam'), 'Enter');
+  act('next').click();
+  await run.idle();
+  const levelNow = celMount.querySelector('.table__level').textContent;
+  celMount.querySelector('.table__restart').click();
+  await run.idle();
+  check('AC-ARC-62: un nivel más arriba, tocarlo vuelve al nivel de inicio con todas las cartas boca abajo y sin festejo',
+    levelNow === `Nivel ${celLevel + 1}` && celMount.querySelector('.table__level').textContent === `Nivel ${celLevel}` &&
+    [...celMount.querySelectorAll('.fan__card')].every((slot) => slot.dataset.state === 'down') && !banner(),
+    `${levelNow} -> ${celMount.querySelector('.table__level').textContent}`);
+  run.destroy();
+
   run = cel({ reducedMotion: true });
   press(type(celMount, 'alp'), 'Enter');
   press(type(celMount, 'gam'), 'Enter');
   check('AC-CEL-13: con movimiento reducido hay cartel y cero confetti', !!banner() && pieces().length === 0);
+  run.destroy();
+  run = cel({ reducedMotion: true });
+  press(type(celMount, 'bet'), 'Enter');
+  const stillInput = celMount.querySelector('input[role="combobox"]');
+  check('AC-ARC-63: con movimiento reducido errar la carta marca el input pero no tiembla',
+    stillInput.getAttribute('aria-invalid') === 'true' && stillInput.getAnimations().length === 0,
+    getComputedStyle(stillInput).animationName);
   run.destroy();
 
   run = cel();
@@ -1277,6 +1349,10 @@ deskFrame.remove();
   run = cel();
   press(type(celMount, 'alp'), 'Enter');
   act('finish').click();
+  check('AC-CEL-32: terminar con cartas faltantes no festeja: cartel "Te faltaron cartas", cero confetti, foco en Repetir nivel',
+    banner()?.textContent === 'Te faltaron cartas' && banner().classList.contains('celebration__banner--missed') &&
+    pieces().length === 0 && document.activeElement === act('repeat'),
+    `${banner()?.textContent} pieces=${pieces().length}`);
   act('repeat').click();
   check('AC-FAN-14: Repetir con pagables pendientes reabre el nivel, sin festejo, con el foco en el input',
     act('finish').hidden === false && !banner() && document.activeElement === celMount.querySelector('input[role="combobox"]'));

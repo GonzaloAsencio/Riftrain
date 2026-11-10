@@ -68,12 +68,14 @@ export function mountCelebration(root, { reducedMotion = false } = {}) {
   }
 
   return {
-    show(text) {
+    /** `missed`: el nivel cerro con cartas faltantes. Cartel sobrio y sin confetti: no se festeja. */
+    show(text, { missed = false } = {}) {
       hide();
       banner.textContent = text;
+      banner.classList.toggle('celebration__banner--missed', missed);
       banner.hidden = false;
       layer.hidden = false;
-      if (reducedMotion) return;
+      if (reducedMotion || missed) return;
       // El canvas toma el tamaño de la ventana (en pixeles reales: nitido en pantallas densas).
       const width = layer.clientWidth || globalThis.innerWidth;
       const height = layer.clientHeight || globalThis.innerHeight;

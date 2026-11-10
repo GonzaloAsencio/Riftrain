@@ -34,8 +34,9 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
   onMaxLevelChange = () => {}, newSeed = () => globalThis.crypto.getRandomValues(new Uint32Array(1))[0],
   // Inyectable para testear: el navegador headless no deja emular prefers-reduced-motion.
   reducedMotion = !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
-  // Cuanto dura la vuelta de las cartas al mazo entre niveles. Sin movimiento, nada: se reparte al toque.
-  transitionMs = reducedMotion ? 0 : 1000 }) {
+  // Tope de la vuelta de las cartas al mazo: termina cuando llega la ultima carta (AC-DEAL-04); esto
+  // solo corta si una animacion nunca termina. Sin movimiento, 0: se reparte al toque.
+  transitionMs = reducedMotion ? 0 : 4000 }) {
   let disposed = false;
   let state = null;
   let runSeed = seed;
@@ -58,13 +59,23 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
   const champName = cardsById.get(deck?.champion)?.baseName;
   const rivalName = legendCard && champName ? `${champName}, ${legendCard.name}` : (deck?.name ?? 'Mazo');
   tableHead.append(node('span', 'table__deck', rivalName), levelText);
+  // Volver al nivel de inicio en cualquier momento, no solo al terminar (AC-ARC-62).
+  const headRestart = node('button', 'table__restart');
+  headRestart.type = 'button';
+  headRestart.setAttribute('aria-label', 'Volver al nivel inicial');
+  headRestart.title = 'Volver al nivel inicial';
+  headRestart.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>';
+  // Reiniciar y el engranaje viajan juntos: en el celular nunca se separan en dos filas.
+  const headActions = node('div', 'table__actions');
+  headActions.appendChild(headRestart);
+  tableHead.appendChild(headActions);
   if (onOpenSettings) {
     const gear = node('button', 'table__settings');
     gear.type = 'button';
     gear.setAttribute('aria-label', 'Configuración');
     gear.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
     gear.addEventListener('click', () => onOpenSettings(gear));
-    tableHead.appendChild(gear);
+    headActions.appendChild(gear);
   }
   const board = node('div', 'board');
   const publicCards = node('div', 'legend');
@@ -125,7 +136,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
     levelText.textContent = atMax ? 'Nivel Max' : `Nivel ${scenario.level}`;
     levelText.classList.toggle('table__level--max', atMax);
     publicCards.replaceChildren();
-    for (const id of [deck.legend, deck.champion]) {
+    for (const id of [deck.champion, deck.legend]) {   // campeon primero (AC-ARC-61)
       const card = cardsById.get(id);
       if (card) publicCards.appendChild(renderCard(card, { faceUp: true }));
     }
@@ -270,8 +281,13 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
     composer.clear();
     draw();
     // Las que faltaron las marca el motor (missed); un falso positivo solo no es "faltar".
-    if (outcomes.some((card) => card.outcome === 'missed')) feedback.notify('Te faltaron cartas. Revisá las que están en gris');
-    celebrate();
+    // Si faltaron, no se festeja (AC-CEL-32, decision del usuario 2026-11-10): el confetti sobre
+    // cartas en gris le saca lo incomodo al feedback.
+    if (outcomes.some((card) => card.outcome === 'missed')) {
+      feedback.notify('Te faltaron cartas. Revisá las que están en gris');
+      celebration.show('Te faltaron cartas', { missed: true });
+      focusNextAction();
+    } else celebrate();
     save();
   });
   repeat.addEventListener('click', () => {
@@ -303,7 +319,12 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
     transition(() => prepare(previous.nextLevel, previous));
   });
   restart.addEventListener('click', () => {
-    if (disposed || !['complete', 'omitted'].includes(state?.status)) return;
+    if (['complete', 'omitted'].includes(state?.status)) restartRun();
+  });
+  headRestart.addEventListener('click', () => restartRun());
+
+  function restartRun() {
+    if (disposed || !state) return;
     // Otra mesa desde el nivel de inicio, con el mismo maximo; el recorrido anterior se reemplaza.
     // La semilla nueva se adopta solo si la mesa se puede crear: si no, sigue todo como estaba.
     const seedNext = newSeed();
@@ -318,7 +339,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
       if (state.status === 'empty') skip.focus(); else composer?.focus();
       return true;
     });
-  });
+  }
 
   /**
    * Reiniciar el nivel: otra mesa del mismo nivel, desde cero. La semilla nueva se adopta solo si
@@ -356,10 +377,10 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
     celebration.hide();
     // El boton tocado se deshabilita: el foco espera en el mensaje en vez de caer al <body>.
     message.focus();
-    for (const item of [next, restart]) item.disabled = true;
+    for (const item of [next, restart, headRestart]) item.disabled = true;
     pending = fan.collect(transitionMs).then(() => {
       busy = false;
-      for (const item of [next, restart]) item.disabled = false;
+      for (const item of [next, restart, headRestart]) item.disabled = false;
       if (disposed) return;
       // Si el nivel siguiente no se pudo armar, la mano vuelve del mazo y se sigue como estaba.
       if (then() === false) { fan.uncollect(); focusNextAction(); }
