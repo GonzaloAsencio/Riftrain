@@ -34,8 +34,9 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
   onMaxLevelChange = () => {}, newSeed = () => globalThis.crypto.getRandomValues(new Uint32Array(1))[0],
   // Inyectable para testear: el navegador headless no deja emular prefers-reduced-motion.
   reducedMotion = !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
-  // Cuanto dura la vuelta de las cartas al mazo entre niveles. Sin movimiento, nada: se reparte al toque.
-  transitionMs = reducedMotion ? 0 : 1000 }) {
+  // Tope de la vuelta de las cartas al mazo: termina cuando llega la ultima carta (AC-DEAL-04); esto
+  // solo corta si una animacion nunca termina. Sin movimiento, 0: se reparte al toque.
+  transitionMs = reducedMotion ? 0 : 4000 }) {
   let disposed = false;
   let state = null;
   let runSeed = seed;

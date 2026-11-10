@@ -233,6 +233,26 @@ check('AC-FAN-01: la mano tiene exactamente N cartas boca abajo con el dorso rea
     !dealHost.querySelector('.fan--deal'), getComputedStyle(dealSlots[0]).animationName);
   dealt.destroy(); dealHost.remove();
 }
+{
+  // AC-DEAL-04: la vuelta al mazo termina cuando llega la ULTIMA carta, no a un tiempo fijo: con 8
+  // cartas la ultima sale a los 700ms y llega a los 1180ms, despues de los 1000ms que se esperaban.
+  // Las animaciones se terminan a mano (sin gastar el presupuesto de tiempo virtual del runner).
+  const backHost = document.createElement('div');
+  document.querySelector('#stage main').appendChild(backHost);
+  const backFan = mountRivalFan(backHost, { size: 8 });
+  const backSlots = [...backHost.querySelectorAll('.fan__card')];
+  let arrived = false;
+  backFan.collect(1000).then(() => { arrived = true; });
+  const lastSlot = backSlots.at(-1);
+  backHost.getAnimations({ subtree: true }).filter((a) => !lastSlot.contains(a.effect?.target)).forEach((a) => a.finish());
+  await new Promise((r) => setTimeout(r, 0));
+  const earlyArrived = arrived;
+  backHost.getAnimations({ subtree: true }).forEach((a) => a.finish());
+  await new Promise((r) => setTimeout(r, 0));
+  check('AC-DEAL-04: la vuelta al mazo espera a que llegue la última carta antes de repartir la mano nueva',
+    getComputedStyle(lastSlot).animationName === 'fan-collect' && !earlyArrived && arrived, `antes=${earlyArrived} después=${arrived}`);
+  backFan.destroy(); backHost.remove();
+}
 check('AC-FAN-03: cada carta lleva su ángulo de fanAngles en --a',
   fanSlots().map((slot) => parseFloat(slot.style.getPropertyValue('--a'))).every((a, i) => near(a, fanAngles(3)[i])));
 check('AC-FAN-21: la mano es un grupo "Mano del rival"; los dorsos no tienen identidad ni foco',

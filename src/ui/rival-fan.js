@@ -172,8 +172,10 @@ export function mountRivalFan(root, { size, deal = false }) {
     showOutcomes,
     reset,
     /**
-     * Fin del nivel: las cartas se dan vuelta, vuelven al mazo y se van las extras. Resuelve
-     * cuando termino (ms); con 0 resuelve en la proxima vuelta, sin animar nada.
+     * Fin del nivel: las cartas se dan vuelta, vuelven al mazo y se van las extras. Con `ms` > 0
+     * resuelve cuando llega la ULTIMA carta (lo que dura depende de cuantas son: un tiempo fijo
+     * cortaba las manos grandes a mitad de vuelo, AC-DEAL-04); `ms` es solo el tope por si una
+     * animacion nunca termina. Con 0 resuelve en la proxima vuelta, sin esperar nada.
      */
     collect(ms = 0) {
       for (const node of fan.querySelectorAll('.card')) node.dataset.face = 'down';
@@ -182,7 +184,10 @@ export function mountRivalFan(root, { size, deal = false }) {
       why.textContent = '';
       fan.classList.remove('fan--deal');
       fan.classList.add('fan--collect');
-      return new Promise((resolve) => setTimeout(resolve, ms));
+      if (!ms) return new Promise((resolve) => setTimeout(resolve, 0));
+      // getAnimations() ya ve las animaciones nuevas (incluido su delay): sin animacion, resuelve ya.
+      const landed = Promise.allSettled(fan.getAnimations({ subtree: true }).map((a) => a.finished));
+      return Promise.race([landed, new Promise((resolve) => setTimeout(resolve, ms))]).then(() => {});
     },
     /** Si el nivel siguiente no se pudo armar, las cartas vuelven del mazo a la mano. */
     uncollect() { fan.classList.remove('fan--collect'); },
