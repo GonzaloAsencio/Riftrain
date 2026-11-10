@@ -16,7 +16,7 @@ const el = (tag, cls, text) => {
 };
 
 const MAX_SPREAD = 110;    // grados: mas abierto deja de leerse como una mano
-const STEP = 6;            // grados por carta hasta llegar al maximo (mas arco: se ve como una mano real)
+const STEP = 14;           // grados por carta hasta el maximo: con menos, la mano se ve como una pila y no un abanico
 
 /** Angulos del abanico, simetricos y crecientes. Puro: sin DOM. */
 export function fanAngles(n) {

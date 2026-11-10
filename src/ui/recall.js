@@ -52,8 +52,12 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
   const table = node('section', 'table recall__table recall-band');
   table.setAttribute('aria-label', 'Mesa del rival');
   const tableHead = node('div', 'table__head');
-  const maxText = node('span', 'table__max', `de ${maxLevel}`);
-  tableHead.append(node('span', 'table__deck', deck?.name ?? 'Mazo'), levelText, maxText);
+  // Al rival se lo nombra como en la mesa: "Kai'Sa, Daughter of the Void". La leyenda trae sólo el
+  // título; el nombre del campeón sale de su carta. Sin alguna de las dos, el nombre del mazo.
+  const legendCard = cardsById.get(deck?.legend);
+  const champName = cardsById.get(deck?.champion)?.baseName;
+  const rivalName = legendCard && champName ? `${champName}, ${legendCard.name}` : (deck?.name ?? 'Mazo');
+  tableHead.append(node('span', 'table__deck', rivalName), levelText);
   if (onOpenSettings) {
     const gear = node('button', 'table__settings');
     gear.type = 'button';
@@ -116,7 +120,10 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
   const searchCards = normalized.ok ? normalized.index.fullCards.map(({ id }) => cardsById.get(id)) : [];
 
   function showBoard(scenario) {
-    levelText.textContent = `Nivel ${scenario.level}`;
+    // Sin "de N": el maximo sólo se nombra al llegar (o si se bajo por debajo del nivel en curso).
+    const atMax = scenario.level >= (state?.maxLevel ?? maxLevel);
+    levelText.textContent = atMax ? 'Nivel Max' : `Nivel ${scenario.level}`;
+    levelText.classList.toggle('table__level--max', atMax);
     publicCards.replaceChildren();
     for (const id of [deck.legend, deck.champion]) {
       const card = cardsById.get(id);
@@ -125,9 +132,11 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
     runes.replaceChildren();
     const open = scenario.runes.filter((r) => r.ready).length;
     const exhausted = scenario.runes.length - open;
-    const meta = node('span', 'runes__meta',
-      `${open} ${open === 1 ? 'abierta' : 'abiertas'} · ${exhausted} ${exhausted === 1 ? 'agotada' : 'agotadas'} · ${scenario.deckRemaining} en el Mazo de Runas`);
-    // La marca del dominio ausente vive en la linea de resumen: nunca empuja las runas a otra fila.
+    // El resumen no se ve (las runas ya lo muestran): lo lee el lector de pantalla con el grupo.
+    runes.setAttribute('aria-label',
+      `Runas en mesa: ${open} ${open === 1 ? 'abierta' : 'abiertas'} · ${exhausted} ${exhausted === 1 ? 'agotada' : 'agotadas'} · ${scenario.deckRemaining} en el Mazo de Runas`);
+    const meta = node('span', 'runes__meta');
+    // La marca del dominio ausente vive en una linea propia: nunca empuja las runas a otra fila.
     missing.hidden = true;
     meta.appendChild(missing);
     runes.appendChild(meta);
@@ -282,12 +291,11 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
   next.addEventListener('click', () => {
     if (disposed || !state) return;
     if (['complete', 'omitted'].includes(state.status)) {
-      // Despues del maximo: se sube en uno, se guarda y se sigue (la banda nunca dice "Nivel 2 de 1").
+      // Despues del maximo: se sube en uno, se guarda y se sigue (nunca se juega por encima del maximo).
       const answer = reduceRecall(state, { type: 'extend', maxLevel: state.scenario.level + 1 }, normalized.index);
       if (answer.kind !== 'extended') { message.textContent = answer.reason; return; }
       state = answer.state;
       maxLevel = state.maxLevel;
-      maxText.textContent = `de ${maxLevel}`;
       onMaxLevelChange(maxLevel);
     }
     if (state.status !== 'next') return;
