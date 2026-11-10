@@ -270,8 +270,13 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
     composer.clear();
     draw();
     // Las que faltaron las marca el motor (missed); un falso positivo solo no es "faltar".
-    if (outcomes.some((card) => card.outcome === 'missed')) feedback.notify('Te faltaron cartas. Revisá las que están en gris');
-    celebrate();
+    // Si faltaron, no se festeja (AC-CEL-32, decision del usuario 2026-11-10): el confetti sobre
+    // cartas en gris le saca lo incomodo al feedback.
+    if (outcomes.some((card) => card.outcome === 'missed')) {
+      feedback.notify('Te faltaron cartas. Revisá las que están en gris');
+      celebration.show('Te faltaron cartas', { missed: true });
+      focusNextAction();
+    } else celebrate();
     save();
   });
   repeat.addEventListener('click', () => {

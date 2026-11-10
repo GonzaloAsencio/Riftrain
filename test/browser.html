@@ -1277,6 +1277,10 @@ deskFrame.remove();
   run = cel();
   press(type(celMount, 'alp'), 'Enter');
   act('finish').click();
+  check('AC-CEL-32: terminar con cartas faltantes no festeja: cartel "Te faltaron cartas", cero confetti, foco en Repetir nivel',
+    banner()?.textContent === 'Te faltaron cartas' && banner().classList.contains('celebration__banner--missed') &&
+    pieces().length === 0 && document.activeElement === act('repeat'),
+    `${banner()?.textContent} pieces=${pieces().length}`);
   act('repeat').click();
   check('AC-FAN-14: Repetir con pagables pendientes reabre el nivel, sin festejo, con el foco en el input',
     act('finish').hidden === false && !banner() && document.activeElement === celMount.querySelector('input[role="combobox"]'));
