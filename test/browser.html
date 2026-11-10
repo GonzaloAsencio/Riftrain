@@ -664,6 +664,10 @@ await flow.ready;
 press(type(flowMount, 'bet'), 'Enter');
 check('AC-ARC-35: tras remontar, beta vuelve a sellar y a marcar el dominio',
   stampShown() && !!missingMark(flowMount) && flowInput().getAttribute('aria-invalid') === 'true' && saves === 0);
+check('AC-ARC-63: errar la carta hace temblar el input, leve y corto (menos de medio segundo)',
+  getComputedStyle(flowInput()).animationName === 'composer-shake' &&
+  flowInput().getAnimations().some((a) => a.animationName === 'composer-shake' && a.effect.getTiming().duration < 500),
+  getComputedStyle(flowInput()).animationName);
 press(type(flowMount, 'zzzz'), 'Enter');
 check('AC-ARC-37: nombrar otra cosa (otro aviso) limpia el sello y la marca del dominio',
   !stampShown() && !missingMark(flowMount) && flowInput().getAttribute('aria-invalid') !== 'true' && toastText() !== null);
@@ -1321,6 +1325,13 @@ deskFrame.remove();
   press(type(celMount, 'alp'), 'Enter');
   press(type(celMount, 'gam'), 'Enter');
   check('AC-CEL-13: con movimiento reducido hay cartel y cero confetti', !!banner() && pieces().length === 0);
+  run.destroy();
+  run = cel({ reducedMotion: true });
+  press(type(celMount, 'bet'), 'Enter');
+  const stillInput = celMount.querySelector('input[role="combobox"]');
+  check('AC-ARC-63: con movimiento reducido errar la carta marca el input pero no tiembla',
+    stillInput.getAttribute('aria-invalid') === 'true' && stillInput.getAnimations().length === 0,
+    getComputedStyle(stillInput).animationName);
   run.destroy();
 
   run = cel();
