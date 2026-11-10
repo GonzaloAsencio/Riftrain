@@ -81,6 +81,20 @@ export function advanceRecall(state, scenario, index) {
 }
 
 /**
+ * Reiniciar el nivel: otra mesa del MISMO nivel, desde cero. Se puede en cualquier momento, tambien
+ * con el nivel cerrado. Lo nombrado se descarta; el historial y el maximo siguen.
+ */
+export function rerollRecall(state, scenario, index) {
+  if (!state?.scenario) return fail('No hay nivel en curso para reiniciar');
+  if (scenario?.level !== state.scenario.level) return fail('La mesa nueva tiene que ser del mismo nivel');
+  if (scenario.identity === state.scenario.identity) return fail('La mesa nueva tiene que ser otra');
+  const next = startRecall(scenario, index, { maxLevel: state.maxLevel ?? 12 });
+  if (!next.ok) return next;
+  next.state.history = state.history;
+  return next;
+}
+
+/**
  * Resultado por carta distinta del muro al cerrar el nivel, en el orden del indice:
  *   hit            -> esta en `found`.
  *   missed         -> se pagaba sola y nadie la nombro ("Se podía pagar: ...").

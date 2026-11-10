@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeDeck } from '../src/engine/deck-combos.js';
-import { startRecall, reduceRecall, advanceRecall, levelCardOutcomes } from '../src/engine/recall-progress.js';
+import { startRecall, reduceRecall, advanceRecall, rerollRecall, levelCardOutcomes } from '../src/engine/recall-progress.js';
 
 // ---- Muro del mazo: levelCardOutcomes (AC-ARC-19..20) ----
 const wallCatalog = [
@@ -347,4 +347,43 @@ test('AC-CFG-22: extender vale también tras un último nivel omitido, y nunca m
     assert.equal(result.kind, 'invalid', `${state.status} -> ${maxLevel}`);
     assert.equal(result.state, state);
   }
+});
+
+// ---- Reiniciar nivel: otra mesa, mismo nivel (AC-RER-01..03) ----
+const otherTable = (level = 3) => ({ level, runes: furyBoard.runes.slice(0, 2), identity: `wall-${level}-b` });
+
+test('AC-RER-01: reiniciar el nivel cambia la mesa, vacía lo nombrado y conserva historial y máximo', () => {
+  let state = startRecall(lvl(3), wallIdx, { maxLevel: 7 }).state;
+  state = { ...state, history: [{ identity: 'wall-2', level: 2, found: ['cheap'], omitted: false }] };
+  state = named(state, 'cheap').state;
+  state = named(state, 'order1').state;
+  const result = rerollRecall(state, otherTable(3), wallIdx);
+  assert.equal(result.ok, true);
+  assert.equal(result.state.scenario.identity, 'wall-3-b');
+  assert.equal(result.state.scenario.level, 3);
+  assert.deepEqual([result.state.found, result.state.misses], [[], []]);
+  assert.equal(result.state.status, 'active');
+  assert.equal(result.state.maxLevel, 7);
+  assert.deepEqual(result.state.history, state.history);
+});
+
+test('AC-RER-02: se puede reiniciar también un nivel cerrado (revisión, siguiente o completo)', () => {
+  const review = reduceRecall(begin(), { type: 'finish' }, wallIdx).state;
+  const done = named(named(begin(), 'cheap').state, 'fury2').state;
+  for (const closed of [review, done]) {
+    const result = rerollRecall(closed, otherTable(3), wallIdx);
+    assert.equal(result.ok, true, closed.status);
+    assert.equal(result.state.status, 'active');
+    assert.equal(result.state.nextLevel, undefined);
+  }
+});
+
+test('AC-RER-03: una mesa de otro nivel o la misma mesa se rechazan con motivo y no tocan el estado', () => {
+  const state = named(begin(), 'cheap').state;
+  for (const scenario of [otherTable(4), lvl(3), null]) {
+    const result = rerollRecall(state, scenario, wallIdx);
+    assert.equal(result.ok, false);
+    assert.ok(result.reason);
+  }
+  assert.deepEqual(state.found, ['cheap']);
 });

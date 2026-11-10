@@ -28,7 +28,7 @@ let sequence = 0;
  * @param {{maxLevel: number, deck: object|null, deckName: string, loadCatalog: () => Promise<object[]>,
  *          onSave: (settings: {maxLevel: number, deck: object|null}) => void, onClose?: () => void}} options
  */
-export function openSettings(host, { startLevel = 1, maxLevel, deck, deckName, loadCatalog, onSave, onClose = () => {} }) {
+export function openSettings(host, { startLevel = 1, maxLevel, deck, deckName, loadCatalog, onSave, onReroll = null, onClose = () => {} }) {
   const id = `settings-${++sequence}`;
   let start = startLevel;
   let level = maxLevel;
@@ -94,6 +94,10 @@ export function openSettings(host, { startLevel = 1, maxLevel, deck, deckName, l
   const foot = el('footer', 'settings__foot');
   const cancel = button('Cancelar', 'cancel', 'btn btn--ghost');
   const save = button('Guardar', 'save');
+  // Reiniciar el nivel: otra mesa del mismo nivel. A la izquierda, lejos de Guardar; lo elegido
+  // en el dialogo sin guardar se descarta.
+  const reroll = onReroll ? button('Reiniciar nivel', 'reroll', 'btn btn--ghost settings__reroll') : null;
+  if (reroll) foot.append(reroll);
   foot.append(cancel, save);
   dialog.append(head, levels, deckGroup, foot);
 
@@ -200,6 +204,8 @@ export function openSettings(host, { startLevel = 1, maxLevel, deck, deckName, l
   read.addEventListener('click', readCode);
   close.addEventListener('click', finish);
   cancel.addEventListener('click', finish);
+  // Primero se cierra (el foco vuelve al engranaje) y despues se reparte: el foco termina en el input.
+  reroll?.addEventListener('click', () => { finish(); onReroll(); });
   save.addEventListener('click', () => {
     if (save.disabled) return;
     // onSave devuelve false si no pudo guardar: el modal queda abierto con lo elegido.

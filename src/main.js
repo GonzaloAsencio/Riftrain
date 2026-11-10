@@ -66,6 +66,7 @@ async function start() {
         window.__riftrainReady = boot().then(() => root.querySelector('.table__settings')?.focus());
         return true;
       },
+      onReroll: () => controller?.rerollLevel(),
       onClose: () => { if (gear.isConnected) gear.focus(); },
     }),
   });
