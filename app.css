@@ -115,6 +115,8 @@ button { font: inherit; color: inherit; }
   font-size: 12px; color: #b9c0cb;
 }
 .runes__meta b { color: #e8eaee; font-weight: 700; }
+/* La linea sólo aparece cuando hay un dominio faltante que marcar. */
+.runes__meta:not(:has(.runes__missing:not([hidden]))) { display: none; }
 
 /* ---------- LA CARTA ---------- */
 .card {
@@ -297,19 +299,24 @@ button { font: inherit; color: inherit; }
     height: 100%; padding-bottom: 12px; row-gap: 10px;
     display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
   }
+  /* Sin sombra: el panel es del color del fondo y la sombra sola se veia como una raya negra. */
   .recall-band {
     display: grid; grid-template: "head" auto "board" auto / minmax(0, 1fr);
+    box-shadow: none;
   }
   .recall-band .table__head { grid-area: head; margin-bottom: 6px; }
   .recall-band .board { grid-area: board; margin: 0; }
   .recall-band .legend { flex-direction: row; flex-basis: auto; }
-  .recall-band .legend .card { width: 56px; }
+  .recall-band .legend .card { width: clamp(56px, 4.6vw, 88px); }
   /* La mesa mas ancha (12 runas, 9 tumbadas) tiene que entrar en UNA fila: si se parte en dos,
-     la banda crece y la mano pierde el alto que necesita. */
+     la banda crece y la mano pierde el alto que necesita. Por eso crecen con el ancho (--rw). */
+  .recall-band { --rw: clamp(48px, 4vw, 72px); }
+  /* Sin "Fury"/"Mind" debajo: la runa ya lo dice con su color y su símbolo; el aria-label lo conserva. */
+  .recall-band .rune__label { display: none; }
   .recall-band .runes { gap: 8px 6px; }
-  .recall-band .rune__seat { width: 44px; height: 62px; }
-  .recall-band .rune__card { width: 44px; }
-  .recall-band .rune--spent .rune__seat { width: 62px; }
+  .recall-band .rune__seat { width: var(--rw); height: calc(var(--rw) * 1.41); }
+  .recall-band .rune__card { width: var(--rw); }
+  .recall-band .rune--spent .rune__seat { width: calc(var(--rw) * 1.41); }
   .recall-band .rune__state { display: none; }   /* el rotulo no ensancha la runa; aria-label lo conserva */
   /* La mano llena la fila que sobra: el area del abanico deja de tener alto fijo. */
   .recall__fan { min-height: 0; }
@@ -346,7 +353,7 @@ button { font: inherit; color: inherit; }
 .fan-zone { position: relative; min-width: 0; height: clamp(250px, 46vw, 470px); container-type: size; overflow-x: clip; }
 .fan { position: absolute; inset: 0; isolation: isolate; }   /* los z-index del arco no salen de aca */
 .fan__card {
-  --w: clamp(40px, min(34cqh, 15.5cqw), 150px);
+  --w: clamp(40px, min(37cqh, 17.5cqw), 180px);
   position: absolute; left: 50%; bottom: calc(var(--w) * 1.08);
   width: var(--w); margin-left: calc(var(--w) / -2);
   transform-origin: 50% 200%;   /* el centro del giro mas cerca: el abanico se curva mas */
@@ -363,20 +370,16 @@ button { font: inherit; color: inherit; }
   20% { opacity: 1; }
   to { transform: rotate(calc(var(--a) * var(--k, 1))) translateY(var(--lift)) scale(1); opacity: 1; }
 }
-/* Revelado en curva: la carta recien dada vuelta sube en arco y vuelve a su lugar. */
-.fan__card[data-fresh] { animation: fan-arc 620ms var(--ease); }
-@keyframes fan-arc {
-  0% { transform: rotate(calc(var(--a) * var(--k, 1))) translateY(0) scale(1); }
-  45% { transform: rotate(calc(var(--a) * var(--k, 1) * .5)) translateY(calc(var(--w) * -.75)) scale(1.12); }
-  100% { transform: rotate(calc(var(--a) * var(--k, 1))) translateY(var(--lift)) scale(1); }
-}
+/* El revelado es solo el giro de la carta, en su lugar: no sube ni sale del abanico (decision
+   del usuario, 2026-11-10). */
 /* Fin del nivel: se dan vuelta (el giro de la carta) y despues vuelven al mazo, de a una. */
 .fan--collect .fan__card { animation: fan-collect 480ms ease-in forwards; animation-delay: calc(280ms + var(--i, 0) * 60ms); }
 @keyframes fan-collect {
   to { transform: translate(42cqw, -46cqh) rotate(32deg) scale(.8); opacity: 0; }
 }
-/* Lo que se da vuelta sube y pasa al frente: tapado por sus vecinas no se leeria. */
-.fan__card[data-state="found"], .fan__card[data-state="missed"] { --lift: calc(var(--w) * -.3); z-index: calc(var(--z) + 100); }
+/* Lo que se da vuelta pasa al frente (tapado por sus vecinas no se leeria), pero a la misma altura
+   que los dorsos: no se corre hacia arriba (decision del usuario, 2026-11-10). */
+.fan__card[data-state="found"], .fan__card[data-state="missed"] { z-index: calc(var(--z) + 100); }
 .fan__card[data-glow] .card { box-shadow: 0 0 0 2px var(--glow), 0 0 22px 3px var(--glow); }
 /* El gris va en la CARA: un filter sobre la carta que gira aplana el 3D y deja ver el dorso espejado. */
 .fan__card[data-state="missed"] .card__face--front { filter: grayscale(1) brightness(.8); }
@@ -422,7 +425,8 @@ button { font: inherit; color: inherit; }
 }
 
 /* ---------- CONFIGURACION ---------- */
-.table__max { color: #98a0ad; }
+/* Llegar al maximo se nota: "Nivel Max" en el amarillo de Order. */
+.table__level--max { color: var(--order); }
 .table__settings {
   margin-left: auto; width: 44px; height: 44px; flex: 0 0 auto; display: grid; place-items: center;
   border: 1px solid #333842; border-radius: 10px; background: #22262d; color: #e8eaee; cursor: pointer;

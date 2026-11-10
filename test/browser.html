@@ -197,10 +197,10 @@ const wallCards = [
 // ---- LA MANO DEL RIVAL EN ABANICO (AC-FAN): tantos dorsos como cartas pagables, sin identidad.
 const { mountRivalFan, fanAngles } = await import('../src/ui/rival-fan.js');
 const near = (a, b) => Math.abs(a - b) < 0.51;
-check('AC-FAN-03: fanAngles abre un arco simétrico y creciente de min(110, 6*N) grados',
+check('AC-FAN-03: fanAngles abre un arco simétrico y creciente de min(110, 14*N) grados',
   [3, 6, 21, 30].every((n) => {
     const angles = fanAngles(n);
-    const spread = Math.min(110, 6 * n);
+    const spread = Math.min(110, 14 * n);
     return angles.length === n && near(angles[0], -spread / 2) && near(angles.at(-1), spread / 2) &&
       angles.every((a, i) => i === 0 || a > angles[i - 1]) && near(angles[0], -angles.at(-1));
   }) && fanAngles(1).join() === '0' && fanAngles(0).length === 0, fanAngles(3).join());
@@ -224,11 +224,12 @@ check('AC-FAN-01: la mano tiene exactamente N cartas boca abajo con el dorso rea
     dealSlots.every((slot) => getComputedStyle(slot).animationName === 'fan-deal') &&
     delays.every((d, i) => i === 0 || d > delays[i - 1]), delays.join());
   dealt.reveal({ id: 'r1', name: 'Uno', energy: 1, power: {}, domain: 'fury' }, { fresh: true });
-  check('AC-DEAL-02: la carta recién revelada sube en curva mientras se da vuelta',
-    getComputedStyle(dealSlots[0]).animationName === 'fan-arc');
+  check('AC-DEAL-02: la carta recién revelada se da vuelta en su lugar: gira, no sube',
+    getComputedStyle(dealSlots[0]).animationName === 'none' && dealSlots[0].querySelector('.card').dataset.face === 'up',
+    getComputedStyle(dealSlots[0]).animationName);
   dealt.reveal({ id: 'r2', name: 'Dos', energy: 1, power: {}, domain: 'calm' }, { fresh: true });
   check('AC-DEAL-02: revelar otra carta no vuelve a repartir la anterior (el reparto ya terminó)',
-    getComputedStyle(dealSlots[0]).animationName !== 'fan-deal' && getComputedStyle(dealSlots[1]).animationName === 'fan-arc' &&
+    getComputedStyle(dealSlots[0]).animationName !== 'fan-deal' && getComputedStyle(dealSlots[1]).animationName === 'none' &&
     !dealHost.querySelector('.fan--deal'), getComputedStyle(dealSlots[0]).animationName);
   dealt.destroy(); dealHost.remove();
 }
@@ -250,9 +251,9 @@ check('AC-FAN-05: el segundo acierto va al slot siguiente, en orden de nombrado,
   fanSlots()[1].hasAttribute('data-fresh') && !fanSlots()[0].hasAttribute('data-fresh'));
 fanHost.getAnimations({ subtree: true }).forEach((animation) => animation.finish());
 const zOf = (slot) => Number(getComputedStyle(slot).zIndex);
-check('AC-FAN-06: la carta acertada queda al frente y levantada respecto de un dorso',
+check('AC-FAN-06: la carta acertada queda al frente, a la misma altura que un dorso: no se corre hacia arriba',
   fanSlots().slice(0, 2).every((slot) => zOf(slot) > zOf(fanSlots()[2])) &&
-  parseFloat(getComputedStyle(fanSlots()[0]).getPropertyValue('--lift')) < 0 &&
+  !parseFloat(getComputedStyle(fanSlots()[0]).getPropertyValue('--lift')) &&
   !parseFloat(getComputedStyle(fanSlots()[2]).getPropertyValue('--lift')),
   `${fanSlots().map(zOf)} | lift ${fanSlots().map((slot) => getComputedStyle(slot).getPropertyValue('--lift'))}`);
 fan.setFound([wallCards[3], wallCards[2]]);
@@ -580,7 +581,9 @@ check('AC-ARC-32: el dock está listo con su placeholder y sin Terminé de más'
   action('finish')?.hidden === false && action('next')?.hidden === true && action('repeat')?.hidden === true);
 check('AC-CMB-19: la mesa del nivel 3 muestra 3 abiertas y el total de doce',
   flowMount.querySelectorAll('.rune:not(.rune--spent)').length === 3 &&
-  flowMount.textContent.includes('3 abiertas') && flowMount.textContent.includes('en el Mazo de Runas'));
+  /3 abiertas.*en el Mazo de Runas/.test(flowMount.querySelector('.runes')?.getAttribute('aria-label')));
+check('AC-SHL-09: el resumen de runas no se ve: las runas ya lo muestran; sólo lo lee el lector de pantalla',
+  !flowMount.querySelector('.recall-band').innerText.includes('Mazo de Runas'));
 
 const regionReady = (item) => !!item && !item.hidden && getComputedStyle(item).display !== 'none' && item.getAttribute('aria-live') === 'polite';
 check('AC-ARC-60: antes de cualquier aviso, las regiones live ya están renderizadas y vacías (sello/toast adentro, aviso de restore)',
@@ -946,9 +949,29 @@ for (let level = 1; level <= 12; level++) {
   const exhausted = boardMount.querySelectorAll('.rune--spent').length;
   const remaining = 12 - open - exhausted;
   check(`AC-CMB-19/31/33: nivel ${level} muestra ${level} abiertas y suma 12`,
-    open === level && remaining >= 0 && boardMount.textContent.includes(`${remaining} en el Mazo de Runas`) &&
+    open === level && remaining >= 0 && boardMount.querySelector('.runes').getAttribute('aria-label').includes(`${remaining} en el Mazo de Runas`) &&
     (level !== 12 || exhausted === 0));
   boardFlow.destroy(); boardMount.remove();
+}
+
+// La banda nombra al rival como se lo nombra en la mesa: campeón y título de la leyenda.
+{
+  const legendCard = { id: 'dov', name: 'Daughter of the Void', baseName: 'Daughter of the Void', subtitle: null, type: 'legend', power: {} };
+  const champCard = { id: 'ks', name: "Kai'Sa, Survivor", baseName: "Kai'Sa", subtitle: 'Survivor', type: 'unit', energy: 1, power: {} };
+  const titleMount = document.createElement('div');
+  document.querySelector('#stage main').appendChild(titleMount);
+  const titled = (deck, cards) => {
+    const flow = mountRecall(titleMount, { deck, cards, seed: 17, initialLevel: 1, storage: stub });
+    const text = titleMount.querySelector('.table__deck')?.textContent;
+    flow.destroy();
+    return text;
+  };
+  const withLegend = { ...terminalDeck, name: 'Daughter of the Void', legend: 'dov', champion: 'ks' };
+  check("AC-SHL-10: con leyenda y campeón, la banda dice \"Kai'Sa, Daughter of the Void\"",
+    titled(withLegend, [terminalCard, legendCard, champCard]) === "Kai'Sa, Daughter of the Void");
+  check('AC-SHL-10: sin campeón, queda el nombre del mazo',
+    titled({ ...withLegend, champion: null }, [terminalCard, legendCard]) === 'Daughter of the Void');
+  titleMount.remove();
 }
 
 const warningMount = document.createElement('div');
@@ -1047,15 +1070,15 @@ check('AC-CFG-20: a 320 la configuración es una hoja inferior sin desborde, con
 liveDialog?.querySelector('[data-level="5"]')?.click();
 liveDialog?.querySelector('[data-action="save"]')?.click();
 await liveFrame.contentWindow.__riftrainReady;
-check('AC-CFG-17: en la app real, guardar el máximo 5 actualiza la banda a "de 5"',
-  liveDoc.querySelector('#recall-root .table__max')?.textContent === 'de 5' && !liveDoc.querySelector('dialog.settings'));
+check('AC-CFG-17: en la app real, guardar el máximo 5 cierra el diálogo y la banda no muestra el máximo',
+  !liveDoc.querySelector('#recall-root .table__max') && liveDoc.querySelector('#recall-root .table__level')?.textContent === 'Nivel 1' &&
+  !liveDoc.querySelector('dialog.settings'));
 liveDoc.querySelector('#recall-root .table__head button[aria-label="Configuración"]')?.click();
 liveDoc.querySelector('dialog.settings [data-start="4"]')?.click();
 liveDoc.querySelector('dialog.settings [data-action="save"]')?.click();
 await liveFrame.contentWindow.__riftrainReady;
 check('AC-CFG-27: en la app real, guardar desde 4 arranca la partida en el nivel 4 (con 4 runas abiertas)',
   liveDoc.querySelector('#recall-root .table__level')?.textContent === 'Nivel 4' &&
-  liveDoc.querySelector('#recall-root .table__max')?.textContent === 'de 5' &&
   liveDoc.querySelectorAll('#recall-root .rune:not(.rune--spent)').length === 4);
 check('AC-CMB-21: la app completa no desborda el documento a 320px',
   liveDoc.documentElement.scrollWidth <= liveDoc.documentElement.clientWidth + 1,
@@ -1323,8 +1346,7 @@ deskFrame.remove();
   maxMount.querySelector('[data-action="next"]').click();
   await cont.idle();
   check('AC-CFG-22: Siguiente nivel después del máximo sube el máximo a 4, lo guarda y arranca el nivel 4',
-    raised.join() === '4' && maxMount.querySelector('.table__level').textContent === 'Nivel 4' &&
-    maxMount.querySelector('.table__max').textContent === 'de 4' && maxMount.querySelector('[data-action="finish"]').hidden === false);
+    raised.join() === '4' && maxMount.querySelector('.table__level').textContent === 'Nivel Max' && maxMount.querySelector('[data-action="finish"]').hidden === false);
   cont.destroy();
 
   // Empezar de nuevo: otra mesa desde el nivel 1, mismo máximo, el foco en el input.
@@ -1343,8 +1365,7 @@ deskFrame.remove();
   restartBtn.click();
   await again.idle();
   check('AC-CFG-23 + AC-CFG-27: Empezar de nuevo vuelve al nivel de inicio (3) con otra mesa, el mismo máximo y el foco en el input',
-    seeds.length === 0 && maxMount.querySelector('.table__level').textContent === 'Nivel 3' &&
-    maxMount.querySelector('.table__max').textContent === 'de 3' && maxMount.querySelectorAll('.fan__card[data-state="found"]').length === 0 &&
+    seeds.length === 0 && maxMount.querySelector('.table__level').textContent === 'Nivel Max' && maxMount.querySelectorAll('.fan__card[data-state="found"]').length === 0 &&
     document.activeElement === maxMount.querySelector('input[role="combobox"]'));
   again.destroy(); maxMount.remove();
 }
@@ -1357,17 +1378,28 @@ deskFrame.remove();
   const kkCode = codes.find((c) => c.name === 'koko-kennen-runas-ogn').code;
   const until = async (fn) => { for (let i = 0; i < 150; i++) { if (fn()) return true; await new Promise((r) => setTimeout(r, 20)); } return false; };
 
-  // La banda: engranaje a la derecha y "de M".
+  // La banda: engranaje a la derecha y sólo el nivel (sin "de M").
   const gearMount = document.createElement('div');
   document.querySelector('#stage main').appendChild(gearMount);
   let opened = 0;
   const gearRun = mountRecall(gearMount, { deck: terminalDeck, cards: [terminalCard], seed: 17, initialLevel: 3, maxLevel: 8,
     storage: stub, onOpenSettings: () => { opened++; } });
   const gear = gearMount.querySelector('.table__head button[aria-label="Configuración"]');
-  check('AC-CFG-15: la banda tiene el botón Configuración (44 px) a la derecha y dice "Nivel 3 de 8"',
+  check('AC-CFG-15: la banda tiene el botón Configuración (44 px) a la derecha y dice "Nivel 3", sin el máximo',
     !!gear && gear.getBoundingClientRect().height >= 44 && gear.getBoundingClientRect().width >= 44 &&
     gear.getBoundingClientRect().left > gearMount.querySelector('.table__level').getBoundingClientRect().right &&
-    gearMount.querySelector('.table__level').textContent === 'Nivel 3' && gearMount.querySelector('.table__max')?.textContent === 'de 8');
+    gearMount.querySelector('.table__level').textContent === 'Nivel 3' && !gearMount.querySelector('.table__max') &&
+    !gearMount.querySelector('.table__level').classList.contains('table__level--max'));
+  {
+    // En el máximo, la banda dice "Nivel Max" en amarillo (el color de Order).
+    const topMount = document.createElement('div');
+    document.querySelector('#stage main').appendChild(topMount);
+    const topRun = mountRecall(topMount, { deck: terminalDeck, cards: [terminalCard], seed: 17, initialLevel: 8, maxLevel: 8, storage: stub });
+    const top = topMount.querySelector('.table__level');
+    check('AC-SHL-11: en el nivel máximo la banda dice "Nivel Max" en amarillo',
+      top.textContent === 'Nivel Max' && getComputedStyle(top).color === 'rgb(192, 160, 42)', getComputedStyle(top).color);
+    topRun.destroy(); topMount.remove();
+  }
   gear?.click();
   check('AC-CFG-15: tocar el engranaje pide abrir la configuración', opened === 1);
   gearRun.destroy(); gearMount.remove();
@@ -1415,6 +1447,7 @@ deskFrame.remove();
   start(2).click(); level(7).click();
   act('save').click();
   check('AC-CFG-27: Guardar entrega desde y hasta', saved?.startLevel === 2 && saved.maxLevel === 7 && saved.deck === null);
+
 
   saved = null;
   open();
