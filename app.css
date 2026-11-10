@@ -307,7 +307,9 @@ button { font: inherit; color: inherit; }
   .recall-band .table__head { grid-area: head; margin-bottom: 6px; }
   .recall-band .board { grid-area: board; margin: 0; }
   .recall-band .legend { flex-direction: row; flex-basis: auto; }
-  .recall-band .legend .card { width: clamp(56px, 4.6vw, 88px); }
+  /* Campeon y leyenda: mas grandes que las runas y con esquinas rectas (AC-ARC-61). */
+  .recall-band .legend .card { width: clamp(64px, 6vw, 112px); }
+  .recall-band .legend .card, .recall-band .legend .card__face { border-radius: 0; }
   /* La mesa mas ancha (12 runas, 9 tumbadas) tiene que entrar en UNA fila: si se parte en dos,
      la banda crece y la mano pierde el alto que necesita. Por eso crecen con el ancho (--rw). */
   .recall-band { --rw: clamp(48px, 4vw, 72px); }

@@ -1157,6 +1157,14 @@ check('AC-ARC-54: runas y leyenda quedan dentro de la banda',
   deskDoc.querySelectorAll('.recall-band .rune').length > 0 &&
   [...deskDoc.querySelectorAll('.recall-band .rune, .recall-band .legend .card')]
     .every((item) => inside(item.getBoundingClientRect(), rect('.recall-band'))));
+check('AC-ARC-61: en la banda el campeón va primero y la leyenda después, más grandes (72px+ a 1280) y con esquinas rectas', (() => {
+  const shown = [...deskDoc.querySelectorAll('.recall-band .legend .card')];
+  const square = shown.every((card) => [card, ...card.querySelectorAll('.card__face')]
+    .every((part) => parseFloat(getComputedStyle(part).borderTopLeftRadius) === 0));
+  return shown.map((card) => card.dataset.cardId).join() === [liveDeck.champion, liveDeck.legend].join() &&
+    shown.every((card) => card.getBoundingClientRect().width >= 72) && square;
+})(), [...deskDoc.querySelectorAll('.recall-band .legend .card')].map((card) =>
+  `${card.dataset.cardId}:${Math.round(card.getBoundingClientRect().width)}px r=${getComputedStyle(card).borderTopLeftRadius}`).join(' '));
 check('AC-FAN-18: la mano tiene tantos dorsos como pagables, todos dentro de su área, sin pisar el dock y legibles', (() => {
   const zone = rect('.fan-zone');
   const cards = fanCardsDesk();

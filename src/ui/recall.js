@@ -125,7 +125,7 @@ export function mountRecall(root, { deck, cards, seed, initialLevel = 1, maxLeve
     levelText.textContent = atMax ? 'Nivel Max' : `Nivel ${scenario.level}`;
     levelText.classList.toggle('table__level--max', atMax);
     publicCards.replaceChildren();
-    for (const id of [deck.legend, deck.champion]) {
+    for (const id of [deck.champion, deck.legend]) {   // campeon primero (AC-ARC-61)
       const card = cardsById.get(id);
       if (card) publicCards.appendChild(renderCard(card, { faceUp: true }));
     }
