@@ -60,6 +60,29 @@ test('AC-ARC-20: no muta las entradas y rechaza índice o runas inválidos', () 
   assert.ok(bad.reason);
 });
 
+// ---- Campeón en el recall (AC-CHA-08); 'champ' es un fixture de test ----
+const champCatalog = [...wallCatalog, { id: 'champ', energy: 3, power: { fury: 1 } }];
+const champIdx = normalizeDeck({ cards: wallCatalog.map(({ id }) => ({ cardId: id, qty: 3 })), champion: 'champ' },
+  champCatalog, { policy: 'positive-energy' }).index;
+
+test('AC-CHA-08: nombrar al campeón pagable cuenta como acierto igual que una carta del mazo', () => {
+  const start = startRecall(lvl(), champIdx);
+  assert.equal(start.ok, true);
+  assert.deepEqual(start.state.payable, ['champ', 'cheap', 'fury2']);
+  const hit = reduceRecall(start.state, { type: 'name', cardId: 'champ' }, champIdx);
+  assert.equal(hit.kind, 'accepted');
+  assert.deepEqual(hit.state.found, ['champ']);
+  assert.deepEqual(hit.state.misses, []);
+});
+
+test('AC-CHA-08: levelCardOutcomes incluye al campeón: acierto si se nombró, perdida si no', () => {
+  const hit = outcomeOf(levelCardOutcomes(champIdx, furyBoard, ['champ'], [])).champ;
+  assert.deepEqual(hit, { cardId: 'champ', outcome: 'hit', reason: null });
+  const missed = outcomeOf(levelCardOutcomes(champIdx, furyBoard, [], [])).champ;
+  assert.equal(missed.outcome, 'missed');
+  assert.match(missed.reason, /Se podía pagar/);
+});
+
 // ---- Muro del mazo: reducer por carta (AC-ARC-12..18, 21) ----
 const lvl = (level = 3, runes = furyBoard.runes) => ({ level, runes, identity: `wall-${level}` });
 const begin = (scenarioArg = lvl()) => startRecall(scenarioArg, wallIdx).state;
