@@ -1,4 +1,4 @@
-/** Main-deck index for recall; other deck zones are not draws. */
+/** Recall index: main deck plus the chosen champion (playable from its zone); other zones are out. */
 import { DOMAINS } from './runes.js';
 import { canPay, availableRunes, cardCost } from './cost.js';
 
@@ -37,7 +37,8 @@ export function normalizeDeck(deck, cards, { policy = 'all' } = {}) {
     catalog.set(card.id, card);
   }
   const byId = new Map();
-  // El campeón se roba como una copia más del mazo principal; si ya está en cards, se fusiona por id.
+  // El campeón no se roba: se juega desde su zona, así que siempre está disponible. Entra como una
+  // copia más; si el main ya tiene copias suyas, se fusiona por id.
   const entries = [...deck.cards, ...(deck.champion ? [{ cardId: deck.champion, qty: 1, champion: true }] : [])];
   for (const entry of entries) {
     const id = entry?.cardId;
