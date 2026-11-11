@@ -88,6 +88,44 @@ test('AC-CHA-03: sin campeón (null o ausente) el índice es idéntico al de hoy
   assert.deepEqual(base.index.cards, [{ id: 'a', qty: 3, energy: 1, power: {} }]);
 });
 
+test('AC-CHA-04: con positive-energy un campeón de Energía 0 va a excludedEnergyZero/fullCards y no a cards', () => {
+  const result = normalizeDeck(champDeck('zeroChamp'), champCards, { policy: 'positive-energy' });
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.index.cards.map((c) => c.id), ['a']);
+  assert.equal(result.index.byId.has('zeroChamp'), false);
+  assert.equal(result.index.excludedEnergyZero.has('zeroChamp'), true);
+  assert.deepEqual(result.index.fullCards.map((c) => c.id), ['a', 'zeroChamp']);
+});
+
+test('AC-CHA-05: un campeón fuera del catálogo o sin coste conocido bloquea el índice nombrándolo como campeón', () => {
+  const unknown = normalizeDeck(champDeck('ghost'), champCards);
+  assert.equal(unknown.ok, false);
+  assert.match(unknown.reason, /Campeón desconocido: ghost/);
+  assert.equal(unknown.index, undefined);
+  for (const bad of [{ needsCost: true }, { energy: null }, { power: null }]) {
+    const result = normalizeDeck(champDeck('champ'), champCards.map((c) => c.id === 'champ' ? { ...c, ...bad } : c));
+    assert.equal(result.ok, false, JSON.stringify(bad));
+    assert.match(result.reason, /campeón champ/);
+    assert.equal(result.index, undefined);
+  }
+});
+
+test('AC-CHA-06: con una mesa que lo paga (3 Energía + 1 Chaos con 3 Chaos abiertas) el campeón es pagable', () => {
+  const { index } = normalizeDeck(champDeck('champ'), champCards);
+  const result = payableCards(index, { runes: [rune('chaos'), rune('chaos'), rune('chaos')] });
+  assert.deepEqual(result, { ok: true, cardIds: ['a', 'champ'] });
+  assert.equal(checkCard('champ', board(rune('chaos'), rune('chaos'), rune('chaos')), index).ok, true);
+});
+
+test('AC-CHA-07: sin Chaos en la mesa el campeón no es pagable y checkCard da el motivo', () => {
+  const { index } = normalizeDeck(champDeck('champ'), champCards);
+  const scenario = board(rune('order'), rune('order'), rune('order'));
+  assert.deepEqual(payableCards(index, scenario).cardIds, ['a']);
+  const check = checkCard('champ', scenario, index);
+  assert.equal(check.ok, false);
+  assert.match(check.reason, /Pide 1 Chaos/);
+});
+
 test('AC-CMB-13: entradas main desconocidas o con cantidades inválidas bloquean el índice entero', () => {
   for (const entries of [
     [{ cardId: 'a', qty: 1 }, { cardId: 'missing', qty: 1 }],
