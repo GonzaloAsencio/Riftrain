@@ -1,4 +1,4 @@
-/** Main-deck index for recall; other deck zones are not draws. */
+/** Recall index: main deck plus the chosen champion (playable from its zone); other zones are out. */
 import { DOMAINS } from './runes.js';
 import { canPay, availableRunes, cardCost } from './cost.js';
 
@@ -37,14 +37,17 @@ export function normalizeDeck(deck, cards, { policy = 'all' } = {}) {
     catalog.set(card.id, card);
   }
   const byId = new Map();
-  for (const entry of deck.cards) {
+  // El campeón no se roba: se juega desde su zona, así que siempre está disponible. Entra como una
+  // copia más; si el main ya tiene copias suyas, se fusiona por id.
+  const entries = [...deck.cards, ...(deck.champion ? [{ cardId: deck.champion, qty: 1, champion: true }] : [])];
+  for (const entry of entries) {
     const id = entry?.cardId;
     const card = catalog.get(id);
-    if (!card) return fail(`ID de carta desconocido: ${String(id)}`);
+    if (!card) return fail(entry?.champion ? `Campeón desconocido: ${String(id)}` : `ID de carta desconocido: ${String(id)}`);
     if (!quantity(entry.qty)) return fail(`Cantidad inválida para ${id}: ${String(entry.qty)}`);
     if (card.needsCost === true || !plainPower(card.power) ||
         !Number.isSafeInteger(card.energy) || card.energy < 0) {
-      return fail(`Coste desconocido o inválido para ${id}`);
+      return fail(entry.champion ? `Coste desconocido o inválido para el campeón ${id}` : `Coste desconocido o inválido para ${id}`);
     }
     for (const [domain, n] of Object.entries(card.power)) {
       if (!DOMAINS.includes(domain) || !Number.isSafeInteger(n) || n < 0) {

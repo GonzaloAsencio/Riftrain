@@ -32,6 +32,18 @@ test('AC-CMB-20/34: seed y nivel reproducen recursos e identidad sin reinterpret
   assert.notEqual(recallIdentity(deck, index, 43, 3, first.runes), first.identity);
 });
 
+test('AC-CHA-09: sin campeón la identidad no cambia; con un campeón de copia única la identidad lo incluye', () => {
+  const catalog = [...cards, { id: 'champ', energy: 3, power: { chaos: 1 } }];
+  const runes = createRecallScenario(deck, index, 42, 3).scenario.runes;
+  const plain = normalizeDeck({ ...deck, champion: null }, catalog).index;
+  assert.equal(recallIdentity({ ...deck, champion: null }, plain, 42, 3, runes), recallIdentity(deck, index, 42, 3, runes));
+  const withChamp = { ...deck, champion: 'champ' };
+  const champIndex = normalizeDeck(withChamp, catalog).index;
+  const identity = recallIdentity(withChamp, champIndex, 42, 3, runes);
+  assert.notEqual(identity, recallIdentity(deck, index, 42, 3, runes));
+  assert.ok(identity.includes('"champ",1,3'), 'el campeón figura con qty 1 y su coste');
+});
+
 test('AC-CMB-34: metadata rúnica ausente o ilegal no produce recursos inventados', () => {
   for (const runes of [undefined, { chaos: 11 }, { lunar: 12 }, { chaos: 12.5 }, { chaos: -1, order: 13 }]) {
     const result = createRecallScenario({ ...deck, runes }, index, 42, 3);
