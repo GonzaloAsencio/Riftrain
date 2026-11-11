@@ -999,6 +999,42 @@ for (let level = 1; level <= 12; level++) {
   flow.destroy(); rerollMount.remove();
 }
 
+// ---- CAMPEÓN EN EL RECALL (AC-CHA-10, AC-CHA-11): el campeón no está en deck.cards pero cuenta como una
+// carta más de la mano del rival. 'cx' es un fixture de test (1 de Energía, pagable en el nivel 3).
+{
+  const champ = { id: 'cx', name: 'Campeón X', baseName: 'Campeón X', energy: 1, power: {}, img: PNG, type: 'unit', domain: 'order' };
+  const champDeck = { id: 'champ', name: 'Mazo con campeón', runes: { order: 12 }, champion: 'cx',
+    cards: [{ cardId: 'alpha', qty: 2 }] };
+  const champCatalog = [...sampleCards, champ];
+  const champMount = document.createElement('div');
+  document.querySelector('#stage main').appendChild(champMount);
+  const champSlot = () => champMount.querySelector('.fan__card[data-card-id="cx"], .fan__extra[data-card-id="cx"]');
+  const champSettle = () => champMount.getAnimations({ subtree: true }).forEach((animation) => animation.finish());
+
+  const missedFlow = mountRecall(champMount, { deck: champDeck, cards: champCatalog, seed: 5, initialLevel: 3, storage: stub, feedbackOptions });
+  press(type(champMount, 'alp'), 'Enter');
+  champMount.querySelector('[data-action="finish"]').click();
+  champSettle();
+  check('AC-CHA-10: cerrar sin nombrar al campeón pagable lo da vuelta en el abanico, en blanco y negro',
+    champSlot()?.dataset.state === 'missed' && champSlot().classList.contains('fan__card') &&
+    champSlot().querySelector('.card').dataset.face === 'up' &&
+    /grayscale\(1\)/.test(getComputedStyle(champSlot().querySelector('.card__face--front')).filter),
+    champSlot()?.dataset.state);
+  check('AC-CHA-11: el campeón sigue boca arriba en la banda aunque también sea carta de la mano',
+    champMount.querySelector('.recall-band .legend .card[data-card-id="cx"]')?.dataset.face === 'up');
+  missedFlow.destroy();
+
+  const hitFlow = mountRecall(champMount, { deck: champDeck, cards: champCatalog, seed: 5, initialLevel: 3, storage: stub, feedbackOptions });
+  press(type(champMount, 'campe'), 'Enter');
+  champSettle();
+  check('AC-CHA-10: nombrar al campeón pagable lo da vuelta en color (found, sin gris)',
+    champSlot()?.dataset.state === 'found' && champSlot().querySelector('.card').dataset.face === 'up' &&
+    !/grayscale\(1\)/.test(getComputedStyle(champSlot().querySelector('.card__face--front')).filter));
+  check('AC-CHA-11: tras nombrarlo, el campeón sigue boca arriba en la banda',
+    champMount.querySelector('.recall-band .legend .card[data-card-id="cx"]')?.dataset.face === 'up');
+  hitFlow.destroy(); champMount.remove();
+}
+
 // La banda nombra al rival como se lo nombra en la mesa: campeón y título de la leyenda.
 {
   const legendCard = { id: 'dov', name: 'Daughter of the Void', baseName: 'Daughter of the Void', subtitle: null, type: 'legend', power: {} };
