@@ -15,27 +15,37 @@ const cards = [
 const deck = { cards: [{ cardId: 'b', qty: 2 }, { cardId: 'a', qty: 1 }, { cardId: 'b', qty: 1 }],
   legend: 'side', champion: 'side', sideboard: [{ cardId: 'side', qty: 3 }], runes: { order: 12 } };
 
-test('AC-CMB-01: sólo el main completo aporta IDs y copias, fusionados por ID', () => {
+test('AC-CMB-01: sólo el main completo (y el campeón, AC-CHA-01) aporta IDs y copias, fusionados por ID', () => {
   const result = normalizeDeck(deck, cards);
   assert.equal(result.ok, true);
   assert.deepEqual(result.index.cards, [
     { id: 'a', qty: 1, energy: 0, power: {} },
     { id: 'b', qty: 3, energy: 2, power: { order: 1 } },
+    { id: 'side', qty: 1, energy: 1, power: {} },
   ]);
+  // El sideboard sigue fuera: la prueba de "fuera del mazo" usa una carta que no es campeón.
+  const outside = checkCard('other', { runes: [] }, result.index);
+  assert.equal(outside.ok, false);
+  assert.equal(outside.reason, 'La carta other no está en el mazo principal');
+});
+
+test('AC-CMB-01: el sideboard no aporta cartas al índice', () => {
+  const result = normalizeDeck({ ...deck, champion: null }, cards);
+  assert.equal(result.index.byId.has('side'), false);
   const outside = checkCard('side', { runes: [] }, result.index);
   assert.equal(outside.ok, false);
   assert.equal(outside.reason, 'La carta side no está en el mazo principal');
 });
 
-test('AC-CMB-01: el JSON real del deck excluye legend y champion del universo', async () => {
+test('AC-CMB-01: el JSON real del deck excluye la legend del universo (el campeón sí entra, AC-CHA-01)', async () => {
   const { readFile } = await import('node:fs/promises');
   const data = JSON.parse(await readFile(new URL('../data/cards.json', import.meta.url), 'utf8'));
   const result = normalizeDeck(data.decks[0], data.cards);
   assert.equal(result.ok, true);
-  assert.equal(result.index.cards.length, 21);
-  assert.equal(result.index.cards.reduce((total, c) => total + c.qty, 0), 39);
+  assert.equal(result.index.cards.length, 22);
+  assert.equal(result.index.cards.reduce((total, c) => total + c.qty, 0), 40);
   assert.equal(result.index.byId.has(data.decks[0].legend), false);
-  assert.equal(result.index.byId.has(data.decks[0].champion), false);
+  assert.equal(result.index.byId.has(data.decks[0].champion), true);
 });
 
 // ---- Campeón en el recall (AC-CHA-01..07) ----
@@ -324,10 +334,11 @@ test('AC-CMB-49/50: el mazo real excluye a Seal pero conserva copias y la carta 
   const data = JSON.parse(await readFile(new URL('../data/cards.json', import.meta.url), 'utf8'));
   const full = normalizeDeck(data.decks[0], data.cards);
   const paid = normalizeDeck(data.decks[0], data.cards, { policy: 'positive-energy' });
-  assert.equal(full.index.cards.length, 21);
-  assert.equal(full.index.cards.reduce((sum, c) => sum + c.qty, 0), 39);
-  assert.equal(paid.index.cards.length, 20);
-  assert.equal(paid.index.cards.reduce((sum, c) => sum + c.qty, 0), 36);
+  // +1 carta y +1 copia por el campeón (AC-CHA-01).
+  assert.equal(full.index.cards.length, 22);
+  assert.equal(full.index.cards.reduce((sum, c) => sum + c.qty, 0), 40);
+  assert.equal(paid.index.cards.length, 21);
+  assert.equal(paid.index.cards.reduce((sum, c) => sum + c.qty, 0), 37);
   assert.equal(paid.index.byId.has('seal-of-discord'), false);
   assert.equal(paid.index.byId.has('ride-the-wind'), true);
 });
